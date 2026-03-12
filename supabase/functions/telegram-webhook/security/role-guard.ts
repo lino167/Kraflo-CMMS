@@ -4,7 +4,7 @@
 
 import { AuthContext } from './auth-context.ts';
 import { sendMessage } from '../services/telegram-service.ts';
-import { mainMenuKeyboard } from '../infra/config.ts';
+import { mainMenuKeyboard, WEB_APP_URL } from '../infra/config.ts';
 
 /**
  * Ensure user is registered as a technician
@@ -18,7 +18,7 @@ export async function ensureRegistered(
     await sendMessage(
       chatId,
       `❌ Você precisa estar cadastrado para usar esta função.\n\n` +
-      `📝 Cadastre-se pelo sistema web:\nhttps://kraflo.lovable.app/auth\n\n` +
+      `📝 Cadastre-se pelo sistema web:\n${WEB_APP_URL}/auth\n\n` +
       `🆔 Seu ID Telegram: \`${userId}\``,
       undefined,
       'Markdown'
