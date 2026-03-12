@@ -376,7 +376,7 @@ export function AIReport({ empresaId }: AIReportProps) {
       doc.setFont("helvetica", "normal");
       doc.setTextColor(150, 150, 150);
       doc.text(
-        `Gerado em ${format(reportData.geradoEm, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} | Página ${i} de ${totalPages}`,
+        `Gerado pelo Kraflo Open Source em ${format(reportData.geradoEm, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} | Página ${i} de ${totalPages}`,
         pageWidth / 2,
         pageHeight - 10,
         { align: "center" }
@@ -385,6 +385,47 @@ export function AIReport({ empresaId }: AIReportProps) {
 
     doc.save(`relatorio-manutencao-${reportData.periodo.label.toLowerCase().replace(' ', '-')}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     toast.success("PDF exportado com sucesso!");
+  };
+
+  const exportToMarkdown = () => {
+    if (!reportData) return;
+
+    let md = `# Relatório de Manutenção - Kraflo\n\n`;
+    md += `**Período:** ${reportData.periodo.label} (${reportData.periodo.inicio} a ${reportData.periodo.fim})\n`;
+    md += `**Gerado em:** ${format(reportData.geradoEm, "dd/MM/yyyy HH:mm")}\n\n`;
+
+    md += `## KPIs Principais\n`;
+    md += `| Métrica | Valor |\n`;
+    md += `| :--- | :--- |\n`;
+    md += `| Total de OS | ${reportData.metricas.totalOS} |\n`;
+    md += `| MTTR (Horas) | ${reportData.metricas.mttr.toFixed(1)}h |\n`;
+    md += `| MTBF (Dias) | ${reportData.metricas.mtbf.toFixed(1)}d |\n`;
+    md += `| Taxa de Resolução | ${reportData.metricas.taxaResolucao.toFixed(1)}% |\n\n`;
+
+    if (reportData.analiseIA?.executiveSummary || reportData.analiseIATexto) {
+      md += `## Análise Executiva\n`;
+      md += `${reportData.analiseIA?.executiveSummary || reportData.analiseIATexto}\n\n`;
+    }
+
+    if (reportData.analiseIA?.recommendations?.length) {
+      md += `## Recomendações\n`;
+      reportData.analiseIA.recommendations.forEach((rec, i) => {
+        md += `### ${i + 1}. ${rec.title}\n`;
+        md += `${rec.rationale}\n\n`;
+      });
+    }
+
+    md += `---\n`;
+    md += `*Este relatório foi empoderado pelo **Kraflo CMMS (Open Source)**. Junte-se à nossa comunidade para transformar a manutenção industrial.*`;
+
+    const blob = new Blob([md], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `relatorio-manutencao-${format(new Date(), 'yyyy-MM-dd')}.md`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("Markdown exportado com sucesso!");
   };
 
   const renderMarkdown = (content: string) => {
@@ -467,10 +508,16 @@ export function AIReport({ empresaId }: AIReportProps) {
         </div>
 
         {reportData && (
-          <Button onClick={exportToPDF} className="gap-2">
-            <Download className="h-4 w-4" />
-            Exportar PDF
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={exportToPDF} variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              PDF
+            </Button>
+            <Button onClick={exportToMarkdown} variant="outline" className="gap-2">
+              <FileText className="h-4 w-4" />
+              Markdown
+            </Button>
+          </div>
         )}
       </div>
 
