@@ -14,7 +14,8 @@ export async function sendMessage(
   chatId: number,
   text: string,
   keyboard?: any,
-  parseMode?: string
+  parseMode?: string,
+  disableWebPagePreview = false
 ): Promise<void> {
   const body: any = {
     chat_id: chatId,
@@ -27,6 +28,10 @@ export async function sendMessage(
 
   if (parseMode) {
     body.parse_mode = parseMode;
+  }
+
+  if (disableWebPagePreview) {
+    body.disable_web_page_preview = true;
   }
 
   try {

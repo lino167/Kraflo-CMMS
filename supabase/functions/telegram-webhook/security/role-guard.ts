@@ -21,7 +21,8 @@ export async function ensureRegistered(
       `📝 Cadastre-se pelo sistema web:\n${WEB_APP_URL}/auth\n\n` +
       `🆔 Seu ID Telegram: \`${userId}\``,
       undefined,
-      'Markdown'
+      'Markdown',
+      true
     );
     return false;
   }

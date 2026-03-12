@@ -37,7 +37,8 @@ export async function handleStart(
       `🆔 *Seu ID Telegram:* \`${userId}\`\n\n` +
       `_(Toque no número acima para copiar)_`,
       undefined,
-      'Markdown'
+      'Markdown',
+      true
     );
   }
 }
