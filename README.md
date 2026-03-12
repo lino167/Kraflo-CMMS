@@ -1,73 +1,77 @@
-# Welcome to your Lovable project
+# Kraflo CMMS
 
-## Project info
+Kraflo is a modern, premium **Computerized Maintenance Management System (CMMS)** designed for high-performance teams. It features a "Deep Tech / Glassmorphism" aesthetic, providing a top-tier user experience while maintaining robust, enterprise-grade functionality for managing equipment, work orders (Ordens de Serviço), and technical teams.
 
-**URL**: https://lovable.dev/projects/141eed8f-0fb9-4a59-ab00-f624897c4a48
+## 🌟 Key Features
 
-## How can I edit this code?
+- **Premium UI/UX:** Built with a "Floating Command Bridge" navigation and a "Bento Box" dashboard layout, utilizing glassmorphism and modern micro-animations.
+- **Advanced Dashboard:** Real-time metrics, operational summaries, and equipment tracking in an intuitive, asynchronous layout.
+- **Work Order Management (OS):** Create, track, and manage maintenance tasks efficiently.
+- **Knowledge Base (Biblioteca):** Centralized repository for manuals and procedures.
+- **AI Assistant:** Integrated AI for technical assistance and insights.
+- **Role-Based Access Control:** Secure, granular permissions using Supabase RLS policies.
 
-There are several ways of editing your application.
+## 🛠️ Technology Stack
 
-**Use Lovable**
+**Frontend:**
+- **React 18** (Vite)
+- **TypeScript**
+- **Tailwind CSS** (Custom Premium "Deep Tech" Theme)
+- **shadcn/ui** (Radix UI) for accessible, high-quality components
+- **React Router v6** for navigation
+- **TanStack React Query** for data fetching and caching
+- **React Hook Form + Zod** for robust form handling and validation
+- **Lucide React** for icons
+- **Recharts** for data visualization
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/141eed8f-0fb9-4a59-ab00-f624897c4a48) and start prompting.
+**Backend & Infrastructure:**
+- **Supabase** (PostgreSQL)
+  - **Edge Functions** (Deno) for secure, server-side logic (Role Management, AI, Queues).
+  - **Row Level Security (RLS)** explicitly optimized with subqueries for high performance at scale.
+  - **Postgres Triggers & Functions** for automated database workflows.
+- **GitHub Actions:** CI/CD pipeline integrated for automated TypeScript checking and building.
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🚀 Getting Started
 
-**Use your preferred IDE**
+### Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js (v20+)
+- npm or pnpm
+- A Supabase project (for backend services)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Installation
 
-Follow these steps:
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/lino167/Kraflo-CMMS.git
+   cd Kraflo-CMMS
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+2. **Install dependencies:**
+   ```sh
+   npm install
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+3. **Configure Environment Variables:**
+   Create a `.env` file in the root directory and add your Supabase credentials:
+   ```env
+   VITE_SUPABASE_URL="https://your-project-id.supabase.co"
+   VITE_SUPABASE_PUBLISHABLE_KEY="your-anon-key"
+   VITE_SUPABASE_PROJECT_ID="your-project-id"
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+4. **Start the development server:**
+   ```sh
+   npm run dev
+   ```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## 🔒 Security & Architecture
 
-**Edit a file directly in GitHub**
+Kraflo takes security seriously. The backend is strictly controlled via **Supabase RLS**. All critical operations (like role assignments and automated queue processing) are isolated in **Edge Functions** that require strict JWT validation (`verify_jwt: true`) and run under the `service_role` securely.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🤝 Contribution & Deployment
 
-**Use GitHub Codespaces**
+This project uses **GitHub Actions** for Continuous Integration. Every push to the `main` branch triggers a workflow that validates TypeScript and verifies the Vite production build.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/141eed8f-0fb9-4a59-ab00-f624897c4a48) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+*Built for the future of maintenance management.*
