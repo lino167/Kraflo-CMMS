@@ -28,10 +28,14 @@ export async function handleStart(
       chatId,
       `👋 Bem-vindo ao KRAFLO!\n\n` +
       `Plataforma de gestão de manutenção para operações industriais e técnicas.\n\n` +
-      `❌ Você ainda não está cadastrado.\n\n` +
-      `📝 Para se cadastrar, acesse:\n${WEB_APP_URL}/auth\n\n` +
-      `💡 *Dica:* Use /meuid para descobrir seu ID Telegram.\n\n` +
-      `🆔 Seu ID: \`${userId}\``,
+      `❌ *Você ainda não está cadastrado.*\n\n` +
+      `Para usar o bot, você precisa vincular sua conta do Telegram ao nosso sistema.\n\n` +
+      `📝 *Siga estes passos:*\n` +
+      `1️⃣ Acesse o sistema web:\n${WEB_APP_URL}/auth\n` +
+      `2️⃣ Faça login ou crie sua conta.\n` +
+      `3️⃣ Edite seu perfil e cole o número abaixo no campo "ID Telegram":\n\n` +
+      `🆔 *Seu ID Telegram:* \`${userId}\`\n\n` +
+      `_(Toque no número acima para copiar)_`,
       undefined,
       'Markdown'
     );
