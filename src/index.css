@@ -1,0 +1,238 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=Outfit:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Premium Deep Tech / Glassmorphism Design System - Kraflo */
+
+@layer base {
+  :root {
+    /* Deep Space Dark Theme base */
+    --background: 230 25% 6%;
+    --foreground: 210 20% 98%;
+
+    --card: 230 25% 10%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 230 25% 10%;
+    --popover-foreground: 210 20% 98%;
+
+    /* Neon Industrial Orange */
+    --primary: 28 100% 55%;
+    --primary-foreground: 230 25% 6%;
+
+    /* Sleek secondary */
+    --secondary: 230 20% 16%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 230 20% 16%;
+    --muted-foreground: 215 15% 65%;
+
+    --accent: 28 100% 55%;
+    --accent-foreground: 230 25% 6%;
+
+    --destructive: 350 85% 60%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 230 20% 18%;
+    --input: 230 20% 16%;
+    --ring: 28 100% 55%;
+
+    --radius: 0.75rem;
+
+    /* Semantic Status Colors (Luminous) */
+    --warning: 45 100% 55%;
+    --success: 150 75% 45%;
+    --info: 200 90% 55%;
+
+    /* Premium Gradients */
+    --gradient-glow: linear-gradient(135deg, hsl(28 100% 55%) 0%, hsl(15 100% 50%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(230 25% 12% / 0.8) 0%, hsl(230 25% 8% / 0.8) 100%);
+
+    /* Deep Shadows */
+    --shadow-neon: 0 0 24px hsl(28 100% 55% / 0.25);
+    --shadow-surface: 0 8px 32px hsl(0 0% 0% / 0.4);
+
+    /* Sidebar Variables */
+    --sidebar-background: 230 26% 8%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 28 100% 55%;
+    --sidebar-primary-foreground: 230 25% 6%;
+    --sidebar-accent: 230 20% 16%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 230 20% 18%;
+    --sidebar-ring: 28 100% 55%;
+  }
+
+  .dark {
+    /* Always dark in this overhaul */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+    background-image:
+      radial-gradient(circle at 50% 0%, hsl(28 100% 55% / 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 100% 100%, hsl(200 90% 55% / 0.03) 0%, transparent 50%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  code, pre {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer components {
+  /* Premium Glassmorphism Panel */
+  .glass-panel {
+    @apply bg-card/60 backdrop-blur-xl border border-white/5 shadow-lg;
+  }
+
+  /* Soft glowing borders for interactive elements */
+  .glow-border {
+    position: relative;
+  }
+
+  .glow-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(to bottom, hsl(var(--border)), transparent);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .glow-border:hover::before {
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.5), transparent);
+  }
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(230 20% 25%);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(28 100% 55% / 0.8);
+}
+
+/* Premium Animations */
+@keyframes pulse-neon {
+  0%, 100% {
+    box-shadow: 0 0 12px hsl(28 100% 55% / 0.2);
+    border-color: hsl(28 100% 55% / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 24px hsl(28 100% 55% / 0.4), inset 0 0 10px hsl(28 100% 55% / 0.1);
+    border-color: hsl(28 100% 55% / 0.6);
+  }
+}
+
+@keyframes slide-up-fade {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes content-show {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.animate-pulse-neon {
+  animation: pulse-neon 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-slide-up-fade {
+  animation: slide-up-fade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Stagger item animations by nth-child */
+.stagger-1 { animation-delay: 50ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
+.stagger-5 { animation-delay: 250ms; }
+
+/* Enhanced Industrial Card (now deep tech) */
+.industrial-card {
+  @apply glass-panel transition-all duration-300 ease-out hover:-translate-y-1;
+}
+
+.industrial-card:hover {
+  border-color: hsl(28 100% 55% / 0.3);
+  box-shadow: 0 10px 40px -10px hsl(0 0% 0% / 0.6), 0 0 20px hsl(28 100% 55% / 0.1);
+}
+
+.prose-premium {
+  color: hsl(var(--foreground));
+}
+
+.prose-premium h1,
+.prose-premium h2,
+.prose-premium h3 {
+  color: hsl(var(--foreground));
+  font-family: 'Outfit', sans-serif;
+}
+
+.prose-premium a {
+  color: hsl(var(--primary));
+  text-decoration-line: underline;
+  text-underline-offset: 4px;
+}
