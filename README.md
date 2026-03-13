@@ -1,77 +1,89 @@
-# Kraflo CMMS
+# 🚀 Kraflo CMMS
 
-Kraflo is a modern, premium **Computerized Maintenance Management System (CMMS)** designed for high-performance teams. It features a "Deep Tech / Glassmorphism" aesthetic, providing a top-tier user experience while maintaining robust, enterprise-grade functionality for managing equipment, work orders (Ordens de Serviço), and technical teams.
+**Kraflo** is a modern, premium **Computerized Maintenance Management System (CMMS)** designed for high-performance industrial teams. 
+
+Experience a "Deep Tech" environment with a glassmorphism aesthetic, providing a top-tier user experience while maintaining robust, enterprise-grade functionality for managing equipment, work orders (Ordens de Serviço), and technical teams.
+
+---
+
+## 📸 Interface Preview
+
+### 🔐 Multi-Role Authentication
+Secure and modern login experience with support for multiple user roles and granular access control.
+
+![Login Page](./public/assets/screenshots/login.png)
+
+### 📊 Operational Dashboard
+A central "Command Bridge" for your maintenance operations. Track real-time metrics, MTTR, and OS distribution in a clean Bento-box layout.
+
+![Dashboard Operational](./public/assets/screenshots/dashboard_operational.png)
+
+### ⚙️ Equipment Insight
+Deep dive into your equipment performance. Track top-performing machines and manage their specific maintenance history.
+
+![Dashboard Equipment](./public/assets/screenshots/dashboard_equipments.png)
+
+### 📋 Service Order Management
+Complete control over work orders with a powerful, searchable table and real-time status tracking.
+
+![Work Orders](./public/assets/screenshots/work_orders.png)
+
+### 📚 Technical Knowledge Base (Biblioteca)
+Centralize all technical manuals and procedures in a secure, easy-to-access library.
+
+![Manuals](./public/assets/screenshots/manuals.png)
+
+---
 
 ## 🌟 Key Features
 
-- **Premium UI/UX:** Built with a "Floating Command Bridge" navigation and a "Bento Box" dashboard layout, utilizing glassmorphism and modern micro-animations.
-- **Advanced Dashboard:** Real-time metrics, operational summaries, and equipment tracking in an intuitive, asynchronous layout.
+- **Premium UI/UX:** Built with a "Floating Command Bridge" navigation and a "Bento Box" dashboard layout.
+- **Advanced Dashboard:** Real-time metrics, operational summaries, and equipment tracking.
 - **Work Order Management (OS):** Create, track, and manage maintenance tasks efficiently.
 - **Knowledge Base (Biblioteca):** Centralized repository for manuals and procedures.
-- **AI Assistant:** Integrated AI for technical assistance and insights.
-- **Role-Based Access Control:** Secure, granular permissions using Supabase RLS policies.
+- **AI Assistant:** Integrated AI for technical assistance and industrial insights.
+- **Role-Based Access Control:** Secure, granular permissions using Supabase RLS.
+
+---
 
 ## 🛠️ Technology Stack
 
-**Frontend:**
-- **React 18** (Vite)
-- **TypeScript**
-- **Tailwind CSS** (Custom Premium "Deep Tech" Theme)
-- **shadcn/ui** (Radix UI) for accessible, high-quality components
-- **React Router v6** for navigation
-- **TanStack React Query** for data fetching and caching
-- **React Hook Form + Zod** for robust form handling and validation
-- **Lucide React** for icons
-- **Recharts** for data visualization
+| Frontend | Backend & Infra |
+| :--- | :--- |
+| **React 18** (Vite) | **Supabase** (PostgreSQL) |
+| **TypeScript** | **Edge Functions** (Deno) |
+| **Tailwind CSS** (Premium Theme) | **Row Level Security (RLS)** |
+| **shadcn/ui** (Radix UI) | **GitHub Actions** (CI/CD) |
+| **TanStack Query** | **Postgres Triggers** |
 
-**Backend & Infrastructure:**
-- **Supabase** (PostgreSQL)
-  - **Edge Functions** (Deno) for secure, server-side logic (Role Management, AI, Queues).
-  - **Row Level Security (RLS)** explicitly optimized with subqueries for high performance at scale.
-  - **Postgres Triggers & Functions** for automated database workflows.
-- **GitHub Actions:** CI/CD pipeline integrated for automated TypeScript checking and building.
+---
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-
 - Node.js (v20+)
-- npm or pnpm
-- A Supabase project (for backend services)
+- Supabase Project
 
 ### Installation
 
-1. **Clone the repository:**
+1. **Clone & Install**
    ```sh
    git clone https://github.com/lino167/Kraflo-CMMS.git
    cd Kraflo-CMMS
-   ```
-
-2. **Install dependencies:**
-   ```sh
    npm install
    ```
 
-3. **Configure Environment Variables:**
-   Create a `.env` file in the root directory and add your Supabase credentials:
+2. **Environment Setup**
+   Create a `.env` file with:
    ```env
-   VITE_SUPABASE_URL="https://your-project-id.supabase.co"
+   VITE_SUPABASE_URL="your-project-url"
    VITE_SUPABASE_PUBLISHABLE_KEY="your-anon-key"
-   VITE_SUPABASE_PROJECT_ID="your-project-id"
    ```
 
-4. **Start the development server:**
+3. **Run Dev Server**
    ```sh
    npm run dev
    ```
 
-## 🔒 Security & Architecture
-
-Kraflo takes security seriously. The backend is strictly controlled via **Supabase RLS**. All critical operations (like role assignments and automated queue processing) are isolated in **Edge Functions** that require strict JWT validation (`verify_jwt: true`) and run under the `service_role` securely.
-
-## 🤝 Contribution & Deployment
-
-This project uses **GitHub Actions** for Continuous Integration. Every push to the `main` branch triggers a workflow that validates TypeScript and verifies the Vite production build.
-
 ---
-*Built for the future of maintenance management.*
+*Built with ❤️ for the future of industrial maintenance.*
