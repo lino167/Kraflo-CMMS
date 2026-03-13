@@ -138,7 +138,7 @@ export function computeEquipmentStats(
       ultimoEvento: data.ultimoEvento,
       healthStatus,
       criticidadeScore,
-    });
+    } as EquipmentStats);
   });
 
   // Ordenar por criticidade (maior primeiro)

@@ -59,7 +59,7 @@ export function useTechnicianPerformance(empresaId: string | undefined, tecnicoI
       return {
         ...data,
         os_por_tipo: (data.os_por_tipo as Record<string, number>) || {},
-        os_heroi: (data.os_heroi as TechnicianPerformance["os_heroi"]) || [],
+        os_heroi: (data.os_heroi as unknown as TechnicianPerformance["os_heroi"]) || [],
       } as TechnicianPerformance;
     },
     enabled: !!empresaId,
@@ -83,10 +83,10 @@ export function useTeamPerformance(empresaId: string | undefined) {
         throw error;
       }
 
-      return (data || []).map((d) => ({
+      return (data || []).map((d: any) => ({
         ...d,
         os_por_tipo: (d.os_por_tipo as Record<string, number>) || {},
-        os_heroi: (d.os_heroi as TechnicianPerformance["os_heroi"]) || [],
+        os_heroi: (d.os_heroi as unknown as TechnicianPerformance["os_heroi"]) || [],
       })) as TechnicianPerformance[];
     },
     enabled: !!empresaId,
@@ -125,8 +125,10 @@ export function useTeamMTTRComparison(
         if (!os.data_abertura || !os.data_fechamento) return;
 
         const tipo = os.tipo_manutencao || "Não especificado";
+        const fecham = os.data_fechamento as string;
+        const abertur = os.data_abertura as string;
         const horas =
-          (new Date(os.data_fechamento).getTime() - new Date(os.data_abertura).getTime()) /
+          (new Date(fecham).getTime() - new Date(abertur).getTime()) /
           (1000 * 60 * 60);
 
         const existing = tipoMap.get(tipo) || {

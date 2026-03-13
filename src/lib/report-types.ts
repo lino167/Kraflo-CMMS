@@ -147,3 +147,94 @@ export const PERIOD_OPTIONS: { value: PeriodType; label: string; days: number }[
   { value: '3meses', label: '3 Meses', days: 90 },
   { value: '6meses', label: '6 Meses', days: 180 },
 ];
+
+/**
+ * Tipos para o Deep Report (via Edge Function)
+ */
+
+export interface WindowStats {
+  totalOs: number;
+  osFechadas: number;
+  osAbertas: number;
+  mttrHours: number;
+  resolutionRate: number;
+}
+
+export interface ServiceTypeBreakdown {
+  tipo_servico: string;
+  total_os: number;
+  os_fechadas: number;
+  mttr_avg: number;
+  percentual: number;
+}
+
+export interface CriticalEquipment {
+  equipamento_nome: string;
+  equipamento_tag: string | null;
+  setor: string | null;
+  total_falhas: number;
+  mttr_hours: number;
+  mtbf_days: number;
+  reincidencia_30d: number;
+  score_criticidade: number;
+}
+
+export interface TagAnalysis {
+  tag: string;
+  total_os: number;
+  mttr_avg: number;
+  equipamentos: string[];
+}
+
+export interface TrendDataPoint {
+  year: number;
+  month?: number;
+  quarter?: number;
+  label: string;
+  totalOs: number;
+  osFechadas: number;
+  mttrHours: number;
+  resolutionRate: number;
+}
+
+export interface Trends {
+  monthly: TrendDataPoint[];
+  quarterly: TrendDataPoint[];
+  yearly: TrendDataPoint[];
+}
+
+export interface IndexingCoverage {
+  total: number;
+  indexed: number;
+  percentage: number;
+}
+
+export interface DeepBenchmarks {
+  id: string;
+  empresa_id: string;
+  mttr_alvo_horas: number | null;
+  mtbf_alvo_dias: number | null;
+  taxa_resolucao_alvo: number | null;
+  peso_falhas: number | null;
+  peso_reincidencia: number | null;
+  peso_mttr: number | null;
+}
+
+export interface DeepReportData {
+  period: {
+    type: string;
+    days: number;
+    startDate: string;
+    endDate: string;
+  };
+  windowStats: WindowStats;
+  serviceTypeBreakdown: ServiceTypeBreakdown[];
+  criticalEquipment: CriticalEquipment[];
+  tagAnalysis: TagAnalysis[];
+  trends: Trends;
+  indexingCoverage: IndexingCoverage;
+  benchmarks: DeepBenchmarks | null;
+  generatedAt: string;
+}
+
+export type DeepPeriodType = '7d' | '14d' | '1m' | '3m' | '6m';

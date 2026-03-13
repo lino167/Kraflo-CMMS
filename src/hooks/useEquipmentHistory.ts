@@ -87,7 +87,7 @@ export interface SuccessCase {
   tecnico_nome: string;
   data_fechamento: string;
   horas_reparo: number | null;
-  status_reincidencia?: string;
+  status_reincidencia?: string | null;
   dias_desde_ultima_solucao?: number | null;
 }
 
@@ -140,15 +140,15 @@ export function useSuccessCases(
         throw error;
       }
 
-      return (data || []).map((os) => ({
-        os_id: os.id!,
-        equipamento_tag: os.equipamento_tag!,
+      return (data || []).map((os: any): SuccessCase => ({
+        os_id: os.id,
+        equipamento_tag: os.equipamento_tag || "N/A",
         equipamento_nome: os.equipamento_nome || "Equipamento",
-        descricao_problema: os.descricao_problema!,
-        diagnostico_solucao: os.diagnostico_solucao!,
+        descricao_problema: os.descricao_problema || "N/A",
+        diagnostico_solucao: os.diagnostico_solucao || "N/A",
         notas_finais: os.notas_finais,
         tecnico_nome: os.tecnico_nome || "Técnico",
-        data_fechamento: os.data_fechamento!,
+        data_fechamento: os.data_fechamento,
         horas_reparo: null,
       }));
     },
@@ -277,15 +277,15 @@ export function useProblematicCases(
         throw error;
       }
 
-      return (data || []).map((os) => ({
-        os_id: os.id!,
-        equipamento_tag: os.equipamento_tag!,
+      return (data || []).map((os: any): SuccessCase => ({
+        os_id: os.id,
+        equipamento_tag: os.equipamento_tag || "N/A",
         equipamento_nome: os.equipamento_nome || "Equipamento",
         descricao_problema: os.descricao_problema || "Problema não especificado",
         diagnostico_solucao: os.diagnostico_solucao || "Solução não especificada",
         notas_finais: os.notas_finais,
         tecnico_nome: os.tecnico_nome || "Técnico",
-        data_fechamento: os.data_fechamento!,
+        data_fechamento: os.data_fechamento,
         horas_reparo: null,
         status_reincidencia: os.status_reincidencia,
         dias_desde_ultima_solucao: os.dias_desde_ultima_solucao,

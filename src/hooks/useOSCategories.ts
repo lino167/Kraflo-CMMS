@@ -1,25 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-
-export interface CategoriaParada {
-  id: string;
-  nome: string;
-  descricao: string;
-}
-
-export interface CategoriaProblema {
-  id: string;
-  nome: string;
-  descricao: string;
-}
-
-export interface Subcategoria {
-  id: string;
-  nome: string;
-  descricao: string;
-  categoria_id: string;
-  tipo_categoria: 'parada' | 'problema';
-}
+import { OSService, CategoriaParada, CategoriaProblema, Subcategoria } from '@/domain/osService';
 
 interface UseOSCategoriesResult {
   categoriasParada: CategoriaParada[];
@@ -40,27 +20,15 @@ export function useOSCategories(): UseOSCategoriesResult {
   const loadCategories = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [paradaRes, problemaRes, subRes] = await Promise.all([
-        supabase
-          .from('categorias_parada')
-          .select('id, nome, descricao')
-          .eq('ativo', true)
-          .order('ordem'),
-        supabase
-          .from('categorias_problema')
-          .select('id, nome, descricao')
-          .eq('ativo', true)
-          .order('ordem'),
-        supabase
-          .from('subcategorias')
-          .select('id, nome, descricao, categoria_id, tipo_categoria')
-          .eq('ativo', true)
-          .order('ordem'),
+      const [parada, problema, sub] = await Promise.all([
+        OSService.getCategoriasParada(),
+        OSService.getCategoriasProblema(),
+        OSService.getSubcategorias()
       ]);
 
-      if (paradaRes.data) setCategoriasParada(paradaRes.data);
-      if (problemaRes.data) setCategoriasProblema(problemaRes.data);
-      if (subRes.data) setSubcategorias(subRes.data as Subcategoria[]);
+      setCategoriasParada(parada);
+      setCategoriasProblema(problema);
+      setSubcategorias(sub);
     } catch (error) {
       console.error('Error loading categories:', error);
     } finally {
@@ -75,8 +43,7 @@ export function useOSCategories(): UseOSCategoriesResult {
   const getCategoriaParadaNome = useCallback(
     (id: string | null | undefined): string | null => {
       if (!id) return null;
-      const cat = categoriasParada.find((c) => c.id === id);
-      return cat?.nome ?? null;
+      return categoriasParada.find((c) => c.id === id)?.nome ?? null;
     },
     [categoriasParada]
   );
@@ -84,8 +51,7 @@ export function useOSCategories(): UseOSCategoriesResult {
   const getCategoriaProblemaName = useCallback(
     (id: string | null | undefined): string | null => {
       if (!id) return null;
-      const cat = categoriasProblema.find((c) => c.id === id);
-      return cat?.nome ?? null;
+      return categoriasProblema.find((c) => c.id === id)?.nome ?? null;
     },
     [categoriasProblema]
   );
@@ -93,8 +59,7 @@ export function useOSCategories(): UseOSCategoriesResult {
   const getSubcategoriaName = useCallback(
     (id: string | null | undefined): string | null => {
       if (!id) return null;
-      const sub = subcategorias.find((s) => s.id === id);
-      return sub?.nome ?? null;
+      return subcategorias.find((s) => s.id === id)?.nome ?? null;
     },
     [subcategorias]
   );

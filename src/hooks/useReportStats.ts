@@ -18,7 +18,6 @@ import {
   computeModelStats,
   computeIndexingCoverage,
   computePeriodMetrics,
-  computeBenchmarkComparison,
 } from '@/lib/report-utils';
 
 function getDateRange(period: PeriodType): { startDate: Date; endDate: Date; days: number } {

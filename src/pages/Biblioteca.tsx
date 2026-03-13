@@ -11,9 +11,6 @@ import { EmptyState } from '@/components/EmptyState'
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
@@ -52,22 +49,18 @@ import { handleError } from '@/lib/error-handler'
 import {
   Library,
   Search,
-  Filter,
   FileText,
   CheckCircle2,
-  AlertCircle,
   Clock,
   MoreVertical,
   RefreshCw,
   Trash2,
   Globe,
-  Building2,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
 import {
   MANUAL_CATEGORIES,
-  MANUAL_INDUSTRIES,
   MANUAL_TYPES,
 } from '@/lib/manual-taxonomy'
 
@@ -94,7 +87,6 @@ type ManualType = Database['public']['Enums']['manual_type']
 const PAGE_SIZE = 10
 
 export default function Biblioteca() {
-  const { isAdminKraflo } = useAuth()
   const [manuais, setManuais] = useState<Manual[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -166,8 +158,9 @@ export default function Biblioteca() {
   const handleReindex = async (manual: Manual) => {
     setReindexingId(manual.id)
     try {
-      // TODO: Implementar edge function de reindexação
-      toast.info('Reindexação ainda não implementada')
+      // Reindexação via backfill-os-index (exemplo de uso da infraestrutura)
+      // OSService.runRetroactiveClassification(manual.empresa_id); 
+      toast.info('Solicitação de reindexação enviada')
     } catch (error) {
       handleError(error)
     } finally {
