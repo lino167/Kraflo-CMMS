@@ -426,7 +426,7 @@ export function OSForm({ open, onClose, onSuccess, editingOS }: OSFormProps) {
                 name="tipo_manutencao"
                 render={({ field }) => (
                   <Select
-                    value={field.value}
+                    value={field.value || undefined}
                     onValueChange={(val) => field.onChange(val || undefined)}
                   >
                     <SelectTrigger>
@@ -458,7 +458,7 @@ export function OSForm({ open, onClose, onSuccess, editingOS }: OSFormProps) {
                 name="prioridade"
                 render={({ field }) => (
                   <Select
-                    value={field.value}
+                    value={field.value || undefined}
                     onValueChange={(val) => field.onChange(val || undefined)}
                   >
                     <SelectTrigger>

@@ -359,7 +359,7 @@ export function ManualUpload() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo de Manual *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || undefined}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o tipo" />
@@ -385,7 +385,7 @@ export function ManualUpload() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoria *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || undefined}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione a categoria" />
@@ -532,7 +532,7 @@ export function ManualUpload() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Segmento (opcional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || undefined}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o segmento" />
