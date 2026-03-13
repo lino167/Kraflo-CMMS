@@ -8,6 +8,7 @@ import {
   assertAdmin,
   getClientIp,
 } from "../_shared/auth.ts";
+import { generateEmbedding } from "../_shared/ai.ts";
 
 let corsHeaders: Record<string, string> = {};
 
@@ -17,30 +18,6 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 30;
 const rateMap = new Map<string, { count: number; start: number }>();
-
-async function generateEmbedding(text: string): Promise<number[]> {
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "text-embedding-3-small",
-      input: text,
-      dimensions: 768,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Embedding error:", response.status, errorText);
-    throw new Error(`Embedding API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.data[0].embedding;
-}
 
 serve(async (req) => {
   corsHeaders = buildCorsHeaders(req);

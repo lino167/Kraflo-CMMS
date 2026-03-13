@@ -11,7 +11,7 @@ interface LogContext {
   action?: string;
   osId?: number;
   correlationId?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 function formatMessage(level: LogLevel, message: string, context?: LogContext): string {

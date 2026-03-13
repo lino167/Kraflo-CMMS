@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Database } from "../../../src/integrations/supabase/types.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,7 +33,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     
-    const supabase = createClient(supabaseUrl, supabaseKey, {
+    const supabase: SupabaseClient<Database> = createClient<Database>(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
@@ -148,19 +149,19 @@ serve(async (req) => {
     ]);
 
     // Calculate window stats
-    const osList = windowStatsResult.data || [];
+    const osList = (windowStatsResult.data ?? []) as Database['public']['Tables']['ordens_de_servico']['Row'][];
     const totalOs = osList.length;
-    const osFechadas = osList.filter((os: any) => os.status_os === 'Fechada').length;
+    const osFechadas = osList.filter((os) => os.status_os === 'Fechada').length;
     const osAbertas = totalOs - osFechadas;
 
     // Calculate MTTR (average repair time in hours)
-    const closedWithDates = osList.filter((os: any) => 
-      os.status_os === 'Fechada' && os.data_fechamento && os.data_abertura
+    const closedWithDates = osList.filter(
+      (os) => os.status_os === 'Fechada' && os.data_fechamento && os.data_abertura
     );
     
     let mttrHours = 0;
     if (closedWithDates.length > 0) {
-      const totalRepairHours = closedWithDates.reduce((sum: number, os: any) => {
+      const totalRepairHours = closedWithDates.reduce((sum: number, os) => {
         const opened = new Date(os.data_abertura).getTime();
         const closed = new Date(os.data_fechamento).getTime();
         return sum + (closed - opened) / (1000 * 60 * 60);
@@ -172,10 +173,13 @@ serve(async (req) => {
     const resolutionRate = totalOs > 0 ? (osFechadas / totalOs) * 100 : 0;
 
     // Calculate indexing coverage
-    const indexingList = indexingCoverageResult.data || [];
+    const indexingList = (indexingCoverageResult.data ?? []) as Pick<
+      Database['public']['Tables']['ordens_de_servico']['Row'],
+      'id' | 'index_status' | 'embedding_version'
+    >[];
     const totalForIndexing = indexingList.length;
-    const indexed = indexingList.filter((os: any) => 
-      os.index_status === 'indexed' && os.embedding_version >= 1
+    const indexed = indexingList.filter(
+      (os) => os.index_status === 'indexed' && (os.embedding_version ?? 0) >= 1
     ).length;
     const indexingPercentage = totalForIndexing > 0 ? (indexed / totalForIndexing) * 100 : 0;
 
@@ -195,7 +199,7 @@ serve(async (req) => {
         resolutionRate: Math.round(resolutionRate * 100) / 100,
       },
       serviceTypeBreakdown: serviceTypeResult.data || [],
-      criticalEquipment: (criticalEquipmentResult.data || []).map((eq: any) => ({
+      criticalEquipment: (criticalEquipmentResult.data || []).map((eq) => ({
         ...eq,
         total_falhas: Number(eq.total_falhas),
         mttr_hours: Math.round((Number(eq.mttr_hours) || 0) * 100) / 100,
@@ -203,13 +207,13 @@ serve(async (req) => {
         reincidencia_30d: Math.round((Number(eq.reincidencia_30d) || 0) * 100) / 100,
         score_criticidade: Math.round((Number(eq.score_criticidade) || 0) * 100) / 100,
       })),
-      tagAnalysis: (tagAnalysisResult.data || []).map((tag: any) => ({
+      tagAnalysis: (tagAnalysisResult.data || []).map((tag) => ({
         ...tag,
         total_os: Number(tag.total_os),
         mttr_avg: Math.round((Number(tag.mttr_avg) || 0) * 100) / 100,
       })),
       trends: {
-        monthly: (monthlyTrendResult.data || []).map((m: any) => ({
+        monthly: (monthlyTrendResult.data || []).map((m) => ({
           year: m.year,
           month: m.month,
           label: `${m.month}/${m.year}`,
@@ -218,7 +222,7 @@ serve(async (req) => {
           mttrHours: Math.round((Number(m.mttr_hours) || 0) * 100) / 100,
           resolutionRate: Math.round((Number(m.resolution_rate) || 0) * 100) / 100,
         })).reverse(),
-        quarterly: (quarterlyTrendResult.data || []).map((q: any) => ({
+        quarterly: (quarterlyTrendResult.data || []).map((q) => ({
           year: q.year,
           quarter: q.quarter,
           label: `T${q.quarter}/${q.year}`,
@@ -227,7 +231,7 @@ serve(async (req) => {
           mttrHours: Math.round((Number(q.mttr_hours) || 0) * 100) / 100,
           resolutionRate: Math.round((Number(q.resolution_rate) || 0) * 100) / 100,
         })).reverse(),
-        yearly: (yearlyTrendResult.data || []).map((y: any) => ({
+        yearly: (yearlyTrendResult.data || []).map((y) => ({
           year: y.year,
           label: String(y.year),
           totalOs: Number(y.total_os),

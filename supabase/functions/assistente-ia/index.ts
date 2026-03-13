@@ -2,20 +2,19 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   buildCorsHeaders,
-  getServiceClient,
   extractAuthToken,
   isServiceRoleToken,
   getUserFromToken,
   getClientIp,
 } from "../_shared/auth.ts";
+import type { SupabaseClient } from "../_shared/auth.ts";
+import { generateEmbedding } from "../_shared/ai.ts";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 30;
 const rateMap = new Map<string, { count: number; start: number }>();
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const USE_EMBEDDINGS = (Deno.env.get("USE_EMBEDDINGS") || "false").toLowerCase() === "true";
 
 const SYSTEM_PROMPT = `Você é o Assistente de Manutenção Kraflo, um especialista técnico em manutenção industrial de teares.
@@ -88,26 +87,32 @@ REGRAS:
 6. Compare com benchmarks apenas se valores de alvo forem fornecidos
 7. NUNCA inclua markdown ou texto fora do JSON`;
 
-async function generateEmbedding(text: string): Promise<number[]> {
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ model: "text-embedding-3-small", input: text, dimensions: 768 }),
-  });
-  if (!response.ok) {
-    const err = await response.text();
-    console.error("Embedding error:", response.status, err);
-    throw new Error("Embedding API error");
-  }
-  const data = await response.json();
-  return data.data[0].embedding;
-}
+type ManualChunk = {
+  nome_arquivo: string;
+  equipamento_tipo: string | null;
+  pagina: number | null;
+  conteudo: string;
+};
+
+type SimilarOS = {
+  ordem_id: number;
+  equipamento_nome: string | null;
+  descricao_problema: string | null;
+  diagnostico_solucao: string | null;
+  notas_finais: string | null;
+};
+
+type SearchResult = {
+  manualChunks: ManualChunk[];
+  osSimilares: SimilarOS[];
+};
 
 // Text-based search fallback
-async function searchByText(supabase: any, text: string, empresaId: string | null) {
+async function searchByText(
+  supabase: SupabaseClient,
+  text: string,
+  empresaId: string | null
+): Promise<SearchResult> {
   console.log("Searching by text:", text.substring(0, 100) + "...");
   
   // Extract keywords for search
@@ -176,7 +181,11 @@ async function searchByText(supabase: any, text: string, empresaId: string | nul
   };
 }
 
-async function searchByEmbeddings(supabase: any, text: string, empresaId: string | null) {
+async function searchByEmbeddings(
+  supabase: SupabaseClient,
+  text: string,
+  empresaId: string | null
+): Promise<SearchResult> {
   if (!LOVABLE_API_KEY || !USE_EMBEDDINGS) return { manualChunks: [], osSimilares: [] };
   const emb = await generateEmbedding(text);
   const embStr = JSON.stringify(emb);
@@ -207,6 +216,169 @@ async function searchByEmbeddings(supabase: any, text: string, empresaId: string
       notas_finais: o.notas_finais,
     })),
   };
+}
+
+function buildContextFromResults(search: SearchResult) {
+  const { manualChunks, osSimilares } = search;
+
+  let contextManual = "";
+  if (manualChunks && manualChunks.length > 0) {
+    contextManual = "## INFORMAÇÕES DOS MANUAIS:\n\n";
+    for (const chunk of manualChunks) {
+      contextManual += `### ${chunk.nome_arquivo} (${chunk.equipamento_tipo || "Geral"}) - Página ${chunk.pagina || "N/A"}\n`;
+      contextManual += `${chunk.conteudo}\n\n`;
+    }
+  }
+
+  let contextOS = "";
+  if (osSimilares && osSimilares.length > 0) {
+    contextOS = "## ORDENS DE SERVIÇO SIMILARES JÁ RESOLVIDAS:\n\n";
+    for (const os of osSimilares) {
+      contextOS += `### OS #${os.ordem_id} - ${os.equipamento_nome}\n`;
+      contextOS += `**Problema:** ${os.descricao_problema || "N/A"}\n`;
+      contextOS += `**Diagnóstico/Solução:** ${os.diagnostico_solucao || "N/A"}\n`;
+      if (os.notas_finais) {
+        contextOS += `**Notas:** ${os.notas_finais}\n`;
+      }
+      contextOS += "\n";
+    }
+  }
+
+  return { contextManual, contextOS };
+}
+
+async function getConversationHistory(
+  supabase: SupabaseClient,
+  conversa_id?: string
+): Promise<Array<{ role: string; content: string }>> {
+  if (!conversa_id) return [];
+
+  const { data: mensagens } = await supabase
+    .from("ia_mensagens")
+    .select("role, content")
+    .eq("conversa_id", conversa_id)
+    .order("created_at", { ascending: true })
+    .limit(10);
+
+  if (!mensagens) return [];
+
+  return mensagens.map((m) => ({
+    role: m.role,
+    content: m.content,
+  }));
+}
+
+async function callChatCompletion(
+  correlationId: string,
+  messages: Array<{ role: string; content: string }>
+): Promise<string> {
+  const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+      "x-correlation-id": correlationId,
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages,
+      max_tokens: 2000,
+    }),
+  });
+
+  if (!aiResponse.ok) {
+    if (aiResponse.status === 429) {
+      throw new Response(
+        JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos." }),
+        {
+          status: 429,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+    if (aiResponse.status === 402) {
+      throw new Response(
+        JSON.stringify({ error: "Créditos esgotados. Entre em contato com o administrador." }),
+        {
+          status: 402,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+    const errorText = await aiResponse.text();
+    console.error("AI error:", aiResponse.status, errorText);
+    throw new Error(`AI API error: ${aiResponse.status}`);
+  }
+
+  const aiData = await aiResponse.json();
+  return aiData.choices[0].message.content;
+}
+
+async function persistConversation(
+  supabase: SupabaseClient,
+  params: {
+    empresa_id?: string;
+    conversa_id?: string;
+    tecnico_id?: string;
+    mensagem: string;
+    resposta: string;
+    manualChunks: ManualChunk[];
+    osSimilares: SimilarOS[];
+  }
+): Promise<string | undefined> {
+  const { empresa_id, conversa_id, tecnico_id, mensagem, resposta, manualChunks, osSimilares } = params;
+
+  if (!empresa_id) return conversa_id;
+
+  let novaConversaId = conversa_id;
+
+  if (!novaConversaId) {
+    const { data: novaConversa, error: conversaError } = await supabase
+      .from("ia_conversas")
+      .insert({
+        empresa_id,
+        tecnico_id: tecnico_id || null,
+      })
+      .select("id")
+      .single();
+
+    if (conversaError) {
+      console.error("Error creating conversation:", conversaError);
+    } else {
+      novaConversaId = novaConversa.id;
+    }
+  }
+
+  if (!novaConversaId) return conversa_id;
+
+  await supabase.from("ia_mensagens").insert({
+    conversa_id: novaConversaId,
+    role: "user",
+    content: mensagem,
+  });
+
+  const fontes = {
+    manuais:
+      manualChunks?.map((c) => ({
+        arquivo: c.nome_arquivo,
+        pagina: c.pagina,
+        equipamento: c.equipamento_tipo,
+      })) || [],
+    os:
+      osSimilares?.map((o) => ({
+        ordem_id: o.ordem_id,
+        equipamento: o.equipamento_nome,
+      })) || [],
+  };
+
+  await supabase.from("ia_mensagens").insert({
+    conversa_id: novaConversaId,
+    role: "assistant",
+    content: resposta,
+    fontes,
+  });
+
+  return novaConversaId;
 }
 
 // Parse structured response for reports
@@ -428,67 +600,26 @@ Gere o JSON estruturado com recomendações específicas e acionáveis baseadas 
       }
     }
 
-    // === CHAT MODE: Original behavior ===
+    // === CHAT MODE: Original behavior, refatorado ===
     console.log("Processing message:", mensagem.substring(0, 100));
 
-    let manualChunks: any[] = [];
-    let osSimilares: any[] = [];
+    let searchResult: SearchResult = { manualChunks: [], osSimilares: [] };
     try {
-      const byEmb = await searchByEmbeddings(supabase, mensagem, empresa_id || null);
-      manualChunks = byEmb.manualChunks;
-      osSimilares = byEmb.osSimilares;
+      searchResult = await searchByEmbeddings(supabase, mensagem, empresa_id || null);
     } catch (e) {
       console.warn("Embeddings search failed, falling back:", e);
     }
-    if (manualChunks.length === 0 && osSimilares.length === 0) {
-      const byText = await searchByText(supabase, mensagem, empresa_id || null);
-      manualChunks = byText.manualChunks;
-      osSimilares = byText.osSimilares;
+    if (searchResult.manualChunks.length === 0 && searchResult.osSimilares.length === 0) {
+      searchResult = await searchByText(supabase, mensagem, empresa_id || null);
     }
 
-    console.log(`Found ${manualChunks?.length || 0} manual chunks and ${osSimilares?.length || 0} similar OS`);
+    console.log(
+      `Found ${searchResult.manualChunks.length} manual chunks and ${searchResult.osSimilares.length} similar OS`
+    );
 
-    // Build context from search results
-    let contextManual = "";
-    if (manualChunks && manualChunks.length > 0) {
-      contextManual = "## INFORMAÇÕES DOS MANUAIS:\n\n";
-      for (const chunk of manualChunks) {
-        contextManual += `### ${chunk.nome_arquivo} (${chunk.equipamento_tipo || "Geral"}) - Página ${chunk.pagina || "N/A"}\n`;
-        contextManual += `${chunk.conteudo}\n\n`;
-      }
-    }
+    const { contextManual, contextOS } = buildContextFromResults(searchResult);
 
-    let contextOS = "";
-    if (osSimilares && osSimilares.length > 0) {
-      contextOS = "## ORDENS DE SERVIÇO SIMILARES JÁ RESOLVIDAS:\n\n";
-      for (const os of osSimilares) {
-        contextOS += `### OS #${os.ordem_id} - ${os.equipamento_nome}\n`;
-        contextOS += `**Problema:** ${os.descricao_problema || "N/A"}\n`;
-        contextOS += `**Diagnóstico/Solução:** ${os.diagnostico_solucao || "N/A"}\n`;
-        if (os.notas_finais) {
-          contextOS += `**Notas:** ${os.notas_finais}\n`;
-        }
-        contextOS += "\n";
-      }
-    }
-
-    // Get conversation history if exists
-    let conversationHistory: Array<{ role: string; content: string }> = [];
-    if (conversa_id) {
-      const { data: mensagens } = await supabase
-        .from("ia_mensagens")
-        .select("role, content")
-        .eq("conversa_id", conversa_id)
-        .order("created_at", { ascending: true })
-        .limit(10);
-
-      if (mensagens) {
-        conversationHistory = mensagens.map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
-      }
-    }
+    const conversationHistory = await getConversationHistory(supabase, conversa_id);
 
     // Build the user message with context
     const userMessageWithContext = `${contextManual}${contextOS}
@@ -503,92 +634,17 @@ ${mensagem}`;
       { role: "user", content: userMessageWithContext },
     ];
 
-    // Call Lovable AI
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-        "x-correlation-id": correlationId,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages,
-        max_tokens: 2000,
-      }),
+    const resposta = await callChatCompletion(correlationId, messages);
+
+    const novaConversaId = await persistConversation(supabase, {
+      empresa_id,
+      conversa_id,
+      tecnico_id,
+      mensagem,
+      resposta,
+      manualChunks: searchResult.manualChunks,
+      osSimilares: searchResult.osSimilares,
     });
-
-    if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos esgotados. Entre em contato com o administrador." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errorText = await aiResponse.text();
-      console.error("AI error:", aiResponse.status, errorText);
-      throw new Error(`AI API error: ${aiResponse.status}`);
-    }
-
-    const aiData = await aiResponse.json();
-    const resposta = aiData.choices[0].message.content;
-
-    // Save conversation if empresa_id provided
-    let novaConversaId = conversa_id;
-    if (empresa_id) {
-      // Create conversation if doesn't exist
-      if (!conversa_id) {
-        const { data: novaConversa, error: conversaError } = await supabase
-          .from("ia_conversas")
-          .insert({
-            empresa_id,
-            tecnico_id: tecnico_id || null,
-          })
-          .select("id")
-          .single();
-
-        if (conversaError) {
-          console.error("Error creating conversation:", conversaError);
-        } else {
-          novaConversaId = novaConversa.id;
-        }
-      }
-
-      // Save user message
-      if (novaConversaId) {
-        await supabase.from("ia_mensagens").insert({
-          conversa_id: novaConversaId,
-          role: "user",
-          content: mensagem,
-        });
-
-        // Save assistant response with sources
-        const fontes = {
-          manuais: manualChunks?.map((c: { nome_arquivo: string; pagina: number; equipamento_tipo: string }) => ({
-            arquivo: c.nome_arquivo,
-            pagina: c.pagina,
-            equipamento: c.equipamento_tipo,
-          })) || [],
-          os: osSimilares?.map((o: { ordem_id: number; equipamento_nome: string }) => ({
-            ordem_id: o.ordem_id,
-            equipamento: o.equipamento_nome,
-          })) || [],
-        };
-
-        await supabase.from("ia_mensagens").insert({
-          conversa_id: novaConversaId,
-          role: "assistant",
-          content: resposta,
-          fontes,
-        });
-      }
-    }
 
     console.log(`[${correlationId}] Response generated successfully`);
 
@@ -597,8 +653,8 @@ ${mensagem}`;
         resposta,
         conversa_id: novaConversaId,
         fontes: {
-          manuais_consultados: manualChunks?.length || 0,
-          os_similares: osSimilares?.length || 0,
+          manuais_consultados: searchResult.manualChunks.length,
+          os_similares: searchResult.osSimilares.length,
         },
         correlation_id: correlationId,
       }),
