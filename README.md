@@ -11,27 +11,27 @@ Experience a "Deep Tech" environment with a glassmorphism aesthetic, providing a
 ### 🔐 Multi-Role Authentication
 Secure and modern login experience with support for multiple user roles and granular access control.
 
-![Login Page](./public/assets/screenshots/login.png)
+![Login Page](docs/screenshots/login.png)
 
 ### 📊 Operational Dashboard
 A central "Command Bridge" for your maintenance operations. Track real-time metrics, MTTR, and OS distribution in a clean Bento-box layout.
 
-![Dashboard Operational](./public/assets/screenshots/dashboard_operational.png)
+![Dashboard Operational](docs/screenshots/dashboard_operational.png)
 
 ### ⚙️ Equipment Insight
 Deep dive into your equipment performance. Track top-performing machines and manage their specific maintenance history.
 
-![Dashboard Equipment](./public/assets/screenshots/dashboard_equipments.png)
+![Dashboard Equipment](docs/screenshots/dashboard_equipments.png)
 
 ### 📋 Service Order Management
 Complete control over work orders with a powerful, searchable table and real-time status tracking.
 
-![Work Orders](./public/assets/screenshots/work_orders.png)
+![Work Orders](docs/screenshots/work_orders.png)
 
 ### 📚 Technical Knowledge Base (Biblioteca)
 Centralize all technical manuals and procedures in a secure, easy-to-access library.
 
-![Manuals](./public/assets/screenshots/manuals.png)
+![Manuals](docs/screenshots/manuals.png)
 
 ---
 
