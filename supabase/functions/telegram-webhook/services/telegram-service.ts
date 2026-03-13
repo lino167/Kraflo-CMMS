@@ -13,11 +13,17 @@ const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
 export async function sendMessage(
   chatId: number,
   text: string,
-  keyboard?: any,
+  keyboard?: { inline_keyboard?: unknown } | undefined,
   parseMode?: string,
   disableWebPagePreview = false
 ): Promise<void> {
-  const body: any = {
+  const body: {
+    chat_id: number;
+    text: string;
+    reply_markup?: unknown;
+    parse_mode?: string;
+    disable_web_page_preview?: boolean;
+  } = {
     chat_id: chatId,
     text: text,
   };

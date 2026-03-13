@@ -3,6 +3,7 @@
  */
 
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { Database } from '../../../src/integrations/supabase/types.ts';
 
 // Telegram Update types
 export interface TelegramUser {
@@ -52,7 +53,7 @@ export interface BotContext {
   userId: number;
   text: string;
   photo?: TelegramPhoto[];
-  supabase: SupabaseClient;
+  supabase: SupabaseClient<Database>;
   correlationId: string;
 }
 
@@ -69,7 +70,7 @@ export interface Tecnico {
 // User state for multi-step flows
 export interface UserState {
   state: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 // OS (Work Order) data

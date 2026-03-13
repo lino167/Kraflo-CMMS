@@ -3,6 +3,7 @@
  */
 
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { Database } from '../../../src/integrations/supabase/types.ts';
 import { OrdemDeServico } from '../telegram-types.ts';
 import { logger } from '../infra/logger.ts';
 
@@ -25,7 +26,7 @@ export interface EquipmentStats {
  * Get general report stats for a company
  */
 export async function getGeneralStats(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   empresaId: string
 ): Promise<ReportStats | null> {
   const { data: allOS, error } = await supabase
@@ -52,7 +53,7 @@ export async function getGeneralStats(
  * Get personal stats for a technician
  */
 export async function getPersonalStats(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   tecnicoId: number
 ): Promise<ReportStats | null> {
   const { data: myOS, error } = await supabase
@@ -97,7 +98,7 @@ export async function getPersonalStats(
  * Get OS by equipment name search
  */
 export async function getOSByEquipment(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   empresaId: string,
   equipmentName: string,
   limit = 15
@@ -122,7 +123,7 @@ export async function getOSByEquipment(
  * Get stats for the last 30 days
  */
 export async function getLast30DaysStats(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   empresaId: string
 ): Promise<{ stats: ReportStats; topEquipments: EquipmentStats[] } | null> {
   const thirtyDaysAgo = new Date();
@@ -170,7 +171,7 @@ export async function getLast30DaysStats(
  * Get OS for a date range (for PDF report)
  */
 export async function getOSByDateRange(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   empresaId: string,
   startDate: Date,
   endDate: Date
@@ -198,10 +199,12 @@ export async function getOSByDateRange(
  * Search parts history by company
  */
 export async function searchPartsHistory(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   empresaId: string,
   searchQuery: string
-): Promise<any[]> {
+): Promise<
+  Database['public']['Functions']['get_parts_history_by_company']['Returns'] | null
+> {
   const { data, error } = await supabase.rpc('get_parts_history_by_company', {
     id_empresa: empresaId,
     search_query: searchQuery,

@@ -4,6 +4,7 @@
  */
 
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { Database } from '../../../src/integrations/supabase/types.ts';
 import { UserState } from './telegram-types.ts';
 import { logger } from './infra/logger.ts';
 
@@ -62,7 +63,7 @@ export type StateType = typeof States[keyof typeof States];
  */
 export async function getUserState(
   userId: number,
-  supabase: SupabaseClient
+  supabase: SupabaseClient<Database>
 ): Promise<UserState | null> {
   const { data, error } = await supabase
     .from('bot_user_states')
@@ -80,8 +81,8 @@ export async function getUserState(
 export async function setUserState(
   userId: number,
   state: string,
-  stateData: Record<string, any>,
-  supabase: SupabaseClient
+  stateData: Record<string, unknown>,
+  supabase: SupabaseClient<Database>
 ): Promise<void> {
   const previousState = await getUserState(userId, supabase);
 
@@ -103,7 +104,7 @@ export async function setUserState(
  */
 export async function clearUserState(
   userId: number,
-  supabase: SupabaseClient
+  supabase: SupabaseClient<Database>
 ): Promise<void> {
   await supabase.from('bot_user_states').delete().eq('id_telegram', userId);
   logger.stateChange(userId, 'active', 'cleared');

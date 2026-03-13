@@ -3,6 +3,7 @@
  */
 
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { Database } from '../../../src/integrations/supabase/types.ts';
 import { OrdemDeServico, Peca } from '../telegram-types.ts';
 import { logger } from '../infra/logger.ts';
 
@@ -37,10 +38,10 @@ export interface CloseOSData {
  * Create a new work order
  */
 export async function createOS(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   data: CreateOSData
 ): Promise<OrdemDeServico | null> {
-  const insertData: Record<string, any> = {
+  const insertData: Database['public']['Tables']['ordens_de_servico']['Insert'] = {
     tecnico_id: data.tecnicoId,
     empresa_id: data.empresaId,
     equipamento_nome: data.equipamentoNome,
@@ -80,10 +81,10 @@ export async function createOS(
  * Close a work order
  */
 export async function closeOS(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   data: CloseOSData
 ): Promise<boolean> {
-  const updateData: Record<string, any> = {
+  const updateData: Partial<Database['public']['Tables']['ordens_de_servico']['Update']> = {
     diagnostico_solucao: data.diagnosticoSolucao,
     status_os: data.statusOs,
     notas_finais: data.notasFinais || '',
@@ -132,7 +133,7 @@ export async function closeOS(
  * Update an OS field
  */
 export async function updateOSField(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   osId: number,
   field: string,
   value: string
@@ -153,7 +154,7 @@ export async function updateOSField(
  * Delete an OS and its related parts
  */
 export async function deleteOS(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   osId: number
 ): Promise<boolean> {
   // Delete related parts first
@@ -178,7 +179,7 @@ export async function deleteOS(
  * Get open OS for a technician
  */
 export async function getOpenOSByTechnician(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   tecnicoId: number,
   limit = 10
 ): Promise<OrdemDeServico[]> {
@@ -197,7 +198,7 @@ export async function getOpenOSByTechnician(
  * Get OS list for a technician (all statuses)
  */
 export async function getOSByTechnician(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   tecnicoId: number,
   limit = 10
 ): Promise<OrdemDeServico[]> {
@@ -215,7 +216,7 @@ export async function getOSByTechnician(
  * Get open OS for a company
  */
 export async function getOpenOSByCompany(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   empresaId: string,
   limit = 20
 ): Promise<OrdemDeServico[]> {
@@ -234,7 +235,7 @@ export async function getOpenOSByCompany(
  * Get closed OS for a company
  */
 export async function getClosedOSByCompany(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   empresaId: string,
   limit = 20
 ): Promise<OrdemDeServico[]> {
@@ -253,7 +254,7 @@ export async function getClosedOSByCompany(
  * Get a single OS by ID
  */
 export async function getOSById(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   osId: number
 ): Promise<OrdemDeServico | null> {
   const { data } = await supabase
