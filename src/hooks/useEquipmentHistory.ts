@@ -140,7 +140,7 @@ export function useSuccessCases(
         throw error;
       }
 
-      return (data || []).map((os: any): SuccessCase => ({
+      return (data || []).map((os): SuccessCase => ({
         os_id: os.id,
         equipamento_tag: os.equipamento_tag || "N/A",
         equipamento_nome: os.equipamento_nome || "Equipamento",
@@ -277,7 +277,7 @@ export function useProblematicCases(
         throw error;
       }
 
-      return (data || []).map((os: any): SuccessCase => ({
+      return (data || []).map((os): SuccessCase => ({
         os_id: os.id,
         equipamento_tag: os.equipamento_tag || "N/A",
         equipamento_nome: os.equipamento_nome || "Equipamento",

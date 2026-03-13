@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useForm, Controller, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
 import { osFormSchema, OSFormData } from '@/lib/validation-schemas'
 import { handleError } from '@/lib/error-handler'
 import { supabase } from '@/integrations/supabase/client'
@@ -72,7 +71,9 @@ interface ReincidenciaData {
   }
 }
 
-function FormReincidenciaAlert({ control, data }: { control: any; data: ReincidenciaData | null }) {
+import { Control } from 'react-hook-form'
+
+function FormReincidenciaAlert({ control, data }: { control: Control<OSFormData>; data: ReincidenciaData | null }) {
   const tag = useWatch({ control, name: 'equipamento_tag' })
   if (!data?.encontrou) return null
   return <ReincidenciaAlert data={data} tag={tag || ''} />
@@ -191,8 +192,8 @@ export function OSForm({ open, onClose, onSuccess, editingOS }: OSFormProps) {
         setValue('equipamento_nome', editingOS.equipamento_nome)
         setValue('equipamento_tag', editingOS.equipamento_tag || '')
         setValue('localizacao', editingOS.localizacao || '')
-        setValue('tipo_manutencao', (editingOS.tipo_manutencao as any) || undefined)
-        setValue('prioridade', (editingOS.prioridade as any) || undefined)
+        setValue('tipo_manutencao', (editingOS.tipo_manutencao as OSFormData['tipo_manutencao']) || undefined)
+        setValue('prioridade', (editingOS.prioridade as OSFormData['prioridade']) || undefined)
         setValue('descricao_problema', editingOS.descricao_problema || '')
         setValue('diagnostico_solucao', editingOS.diagnostico_solucao || '')
         setValue('notas_finais', editingOS.notas_finais || '')
@@ -426,7 +427,7 @@ export function OSForm({ open, onClose, onSuccess, editingOS }: OSFormProps) {
                 render={({ field }) => (
                   <Select
                     value={field.value}
-                    onValueChange={field.onChange}
+                    onValueChange={(val) => field.onChange(val || undefined)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
@@ -458,7 +459,7 @@ export function OSForm({ open, onClose, onSuccess, editingOS }: OSFormProps) {
                 render={({ field }) => (
                   <Select
                     value={field.value}
-                    onValueChange={field.onChange}
+                    onValueChange={(val) => field.onChange(val || undefined)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a prioridade" />

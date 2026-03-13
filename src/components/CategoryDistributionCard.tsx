@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Tag, Wrench } from 'lucide-react'
+import { Tag } from 'lucide-react'
 import {
   BarChart,
   Bar,
@@ -179,6 +179,7 @@ export function CategoryDistributionCard({ dateRange }: CategoryDistributionCard
               borderRadius: '8px',
               fontSize: '12px',
             }}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             formatter={(value: number, _name: string, props: any) => [
               `${value} OS (${props.payload.percentual}%)`,
               'Total',
@@ -211,8 +212,8 @@ export function CategoryDistributionCard({ dateRange }: CategoryDistributionCard
               value={cat.percentual}
               className="h-2"
               style={{
-                ['--progress-color' as any]: colors[index % colors.length],
-              }}
+                '--progress-color': colors[index % colors.length],
+              } as React.CSSProperties}
             />
           </div>
         ))}

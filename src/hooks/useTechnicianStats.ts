@@ -83,7 +83,7 @@ export function useTeamPerformance(empresaId: string | undefined) {
         throw error;
       }
 
-      return (data || []).map((d: any) => ({
+      return (data || []).map((d) => ({
         ...d,
         os_por_tipo: (d.os_por_tipo as Record<string, number>) || {},
         os_heroi: (d.os_heroi as unknown as TechnicianPerformance["os_heroi"]) || [],

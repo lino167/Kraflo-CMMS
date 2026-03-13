@@ -101,7 +101,7 @@ export function ParetoCrossAnalysisCard({ dateRange }: ParetoCrossAnalysisCardPr
 
         const countMap = new Map<string, number>()
         fallbackData.forEach((os) => {
-          const id = (os as any)[categoryField] as string
+          const id = os[categoryField as keyof typeof os] as string
           countMap.set(id, (countMap.get(id) || 0) + 1)
         })
 
