@@ -58,7 +58,13 @@ import {
   Globe,
   ChevronLeft,
   ChevronRight,
+  BookOpen,
+  Wrench,
+  ExternalLink,
+  AlertTriangle,
 } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import { format } from 'date-fns'
 import {
   MANUAL_CATEGORIES,
   MANUAL_TYPES,
@@ -81,6 +87,23 @@ interface Manual {
   empresa_id: string | null
 }
 
+interface OS {
+  id: number
+  equipamento_nome: string
+  equipamento_tag: string | null
+  status_os: string
+  prioridade: string | null
+  tipo_manutencao: string | null
+  data_abertura: string
+  data_fechamento: string | null
+  descricao_problema: string | null
+  diagnostico_solucao: string | null
+  notas_finais: string | null
+  tecnico_id: number
+  localizacao: string | null
+  empresa_id: string
+}
+
 type ManualCategory = Database['public']['Enums']['manual_category']
 type ManualType = Database['public']['Enums']['manual_type']
 
@@ -90,15 +113,24 @@ export default function Biblioteca() {
   const [manuais, setManuais] = useState<Manual[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [filterType, setFilterType] = useState<ManualType | ''>('')
-  const [filterCategory, setFilterCategory] = useState<ManualCategory | ''>('')
-  const [filterIndustry, setFilterIndustry] = useState<string>('')
-  const [filterStatus, setFilterStatus] = useState<string>('')
+  const [filterType, setFilterType] = useState<ManualType | 'all'>('all')
+  const [filterCategory, setFilterCategory] = useState<ManualCategory | 'all'>('all')
+  const [filterIndustry, setFilterIndustry] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [reindexingId, setReindexingId] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [manualToDelete, setManualToDelete] = useState<Manual | null>(null)
+  const { profile } = useAuth()
+
+  // Histórico de Reparos (Wiki) State
+  const [wikiResults, setWikiResults] = useState<OS[]>([])
+  const [isWikiLoading, setIsWikiLoading] = useState(false)
+  const [wikiSearch, setWikiSearch] = useState('')
+  const [wikiTotalCount, setWikiTotalCount] = useState(0)
+  const [wikiPage, setWikiPage] = useState(1)
+  const [activeTab, setActiveTab] = useState<'manuals' | 'wiki'>('manuals')
 
   const loadManuais = useCallback(async () => {
     setIsLoading(true)
@@ -111,14 +143,14 @@ export default function Biblioteca() {
           `nome_arquivo.ilike.%${search}%,fabricante.ilike.%${search}%,modelo.ilike.%${search}%`,
         )
       }
-      if (filterType) {
-        query = query.eq('manual_type', filterType)
+      if (filterType && (filterType as string) !== 'all') {
+        query = query.eq('manual_type', filterType as any)
       }
-      if (filterCategory) {
-        query = query.eq('category', filterCategory)
+      if (filterCategory && (filterCategory as string) !== 'all') {
+        query = query.eq('category', filterCategory as any)
       }
-      if (filterIndustry) {
-        query = query.eq('industry', filterIndustry)
+      if (filterIndustry && (filterIndustry as string) !== 'all') {
+        query = query.eq('industry', filterIndustry as any)
       }
       if (filterStatus === 'indexed') {
         query = query.eq('processado', true)
@@ -151,9 +183,49 @@ export default function Biblioteca() {
     search,
   ])
 
+  const loadWiki = useCallback(async () => {
+    setIsWikiLoading(true)
+    try {
+      let query = supabase
+        .from('ordens_de_servico')
+        .select('*', { count: 'exact' })
+        // Apenas OS fechadas servem como "wiki" de solução confirmada
+        .eq('status_os', 'Fechada')
+
+      if (profile?.empresa_id) {
+        query = query.eq('empresa_id', profile.empresa_id)
+      }
+
+      if (wikiSearch) {
+        query = query.or(
+          `equipamento_nome.ilike.%${wikiSearch}%,equipamento_tag.ilike.%${wikiSearch}%,descricao_problema.ilike.%${wikiSearch}%,diagnostico_solucao.ilike.%${wikiSearch}%,notas_finais.ilike.%${wikiSearch}%`,
+        )
+      }
+
+      const from = (wikiPage - 1) * PAGE_SIZE
+      const to = from + PAGE_SIZE - 1
+
+      const { data, error, count } = await query
+        .order('data_fechamento', { ascending: false })
+        .range(from, to)
+
+      if (error) throw error
+      setWikiResults((data as OS[]) || [])
+      setWikiTotalCount(count || 0)
+    } catch (error) {
+      handleError(error)
+    } finally {
+      setIsWikiLoading(false)
+    }
+  }, [profile?.empresa_id, wikiSearch, wikiPage])
+
   useEffect(() => {
     loadManuais()
   }, [loadManuais])
+
+  useEffect(() => {
+    loadWiki()
+  }, [loadWiki])
 
   const handleReindex = async (manual: Manual) => {
     setReindexingId(manual.id)
@@ -219,10 +291,10 @@ export default function Biblioteca() {
 
   const clearFilters = () => {
     setSearch('')
-    setFilterType('')
-    setFilterCategory('')
-    setFilterIndustry('')
-    setFilterStatus('')
+    setFilterType('all' as any)
+    setFilterCategory('all' as any)
+    setFilterIndustry('all')
+    setFilterStatus('all')
     setCurrentPage(1)
   }
 
@@ -254,6 +326,33 @@ export default function Biblioteca() {
       </div>
 
       <main className="container mx-auto px-4 pb-6 space-y-6 mt-2">
+        <div className="flex w-full mb-8 h-12 p-1 bg-muted/50 rounded-xl overflow-hidden shadow-inner border border-border/10">
+          <button
+            onClick={() => setActiveTab('manuals')}
+            className={`flex-1 flex items-center justify-center rounded-lg transition-all duration-300 font-medium text-sm ${
+              activeTab === 'manuals'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Documentação (Manuais)
+          </button>
+          <button
+            onClick={() => setActiveTab('wiki')}
+            className={`flex-1 flex items-center justify-center rounded-lg transition-all duration-300 font-medium text-sm ${
+              activeTab === 'wiki'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+          >
+            <Wrench className="h-4 w-4 mr-2" />
+            Histórico de Reparos (Wiki)
+          </button>
+        </div>
+
+        {activeTab === 'manuals' ? (
+          <div className="space-y-6 animate-in fade-in-50 duration-500">
 
       {/* Filtros */}
       <Card>
@@ -276,7 +375,7 @@ export default function Biblioteca() {
             <Select
               value={filterType}
               onValueChange={(v) => {
-                setFilterType(v as ManualType | '')
+                setFilterType(v as any)
                 setCurrentPage(1)
               }}
             >
@@ -284,7 +383,7 @@ export default function Biblioteca() {
                 <SelectValue placeholder="Tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os tipos</SelectItem>
+                <SelectItem value="all">Todos os tipos</SelectItem>
                 {MANUAL_TYPES.map((t) => (
                   <SelectItem key={t.value} value={t.value}>
                     {t.label}
@@ -295,7 +394,7 @@ export default function Biblioteca() {
             <Select
               value={filterCategory}
               onValueChange={(v) => {
-                setFilterCategory(v as ManualCategory | '')
+                setFilterCategory(v as any)
                 setCurrentPage(1)
               }}
             >
@@ -303,7 +402,7 @@ export default function Biblioteca() {
                 <SelectValue placeholder="Categoria" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas categorias</SelectItem>
+                <SelectItem value="all">Todas categorias</SelectItem>
                 {MANUAL_CATEGORIES.map((c) => (
                   <SelectItem key={c.value} value={c.value}>
                     {c.label}
@@ -322,17 +421,17 @@ export default function Biblioteca() {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="indexed">Indexado</SelectItem>
                 <SelectItem value="pending">Pendente</SelectItem>
               </SelectContent>
             </Select>
           </div>
           {(search ||
-            filterType ||
-            filterCategory ||
-            filterIndustry ||
-            filterStatus) && (
+            (filterType && (filterType as string) !== 'all') ||
+            (filterCategory && (filterCategory as string) !== 'all') ||
+            (filterIndustry && (filterIndustry as string) !== 'all') ||
+            (filterStatus && (filterStatus as string) !== 'all')) && (
             <div className="mt-4 flex items-center gap-2">
               <span className="text-sm text-muted-foreground">
                 Filtros ativos:
@@ -534,6 +633,21 @@ export default function Biblioteca() {
           )}
         </CardContent>
       </Card>
+    </div>
+        ) : (
+          <div className="animate-in fade-in-50 duration-500">
+            <WikiTab
+              wikiResults={wikiResults}
+              isLoading={isWikiLoading}
+              search={wikiSearch}
+              setSearch={setWikiSearch}
+              totalCount={wikiTotalCount}
+              currentPage={wikiPage}
+              setCurrentPage={setWikiPage}
+              onRefresh={loadWiki}
+            />
+          </div>
+        )}
 
       {/* Dialog de confirmação de exclusão */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -560,6 +674,174 @@ export default function Biblioteca() {
         </DialogContent>
       </Dialog>
       </main>
+    </div>
+  )
+}
+
+function WikiTab({
+  wikiResults,
+  isLoading,
+  search,
+  setSearch,
+  totalCount,
+  currentPage,
+  setCurrentPage,
+  onRefresh,
+}: {
+  wikiResults: OS[]
+  isLoading: boolean
+  search: string
+  setSearch: (v: string) => void
+  totalCount: number
+  currentPage: number
+  setCurrentPage: (p: number) => void
+  onRefresh: () => void
+}) {
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE)
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Pesquise por palavras-chave (ex: 'correia', 'motor', 'erro 404')..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value)
+                  setCurrentPage(1)
+                }}
+                className="pl-10 h-11 bg-background/50"
+              />
+            </div>
+            <Button onClick={onRefresh} variant="outline" size="lg" className="h-11 shadow-sm">
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Pesquisar
+            </Button>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Dica: O wiki busca em nomes de equipamentos, problemas relatados e soluções técnicas aplicadas.
+          </p>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-4">
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="overflow-hidden border-border/40">
+              <CardContent className="p-0">
+                <div className="p-4 space-y-3">
+                  <Skeleton className="h-6 w-1/3" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : wikiResults.length === 0 ? (
+          <EmptyState
+            icon={BookOpen}
+            title="Nenhum registro encontrado"
+            description="Tente usar termos mais genéricos ou verifique se as OS foram fechadas corretamente com diagnóstico."
+          />
+        ) : (
+          wikiResults.map((os) => (
+            <Card key={os.id} className="overflow-hidden border-border/40 hover:border-primary/30 transition-all duration-300 shadow-sm group">
+              <div className="absolute top-0 left-0 w-1 h-full bg-primary/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <CardContent className="p-0">
+                <div className="p-5">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="font-mono text-[10px] bg-secondary/50">
+                          #{os.id}
+                        </Badge>
+                        <h3 className="text-base font-bold text-foreground">
+                          {os.equipamento_nome}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {os.equipamento_tag && (
+                          <span className="flex items-center gap-1 font-mono">
+                            <Badge variant="secondary" className="px-1 text-[10px] h-4">TAG</Badge> {os.equipamento_tag}
+                          </span>
+                        )}
+                        <span>•</span>
+                        <span>{os.tipo_manutencao}</span>
+                        <span>•</span>
+                        <span>{os.data_fechamento ? format(new Date(os.data_fechamento), 'dd/MM/yyyy') : '-'}</span>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={() => window.open(`/ordens-servico?search=${os.id}`, '_blank')}>
+                      <ExternalLink className="h-3 w-3" />
+                      Ver Detalhes
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2 p-3 rounded-lg bg-orange-500/5 border border-orange-500/10">
+                      <div className="flex items-center gap-2 text-orange-400 font-semibold text-xs uppercase tracking-wider">
+                        <AlertTriangle className="h-3 w-3" />
+                        Problema Relatado
+                      </div>
+                      <p className="text-sm text-foreground/80 leading-relaxed italic">
+                        "{os.descricao_problema || 'Não descrito'}"
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 p-3 rounded-lg bg-green-500/5 border border-green-500/10">
+                      <div className="flex items-center gap-2 text-green-400 font-semibold text-xs uppercase tracking-wider">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Diagnóstico e Solução
+                      </div>
+                      <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-medium">
+                        {os.diagnostico_solucao || 'Nenhuma solução detalhada.'}
+                      </div>
+                      {os.notas_finais && (
+                        <div className="mt-2 text-xs text-muted-foreground pt-2 border-t border-green-500/10">
+                          <strong>Notas:</strong> {os.notas_finais}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Paginação Wiki */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-3 bg-card rounded-lg border border-border/40">
+          <span className="text-sm text-muted-foreground font-mono">
+            {((currentPage - 1) * PAGE_SIZE) + 1}-{Math.min(currentPage * PAGE_SIZE, totalCount)} / {totalCount}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm font-mono px-2">
+              {currentPage} de {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
