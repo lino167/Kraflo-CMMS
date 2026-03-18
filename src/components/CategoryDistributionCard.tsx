@@ -4,7 +4,6 @@ import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { Tag } from 'lucide-react'
 import {
   BarChart,
@@ -195,31 +194,6 @@ export function CategoryDistributionCard({ dateRange }: CategoryDistributionCard
     )
   }
 
-  const renderProgressList = (data: CategoryStat[], colors: string[]) => {
-    if (data.length === 0) return null
-
-    return (
-      <div className="space-y-3 mt-4">
-        {data.map((cat, index) => (
-          <div key={cat.nome}>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium text-foreground">{cat.nome}</span>
-              <span className="text-sm text-muted-foreground font-mono">
-                {cat.total} ({cat.percentual}%)
-              </span>
-            </div>
-            <Progress
-              value={cat.percentual}
-              className="h-2"
-              style={{
-                '--progress-color': colors[index % colors.length],
-              } as React.CSSProperties}
-            />
-          </div>
-        ))}
-      </div>
-    )
-  }
 
   if (isLoading) {
     return (

@@ -224,9 +224,9 @@ export default function EquipamentoRaioX() {
   const monthEnd = endOfMonth(now);
   const currentMonthName = format(now, "MMMM 'de' yyyy", { locale: ptBR });
 
-  const { data: successCases, isLoading: successLoading } = useSuccessCases(empresaId, 10, monthStart, monthEnd);
-  const { data: problematicCases, isLoading: problematicLoading } = useProblematicCases(empresaId, 10, monthStart, monthEnd);
-  const { data: monthlyStats, isLoading: statsLoading } = useMonthlyStats(empresaId, monthStart, monthEnd);
+  const { data: successCases, isLoading: successLoading } = useSuccessCases(empresaId || undefined, 10, monthStart, monthEnd);
+  const { data: problematicCases, isLoading: problematicLoading } = useProblematicCases(empresaId || undefined, 10, monthStart, monthEnd);
+  const { data: monthlyStats, isLoading: statsLoading } = useMonthlyStats(empresaId || undefined, monthStart, monthEnd);
 
   const handleToggle = (osId: number) => {
     setExpandedId(expandedId === osId ? null : osId);

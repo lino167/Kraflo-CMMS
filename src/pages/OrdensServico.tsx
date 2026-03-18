@@ -49,7 +49,7 @@ import {
 import { toast } from '@/components/ui/sonner'
 import { handleError } from '@/lib/error-handler'
 import { exportOSListToPDF } from '@/components/OSListPdfExport'
-import { subDays, startOfMonth, endOfMonth } from 'date-fns'
+import { startOfMonth, endOfMonth } from 'date-fns'
 
 interface OS {
   id: number
@@ -515,7 +515,7 @@ export default function OrdensServico() {
         open={isFormOpen}
         onClose={handleFormClose}
         onSuccess={loadData}
-        editingOS={editingOS}
+        editingOS={editingOS || undefined}
       />
 
       <OSViewDialog

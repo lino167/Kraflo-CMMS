@@ -1,0 +1,2 @@
+src/components/BenchmarkComparisonCard.tsx(5,25): error TS1127: Invalid character.
+src/components/BenchmarkComparisonCard.tsx(5,32): error TS1127: Invalid character.

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useForm, Controller, useWatch } from 'react-hook-form'
+import { useForm, Controller, useWatch, Control } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { osFormSchema, OSFormData } from '@/lib/validation-schemas'
 import { handleError } from '@/lib/error-handler'
@@ -71,7 +71,7 @@ interface ReincidenciaData {
   }
 }
 
-import { Control } from 'react-hook-form'
+
 
 function FormReincidenciaAlert({ control, data }: { control: Control<OSFormData>; data: ReincidenciaData | null }) {
   const tag = useWatch({ control, name: 'equipamento_tag' })

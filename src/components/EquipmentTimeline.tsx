@@ -107,7 +107,7 @@ export function EquipmentTimeline({ events, isLoading }: EquipmentTimelineProps)
       <div className="absolute left-[5px] top-2 bottom-2 w-0.5 bg-border" />
 
       <div className="space-y-4">
-        {events.map((event, index) => {
+        {events.map(event => {
           const isExpanded = expandedItems.has(event.os_id);
           const statusColor = getStatusColor(event.status_reincidencia);
           const isOpen = event.status_os === "Aberta" || event.status_os === "Em manutenção";

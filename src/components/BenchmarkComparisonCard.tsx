@@ -2,7 +2,6 @@
  * Card de comparação com benchmarks internos e período anterior
  */
 
-import React from "react";
 import { TrendingUp, TrendingDown, Minus, Target, BarChart2, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,14 +22,12 @@ interface BenchmarkComparisonCardProps {
     totalOS: number;
   };
   benchmarks?: InternalBenchmarks;
-  periodLabel: string;
 }
 
 export function BenchmarkComparisonCard({
   currentMetrics,
   previousMetrics,
   benchmarks,
-  periodLabel,
 }: BenchmarkComparisonCardProps) {
   // Determinar referência de comparação
   const referenceLabel = benchmarks?.isConfigured 
@@ -75,8 +72,6 @@ export function BenchmarkComparisonCard({
     if (value === null) return <span className="text-muted-foreground text-xs">—</span>;
     
     const isGood = isVariationGood(metric, value);
-    const Icon = value === 0 ? Minus : (isGood ? TrendingDown : TrendingUp);
-    
     // Para MTTR: TrendingDown (diminuiu) é bom
     // Para MTBF/Taxa: TrendingUp (aumentou) é bom
     const displayIcon = metric === 'mttr'

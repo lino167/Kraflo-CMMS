@@ -208,7 +208,7 @@ export function PreventivePlanWizard({
             tarefa_id: tarefa.id,
             empresa_id: empresaId,
             agendado_para: proximaData.toISOString().split('T')[0],
-            status: 'agendada',
+            status: 'agendada' as any,
           })
           proximaData.setDate(proximaData.getDate() + intervaloDias)
         }

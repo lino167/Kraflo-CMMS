@@ -10,7 +10,7 @@ import { EmailVerificationDialog } from '@/components/EmailVerificationDialog';
 import { toast } from '@/components/ui/sonner';
 import { Bot, Loader2, Mail, Lock, User, Briefcase, Building2, MessageCircle, Hash } from 'lucide-react';
 import { z } from 'zod';
-import { supabase } from '@/integrations/supabase/client';
+;
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),

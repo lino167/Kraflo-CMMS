@@ -3,7 +3,7 @@
  * Permite monitorar e controlar o processo de indexação para RAG
  */
 
-import { useState, useEffect, type ComponentType } from 'react'
+import { useState, type ComponentType } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'

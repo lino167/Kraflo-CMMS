@@ -1,3 +1,4 @@
+export type { DeepPeriodType, ServiceTypeBreakdown, TrendDataPoint } from "@/lib/report-types";
 import { useQuery } from "@tanstack/react-query";
 import { ReportService } from "@/domain/reportService";
 import { DeepPeriodType } from "@/lib/report-types";

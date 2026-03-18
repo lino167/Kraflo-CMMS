@@ -1,0 +1,12 @@
+src/components/AIReport.tsx(666,13): error TS2322: Type '{ currentMetrics: { mttr: number; mtbf: number; taxaResolucao: number; totalOS: number; }; previousMetrics: { mttr: number; mtbf: number; taxaResolucao: number; totalOS: number; } | undefined; benchmarks: InternalBenchmarks | undefined; periodLabel: string; }' is not assignable to type 'IntrinsicAttributes & BenchmarkComparisonCardProps'.
+  Property 'periodLabel' does not exist on type 'IntrinsicAttributes & BenchmarkComparisonCardProps'.
+src/components/AIReport.tsx(680,22): error TS2304: Cannot find name 'Bot'.
+src/components/AIReport.tsx(701,28): error TS2304: Cannot find name 'Lightbulb'.
+src/components/AIReport.tsx(794,18): error TS2304: Cannot find name 'Lightbulb'.
+src/components/CategoryDistributionCard.tsx(198,9): error TS6133: 'renderProgressList' is declared but its value is never read.
+src/components/Dashboard.tsx(275,5): error TS2552: Cannot find name 'setFechadasMesAtual'. Did you mean 'fechadasAtual'?
+src/components/Dashboard.tsx(276,5): error TS2304: Cannot find name 'setFechadasMesAnterior'.
+src/components/EquipmentTimeline.tsx(110,29): error TS6133: 'index' is declared but its value is never read.
+src/components/TechnicianPerformanceCard.tsx(203,31): error TS6133: 'name' is declared but its value is never read.
+src/components/TrendChart.tsx(26,3): error TS6133: 'subDays' is declared but its value is never read.
+src/components/TrendChart.tsx(27,3): error TS6133: 'startOfDay' is declared but its value is never read.

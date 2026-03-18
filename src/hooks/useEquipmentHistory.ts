@@ -141,14 +141,14 @@ export function useSuccessCases(
       }
 
       return (data || []).map((os): SuccessCase => ({
-        os_id: os.id,
+        os_id: os.id as number,
         equipamento_tag: os.equipamento_tag || "N/A",
         equipamento_nome: os.equipamento_nome || "Equipamento",
         descricao_problema: os.descricao_problema || "N/A",
         diagnostico_solucao: os.diagnostico_solucao || "N/A",
         notas_finais: os.notas_finais,
         tecnico_nome: os.tecnico_nome || "Técnico",
-        data_fechamento: os.data_fechamento,
+        data_fechamento: os.data_fechamento as string,
         horas_reparo: null,
       }));
     },
@@ -278,14 +278,14 @@ export function useProblematicCases(
       }
 
       return (data || []).map((os): SuccessCase => ({
-        os_id: os.id,
+        os_id: os.id as number,
         equipamento_tag: os.equipamento_tag || "N/A",
         equipamento_nome: os.equipamento_nome || "Equipamento",
         descricao_problema: os.descricao_problema || "Problema não especificado",
         diagnostico_solucao: os.diagnostico_solucao || "Solução não especificada",
         notas_finais: os.notas_finais,
         tecnico_nome: os.tecnico_nome || "Técnico",
-        data_fechamento: os.data_fechamento,
+        data_fechamento: os.data_fechamento as string,
         horas_reparo: null,
         status_reincidencia: os.status_reincidencia,
         dias_desde_ultima_solucao: os.dias_desde_ultima_solucao,

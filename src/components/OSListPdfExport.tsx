@@ -223,7 +223,7 @@ export function exportOSListToPDF(
   yPos += 10;
 
   // Iterate through each OS with full details
-  osList.forEach((os, index) => {
+  osList.forEach((os) => {
     // Check if we need a new page
     if (yPos > 240) {
       doc.addPage();

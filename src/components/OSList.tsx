@@ -88,7 +88,7 @@ interface OSListProps {
   onRefresh: () => void;
 }
 
-export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onDelete, onRefresh }: OSListProps) {
+export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh }: OSListProps) {
   const [deletingOS, setDeletingOS] = useState<OS | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [exportingId, setExportingId] = useState<number | null>(null);

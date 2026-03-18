@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import type { Database } from '@/integrations/supabase/types'
-import { useAuth } from '@/hooks/useAuth'
+
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/EmptyState'
 import {

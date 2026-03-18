@@ -2,7 +2,7 @@
  * Prompt 5: UI de upload de manual com classificação obrigatória
  */
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { supabase } from '@/integrations/supabase/client'

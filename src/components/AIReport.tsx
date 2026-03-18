@@ -6,13 +6,13 @@ import {
   Calendar, 
   TrendingUp, 
   AlertTriangle,
-  Wrench,
+
   Clock,
   Target,
   CheckCircle2,
   BarChart3,
-  Lightbulb,
   Bot,
+  Lightbulb,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -663,7 +663,7 @@ export function AIReport({ empresaId }: AIReportProps) {
               totalOS: previousMetrics.totalOS,
             } : undefined}
             benchmarks={internalBenchmarks}
-            periodLabel={statsData.periodo.label}
+            
           />
 
           {/* Tag Problems */}

@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge'
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { GitMerge, Info } from 'lucide-react'
 import {
-  BarChart,
   Bar,
   XAxis,
   YAxis,
@@ -80,8 +79,7 @@ export function ParetoCrossAnalysisCard({ dateRange }: ParetoCrossAnalysisCardPr
         (os) => os.categoria_parada_id && os.categoria_problema_id
       )
 
-      // Track how many are missing classification
-      const missingCount = allOsData.length - osData.length
+
 
       if (osData.length === 0) {
         // Fallback: show single-category distribution

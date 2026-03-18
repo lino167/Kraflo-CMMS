@@ -13,7 +13,7 @@ import {
   BarChart,
   Bar,
 } from "recharts";
-import { TrendingUp, BarChart3 } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 
 interface TrendChartsProps {
   monthly: TrendDataPoint[];

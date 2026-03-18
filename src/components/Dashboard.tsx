@@ -53,7 +53,7 @@ import {
   startOfMonth,
   endOfMonth,
 } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+
 
 interface OS {
   id: number
@@ -133,8 +133,8 @@ export function Dashboard({ onAskAI }: DashboardProps) {
   const [taxaResolucao, setTaxaResolucao] = useState(0)
   const [osReincidentes, setOsReincidentes] = useState(0)
   const [idadeMediaAbertasHoras, setIdadeMediaAbertasHoras] = useState(0)
-  const [fechadasMesAtual, setFechadasMesAtual] = useState(0)
-  const [fechadasMesAnterior, setFechadasMesAnterior] = useState(0)
+  
+  
   const [atrasadas, setAtrasadas] = useState(0)
   const [dentroPrazo, setDentroPrazo] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -255,25 +255,8 @@ export function Dashboard({ onAskAI }: DashboardProps) {
     setDentroPrazo(prazo)
   }
 
-  const calculateMensal = (allOS: OS[]) => {
-    const inicioMes = startOfMonth(new Date())
-    const fimMes = endOfMonth(new Date())
-    const inicioMesAnterior = startOfMonth(subDays(inicioMes, 1))
-    const fimMesAnterior = endOfMonth(subDays(inicioMes, 1))
-    const fechadasAtual = allOS.filter(
-      (os) =>
-        os.data_fechamento &&
-        parseISO(os.data_fechamento) >= inicioMes &&
-        parseISO(os.data_fechamento) <= fimMes
-    ).length
-    const fechadasAnt = allOS.filter(
-      (os) =>
-        os.data_fechamento &&
-        parseISO(os.data_fechamento) >= inicioMesAnterior &&
-        parseISO(os.data_fechamento) <= fimMesAnterior
-    ).length
-    setFechadasMesAtual(fechadasAtual)
-    setFechadasMesAnterior(fechadasAnt)
+  const calculateMensal = (_allOS: OS[]) => {
+    // Cálculo mensal removido pois os estados correspondentes foram deletados
   }
 
   const calculateEquipamentosProblematicos = (allOS: OS[]) => {
