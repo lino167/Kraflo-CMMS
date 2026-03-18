@@ -64,7 +64,10 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { format } from 'date-fns'
+import { format, subDays, startOfMonth, endOfMonth } from 'date-fns'
+import { Calendar as CalendarIcon } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar as CalendarComponent } from '@/components/ui/calendar'
 import {
   MANUAL_CATEGORIES,
   MANUAL_TYPES,
@@ -130,6 +133,11 @@ export default function Biblioteca() {
   const [wikiSearch, setWikiSearch] = useState('')
   const [wikiTotalCount, setWikiTotalCount] = useState(0)
   const [wikiPage, setWikiPage] = useState(1)
+  const [wikiDateFilter, setWikiDateFilter] = useState<string>('all')
+  const [wikiDateRange, setWikiDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: undefined,
+    to: undefined,
+  })
   const [activeTab, setActiveTab] = useState<'manuals' | 'wiki'>('manuals')
 
   const loadManuais = useCallback(async () => {
@@ -202,6 +210,27 @@ export default function Biblioteca() {
         )
       }
 
+      if (wikiDateFilter !== 'all') {
+        let start: Date | undefined
+        let end: Date | undefined
+        const now = new Date()
+
+        if (wikiDateFilter === 'month') {
+          start = startOfMonth(now)
+          end = endOfMonth(now)
+        } else if (wikiDateFilter === 'quarter') {
+          start = subDays(now, 90)
+        } else if (wikiDateFilter === '7days') {
+          start = subDays(now, 7)
+        } else if (wikiDateFilter === 'custom' && wikiDateRange.from) {
+          start = wikiDateRange.from
+          end = wikiDateRange.to
+        }
+
+        if (start) query = query.gte('data_fechamento', start.toISOString())
+        if (end) query = query.lte('data_fechamento', end.toISOString())
+      }
+
       const from = (wikiPage - 1) * PAGE_SIZE
       const to = from + PAGE_SIZE - 1
 
@@ -217,7 +246,7 @@ export default function Biblioteca() {
     } finally {
       setIsWikiLoading(false)
     }
-  }, [profile?.empresa_id, wikiSearch, wikiPage])
+  }, [profile?.empresa_id, wikiSearch, wikiPage, wikiDateFilter, wikiDateRange])
 
   useEffect(() => {
     loadManuais()
@@ -645,6 +674,10 @@ export default function Biblioteca() {
               currentPage={wikiPage}
               setCurrentPage={setWikiPage}
               onRefresh={loadWiki}
+              dateFilter={wikiDateFilter}
+              setDateFilter={setWikiDateFilter}
+              dateRange={wikiDateRange}
+              setDateRange={setWikiDateRange}
             />
           </div>
         )}
@@ -687,6 +720,10 @@ function WikiTab({
   currentPage,
   setCurrentPage,
   onRefresh,
+  dateFilter,
+  setDateFilter,
+  dateRange,
+  setDateRange,
 }: {
   wikiResults: OS[]
   isLoading: boolean
@@ -696,6 +733,10 @@ function WikiTab({
   currentPage: number
   setCurrentPage: (p: number) => void
   onRefresh: () => void
+  dateFilter: string
+  setDateFilter: (v: string) => void
+  dateRange: { from: Date | undefined; to: Date | undefined }
+  setDateRange: (range: { from: Date | undefined; to: Date | undefined }) => void
 }) {
   const totalPages = Math.ceil(totalCount / PAGE_SIZE)
 
@@ -704,7 +745,7 @@ function WikiTab({
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
+            <div className="relative flex-[2]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Pesquise por palavras-chave (ex: 'correia', 'motor', 'erro 404')..."
@@ -716,7 +757,42 @@ function WikiTab({
                 className="pl-10 h-11 bg-background/50"
               />
             </div>
-            <Button onClick={onRefresh} variant="outline" size="lg" className="h-11 shadow-sm">
+            <div className="flex flex-1 gap-2">
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger className="h-11 bg-background/50 min-w-[150px]">
+                  <CalendarIcon className="h-4 w-4 mr-2 text-primary" />
+                  <SelectValue placeholder="Período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="month">Mês atual</SelectItem>
+                  <SelectItem value="quarter">Trimestral (90 dias)</SelectItem>
+                  <SelectItem value="7days">Últimos 7 dias</SelectItem>
+                  <SelectItem value="custom">Escolher intervalo</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {dateFilter === 'custom' && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="h-11 bg-background/50 border-input px-3 shadow-sm hover:bg-accent group">
+                      <CalendarIcon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <CalendarComponent
+                      initialFocus
+                      mode="range"
+                      defaultMonth={dateRange?.from}
+                      selected={{ from: dateRange.from, to: dateRange.to }}
+                      onSelect={(range: any) => setDateRange(range || { from: undefined, to: undefined })}
+                      numberOfMonths={2}
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+            <Button onClick={onRefresh} variant="outline" size="lg" className="h-11 shadow-sm hover:bg-primary/5">
               <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Pesquisar
             </Button>

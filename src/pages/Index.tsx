@@ -21,6 +21,7 @@ import {
   BarChart3,
   Activity,
   Cpu,
+  Library,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -179,6 +180,15 @@ const Index = () => {
               >
                 <Activity className="h-4 w-4 mr-2" />
                 Meu Desempenho
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/biblioteca")}
+                className="hidden md:flex"
+              >
+                <Library className="h-4 w-4 mr-2" />
+                Biblioteca
               </Button>
 
               {/* Role Badge */}
