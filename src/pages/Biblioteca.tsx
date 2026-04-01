@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/integrations/supabase/client'
-import type { Database } from '@/integrations/supabase/types'
+
 
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/EmptyState'
@@ -59,6 +59,7 @@ import {
   ExternalLink,
   Settings,
   User,
+  Pencil,
 } from 'lucide-react'
 import { ManualUpload } from '@/components/ManualUpload'
 import { useAuth } from '@/hooks/useAuth'
@@ -69,13 +70,15 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar'
 import {
   MANUAL_CATEGORIES,
   MANUAL_TYPES,
+  ManualCategory,
+  ManualType,
 } from '@/lib/manual-taxonomy'
 
 interface Manual {
   id: string
   nome_arquivo: string
-  manual_type: 'general' | 'equipment' | null
-  category: string | null
+  manual_type: ManualType
+  category: ManualCategory | null
   tags: string[] | null
   industry: string | null
   fabricante: string | null
@@ -106,9 +109,6 @@ interface OS {
   empresa_id: string
 }
 
-type ManualCategory = Database['public']['Enums']['manual_category']
-type ManualType = Database['public']['Enums']['manual_type']
-
 const PAGE_SIZE = 10
 
 export default function Biblioteca() {
@@ -123,7 +123,9 @@ export default function Biblioteca() {
   const [totalCount, setTotalCount] = useState(0)
   const [reindexingId, setReindexingId] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [manualToDelete, setManualToDelete] = useState<Manual | null>(null)
+  const [manualToEdit, setManualToEdit] = useState<Manual | null>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const { profile } = useAuth()
 
@@ -267,6 +269,25 @@ export default function Biblioteca() {
     if (!manualToDelete) return
 
     try {
+      // First, try to delete the file from storage if there's a URL
+      if (manualToDelete.url_arquivo && manualToDelete.url_arquivo.includes('supabase.co/storage/v1/object/public/')) {
+        try {
+          const urlParts = manualToDelete.url_arquivo.split('/public/')
+          if (urlParts.length > 1) {
+            const bucketAndPath = urlParts[1]
+            const firstSlashIndex = bucketAndPath.indexOf('/')
+            const bucket = bucketAndPath.substring(0, firstSlashIndex)
+            const path = bucketAndPath.substring(firstSlashIndex + 1)
+            
+            console.log(`Attempting to delete from bucket: ${bucket}, path: ${path}`)
+            await supabase.storage.from(bucket).remove([path])
+          }
+        } catch (storageError) {
+          console.error('Error deleting from storage:', storageError)
+          // We continue to delete the record even if storage deletion fails
+        }
+      }
+
       const { error } = await supabase
         .from('manuais')
         .delete()
@@ -275,11 +296,34 @@ export default function Biblioteca() {
       if (error) throw error
 
       toast.success('Manual removido com sucesso')
+    } catch (error) {
+      handleError(error)
+    } finally {
       setDeleteDialogOpen(false)
       setManualToDelete(null)
       loadManuais()
-    } catch (error) {
-      handleError(error)
+    }
+  }
+
+  const handleUpdate = async (updatedData: Partial<Manual>) => {
+    if (!manualToEdit) return
+
+    try {
+      const { error } = await supabase
+        .from('manuais')
+        .update(updatedData as any)
+        .eq('id', manualToEdit.id)
+
+      if (error) throw error
+
+      toast.success("Manual atualizado com sucesso")
+      loadManuais()
+    } catch (error: any) {
+      console.error('Error updating manual:', error)
+      toast.error(error.message || "Erro ao atualizar manual")
+    } finally {
+      setIsEditDialogOpen(false)
+      setManualToEdit(null)
     }
   }
 
@@ -570,10 +614,19 @@ export default function Biblioteca() {
                                     Abrir em nova aba
                                   </DropdownMenuItem>
                                 )}
-                                <DropdownMenuItem
-                                  onClick={() => handleReindex(manual)}
-                                  disabled={reindexingId === manual.id}
-                                >
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setManualToEdit(manual)
+                                      setIsEditDialogOpen(true)
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Editar Informações
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleReindex(manual)}
+                                    disabled={reindexingId === manual.id}
+                                  >
                                   <RefreshCw
                                     className={`h-4 w-4 mr-2 ${reindexingId === manual.id ? 'animate-spin' : ''}`}
                                   />
@@ -695,6 +748,105 @@ export default function Biblioteca() {
           <div className="max-h-[80vh] overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white/10">
             <ManualUpload />
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Edição */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-lg glass-panel border-white/10 shadow-surface">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-primary" />
+              Editar Informações do Manual
+            </DialogTitle>
+            <DialogDescription>
+              Atualize a classificação e detalhes técnicos deste manual.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Nome do Arquivo</label>
+              <Input 
+                value={manualToEdit?.nome_arquivo || ''} 
+                onChange={(e) => setManualToEdit(prev => prev ? {...prev, nome_arquivo: e.target.value} : null)}
+                className="bg-black/20 border-white/10"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Fabricante</label>
+                <Input 
+                  value={manualToEdit?.fabricante || ''} 
+                  onChange={(e) => setManualToEdit(prev => prev ? {...prev, fabricante: e.target.value} : null)}
+                  placeholder="Ex: Siemens, Weg..."
+                  className="bg-black/20 border-white/10"
+                />
+              </div>
+              <div className="grid gap-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Modelo</label>
+                <Input 
+                  value={manualToEdit?.modelo || ''} 
+                  onChange={(e) => setManualToEdit(prev => prev ? {...prev, modelo: e.target.value} : null)}
+                  placeholder="Ex: S7-1200, WEG CFW..."
+                  className="bg-black/20 border-white/10"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Categoria</label>
+                <Select 
+                  value={manualToEdit?.category || ''} 
+                  onValueChange={(val) => setManualToEdit(prev => prev ? {...prev, category: val as any} : null)}
+                >
+                  <SelectTrigger className="bg-black/20 border-white/10">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent className="glass-panel border-white/10">
+                    <SelectItem value="eletrica">Elétrica</SelectItem>
+                    <SelectItem value="mecanica">Mecânica</SelectItem>
+                    <SelectItem value="pneumatica">Pneumática</SelectItem>
+                    <SelectItem value="hidraulica">Hidráulica</SelectItem>
+                    <SelectItem value="automacao">Automação</SelectItem>
+                    <SelectItem value="seguranca">Segurança</SelectItem>
+                    <SelectItem value="geral">Geral</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Tipo</label>
+                <Select 
+                  value={manualToEdit?.manual_type || ''} 
+                  onValueChange={(val) => setManualToEdit(prev => prev ? {...prev, manual_type: val as any} : null)}
+                >
+                  <SelectTrigger className="bg-black/20 border-white/10">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent className="glass-panel border-white/10">
+                    <SelectItem value="general">Geral / Catálogo</SelectItem>
+                    <SelectItem value="equipment">Específico de Equipamento</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="mt-4 gap-2">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="border-white/10">
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => handleUpdate({
+                nome_arquivo: manualToEdit!.nome_arquivo,
+                fabricante: manualToEdit?.fabricante,
+                modelo: manualToEdit?.modelo,
+                category: manualToEdit?.category,
+                manual_type: manualToEdit?.manual_type,
+              })}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              Salvar Alterações
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </main>
