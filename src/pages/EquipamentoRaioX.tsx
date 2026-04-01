@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Loader2, CheckCircle2, Wrench, User, Calendar, ChevronDown, ChevronUp, Award, ArrowLeft, ClipboardCheck, TrendingUp, AlertTriangle, XCircle } from "lucide-react";
+import { Loader2, CheckCircle2, Wrench, User, Calendar, ChevronDown, ChevronUp, Award, ClipboardCheck, TrendingUp, AlertTriangle, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSuccessCases, useMonthlyStats, useProblematicCases, SuccessCase } from "@/hooks/useEquipmentHistory";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,44 +15,44 @@ function StatsCards({ totalClosed, successCases, problematicCases, successRate }
   successRate: number;
 }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-      <Card>
-        <CardContent className="pt-4 pb-4 text-center">
-          <div className="inline-flex items-center justify-center p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 mb-2">
-            <ClipboardCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <Card className="industrial-card">
+        <CardContent className="pt-6 pb-6 text-center">
+          <div className="inline-flex items-center justify-center p-3 rounded-xl bg-primary/10 mb-3 shadow-neon-sm border border-primary/20">
+            <ClipboardCheck className="h-5 w-5 text-primary" />
           </div>
-          <p className="text-xl font-bold">{totalClosed}</p>
-          <p className="text-xs text-muted-foreground">OS Fechadas</p>
+          <p className="text-3xl font-mono font-bold tracking-tighter">{totalClosed}</p>
+          <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider mt-1">OS Fechadas</p>
         </CardContent>
       </Card>
       
-      <Card>
-        <CardContent className="pt-4 pb-4 text-center">
-          <div className="inline-flex items-center justify-center p-2 rounded-full bg-green-100 dark:bg-green-900/30 mb-2">
-            <Award className="h-4 w-4 text-green-600 dark:text-green-400" />
+      <Card className="industrial-card">
+        <CardContent className="pt-6 pb-6 text-center">
+          <div className="inline-flex items-center justify-center p-3 rounded-xl bg-success/10 mb-3 shadow-neon-sm border border-success/20">
+            <Award className="h-5 w-5 text-success" />
           </div>
-          <p className="text-xl font-bold text-green-600 dark:text-green-400">{successCases}</p>
-          <p className="text-xs text-muted-foreground">Sucessos</p>
+          <p className="text-3xl font-mono font-bold text-success tracking-tighter">{successCases}</p>
+          <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider mt-1">Sucessos</p>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="pt-4 pb-4 text-center">
-          <div className="inline-flex items-center justify-center p-2 rounded-full bg-red-100 dark:bg-red-900/30 mb-2">
-            <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+      <Card className="industrial-card">
+        <CardContent className="pt-6 pb-6 text-center">
+          <div className="inline-flex items-center justify-center p-3 rounded-xl bg-destructive/10 mb-3 shadow-neon-sm border border-destructive/20">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
           </div>
-          <p className="text-xl font-bold text-red-600 dark:text-red-400">{problematicCases}</p>
-          <p className="text-xs text-muted-foreground">Reincidências</p>
+          <p className="text-3xl font-mono font-bold text-destructive tracking-tighter">{problematicCases}</p>
+          <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider mt-1">Reincidências</p>
         </CardContent>
       </Card>
       
-      <Card>
-        <CardContent className="pt-4 pb-4 text-center">
-          <div className="inline-flex items-center justify-center p-2 rounded-full bg-purple-100 dark:bg-purple-900/30 mb-2">
-            <TrendingUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+      <Card className="industrial-card">
+        <CardContent className="pt-6 pb-6 text-center">
+          <div className="inline-flex items-center justify-center p-3 rounded-xl bg-primary/20 mb-3 shadow-neon-sm border border-primary/30">
+            <TrendingUp className="h-5 w-5 text-primary" />
           </div>
-          <p className="text-xl font-bold text-purple-600 dark:text-purple-400">{successRate}%</p>
-          <p className="text-xs text-muted-foreground">Taxa Sucesso</p>
+          <p className="text-3xl font-mono font-bold text-primary tracking-tighter">{Math.round(successRate)}%</p>
+          <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider mt-1">Taxa de Sucesso</p>
         </CardContent>
       </Card>
     </div>
@@ -71,25 +69,25 @@ function CaseCard({ caseData, isExpanded, onToggle, isProblematic }: {
   
   return (
     <Card 
-      className={`cursor-pointer transition-all hover:shadow-md ${isExpanded ? 'ring-2 ring-primary/20' : ''}`}
+      className={`cursor-pointer transition-all duration-300 industrial-card group hover:border-primary/20 ${isExpanded ? 'ring-1 ring-primary/30 bg-primary/5' : ''}`}
       onClick={onToggle}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-full ${isProblematic 
-              ? (isCritical ? 'bg-red-100 dark:bg-red-900/30' : 'bg-orange-100 dark:bg-orange-900/30')
-              : 'bg-green-100 dark:bg-green-900/30'
+          <div className="flex items-center gap-4">
+            <div className={`p-3 rounded-xl shadow-surface-sm border ${isProblematic 
+              ? (isCritical ? 'bg-destructive/10 border-destructive/20' : 'bg-orange-500/10 border-orange-500/20')
+              : 'bg-success/10 border-success/20'
             }`}>
               {isProblematic ? (
-                <XCircle className={`h-5 w-5 ${isCritical ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400'}`} />
+                <XCircle className={`h-5 w-5 ${isCritical ? 'text-destructive' : 'text-orange-500'}`} />
               ) : (
-                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <CheckCircle2 className="h-5 w-5 text-success" />
               )}
             </div>
             <div>
-              <CardTitle className="text-base">{caseData.equipamento_nome}</CardTitle>
-              <Badge variant="outline" className="mt-1 font-mono text-xs">
+              <CardTitle className="text-lg group-hover:text-primary transition-colors">{caseData.equipamento_nome}</CardTitle>
+              <Badge variant="outline" className="mt-1 font-mono text-[10px] uppercase tracking-wider">
                 {caseData.equipamento_tag}
               </Badge>
             </div>
@@ -97,84 +95,88 @@ function CaseCard({ caseData, isExpanded, onToggle, isProblematic }: {
           <div className="flex items-center gap-2">
             {isProblematic ? (
               <Badge variant="secondary" className={`${isCritical 
-                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-              }`}>
+                ? 'bg-destructive/10 text-destructive border-destructive/20'
+                : 'bg-orange-500/10 text-orange-500 border-orange-500/20'
+              } text-[10px] uppercase font-bold`}>
                 <AlertTriangle className="h-3 w-3 mr-1" />
-                {isCritical ? 'Crítico' : 'Alerta'}
+                {isCritical ? 'CRÍTICO' : 'ALERTA'}
                 {caseData.dias_desde_ultima_solucao && (
                   <span className="ml-1">({Math.round(caseData.dias_desde_ultima_solucao)}d)</span>
                 )}
               </Badge>
             ) : (
-              <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+              <Badge variant="secondary" className="bg-success/10 text-success border-success/20 text-[10px] uppercase font-bold">
                 <Award className="h-3 w-3 mr-1" />
-                Sucesso
+                SUCESSO
               </Badge>
             )}
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            )}
+            <div className="p-1 rounded-full hover:bg-white/10 transition-colors">
+              {isExpanded ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
           </div>
         </div>
       </CardHeader>
       
       <CardContent className="pt-0">
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 px-1">
           {caseData.descricao_problema}
         </p>
         
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <User className="h-3 w-3" />
+        <div className="flex items-center gap-4 mt-4 px-1">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium border border-white/5 bg-white/5 px-2 py-1 rounded-md">
+            <User className="h-3 w-3 text-primary" />
             {caseData.tecnico_nome}
           </div>
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium border border-white/5 bg-white/5 px-2 py-1 rounded-md">
+            <Calendar className="h-3 w-3 text-primary" />
             {format(new Date(caseData.data_fechamento), "dd MMM yyyy", { locale: ptBR })}
           </div>
         </div>
 
         {isExpanded && (
-          <div className="mt-4 pt-4 border-t space-y-4 animate-in slide-in-from-top-2">
-            <div>
-              <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
-                <span className="text-red-500">⚠️</span> Problema Relatado
-              </h4>
-              <p className="text-sm bg-muted/50 p-3 rounded-lg">
-                {caseData.descricao_problema}
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
-                <Wrench className={`h-4 w-4 ${isProblematic ? 'text-orange-600' : 'text-green-600'}`} /> 
-                Solução Aplicada
-              </h4>
-              <p className={`text-sm p-3 rounded-lg border ${isProblematic 
-                ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
-                : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-              }`}>
-                {caseData.diagnostico_solucao}
-              </p>
+          <div className="mt-6 pt-6 border-t border-white/10 space-y-6 animate-in fade-in-0 slide-in-from-top-2 duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2 px-1">
+                  Problema Relatado
+                </h4>
+                <div className="text-sm text-foreground/80 leading-relaxed bg-black/20 p-4 rounded-xl border border-white/5 shadow-inner">
+                  {caseData.descricao_problema}
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <h4 className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 px-1 ${isProblematic ? 'text-orange-500' : 'text-success'}`}>
+                  <Wrench className="h-3 w-3" /> 
+                  Solução Aplicada
+                </h4>
+                <div className={`text-sm leading-relaxed p-4 rounded-xl border shadow-inner ${isProblematic 
+                  ? 'bg-orange-500/5 text-orange-200 border-orange-500/10'
+                  : 'bg-success/5 text-success-foreground border-success/10'
+                }`}>
+                  {caseData.diagnostico_solucao}
+                </div>
+              </div>
             </div>
 
             {caseData.notas_finais && (
-              <div>
-                <h4 className="text-sm font-semibold mb-2">📝 Observações</h4>
-                <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Observações Adicionais</h4>
+                <div className="text-sm text-muted-foreground/90 bg-white/5 p-4 rounded-xl border border-white/5">
                   {caseData.notas_finais}
-                </p>
+                </div>
               </div>
             )}
 
             {isProblematic && caseData.dias_desde_ultima_solucao && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                <p className="text-sm text-red-700 dark:text-red-400">
-                  <AlertTriangle className="h-4 w-4 inline mr-1" />
-                  Reincidência detectada {Math.round(caseData.dias_desde_ultima_solucao)} dias após última manutenção
+              <div className="p-4 bg-destructive/10 rounded-xl border border-destructive/20 shadow-neon-sm">
+                <p className="text-xs text-destructive font-semibold flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  REINCIDÊNCIA CRÍTICA: Detectada apenas {Math.round(caseData.dias_desde_ultima_solucao)} dias após a última intervenção.
                 </p>
               </div>
             )}
@@ -185,26 +187,28 @@ function CaseCard({ caseData, isExpanded, onToggle, isProblematic }: {
   );
 }
 
-function EmptyState({ type }: { type: 'success' | 'problematic' }) {
+function EmptyStateComponent({ type }: { type: 'success' | 'problematic' }) {
   const isSuccess = type === 'success';
   return (
-    <Card>
-      <CardContent className="py-12 text-center">
-        {isSuccess ? (
-          <CheckCircle2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-        ) : (
-          <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-        )}
-        <p className="text-muted-foreground">
+    <Card className="industrial-card border-dashed">
+      <CardContent className="py-20 text-center">
+        <div className="inline-flex items-center justify-center p-4 rounded-full bg-muted/20 mb-4">
+          {isSuccess ? (
+            <CheckCircle2 className="h-10 w-10 text-muted-foreground/30" />
+          ) : (
+            <AlertTriangle className="h-10 w-10 text-muted-foreground/30" />
+          )}
+        </div>
+        <p className="text-lg font-medium text-foreground">
           {isSuccess 
-            ? "Ainda não há casos de sucesso registrados este mês."
-            : "Nenhuma reincidência registrada este mês. 🎉"
+            ? "Sem registros de sucesso"
+            : "Nenhuma reincidência detectada"
           }
         </p>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-muted-foreground mt-2 max-w-xs mx-auto">
           {isSuccess 
-            ? "Os casos aparecerão quando OS fechadas não gerarem reincidência."
-            : "Todas as manutenções foram resolvidas definitivamente."
+            ? "Os casos de sucesso aparecerão aqui quando as manutenções forem concluídas definitivamente."
+            : "Excelente! Todas as manutenções deste período foram resolvidas de forma definitiva."
           }
         </p>
       </CardContent>
@@ -213,19 +217,17 @@ function EmptyState({ type }: { type: 'success' | 'problematic' }) {
 }
 
 export default function EquipamentoRaioX() {
-  const navigate = useNavigate();
   const { profile, isLoading: authLoading } = useAuth();
   const empresaId = profile?.empresa_id;
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  // Filtrar pelo mês atual
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
   const currentMonthName = format(now, "MMMM 'de' yyyy", { locale: ptBR });
 
-  const { data: successCases, isLoading: successLoading } = useSuccessCases(empresaId || undefined, 10, monthStart, monthEnd);
-  const { data: problematicCases, isLoading: problematicLoading } = useProblematicCases(empresaId || undefined, 10, monthStart, monthEnd);
+  const { data: successCases, isLoading: successLoading } = useSuccessCases(empresaId || undefined, 15, monthStart, monthEnd);
+  const { data: problematicCases, isLoading: problematicLoading } = useProblematicCases(empresaId || undefined, 15, monthStart, monthEnd);
   const { data: monthlyStats, isLoading: statsLoading } = useMonthlyStats(empresaId || undefined, monthStart, monthEnd);
 
   const handleToggle = (osId: number) => {
@@ -236,8 +238,9 @@ export default function EquipamentoRaioX() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />
+        <p className="text-xs font-mono text-muted-foreground uppercase tracking-widest animate-pulse">Processando Dados...</p>
       </div>
     );
   }
@@ -245,17 +248,13 @@ export default function EquipamentoRaioX() {
   const problematicCount = problematicCases?.length || 0;
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-4xl">
-      <div className="mb-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar ao Início
-        </Button>
-      </div>
-
-      <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold">Análise de Manutenções</h1>
-        <p className="text-muted-foreground mt-1 capitalize">
+    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col items-center text-center space-y-2">
+        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] uppercase tracking-[0.2em] font-bold px-3 py-1">
+          Raio-X de Manutenção
+        </Badge>
+        <h1 className="text-4xl font-bold tracking-tight text-foreground">Análise de Performance Industrial</h1>
+        <p className="text-muted-foreground capitalize font-medium text-lg">
           {currentMonthName}
         </p>
       </div>
@@ -268,30 +267,30 @@ export default function EquipamentoRaioX() {
       />
 
       <Tabs defaultValue="success" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-4">
-          <TabsTrigger value="success" className="gap-2">
+        <TabsList className="grid w-full grid-cols-2 p-1.5 bg-muted/30 rounded-2xl border border-white/5 mb-8 h-14">
+          <TabsTrigger value="success" className="rounded-xl flex items-center gap-3 data-[state=active]:bg-background data-[state=active]:shadow-surface transition-all duration-300">
             <Award className="h-4 w-4" />
-            Casos de Sucesso
+            <span className="font-semibold">Casos de Sucesso</span>
             {successCases && successCases.length > 0 && (
-              <Badge variant="secondary" className="ml-1 bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
+              <Badge variant="secondary" className="ml-1 bg-success/10 text-success border-success/20 text-[10px]">
                 {successCases.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="problematic" className="gap-2">
+          <TabsTrigger value="problematic" className="rounded-xl flex items-center gap-3 data-[state=active]:bg-background data-[state=active]:shadow-surface transition-all duration-300">
             <AlertTriangle className="h-4 w-4" />
-            Reincidências
+            <span className="font-semibold">Reincidências</span>
             {problematicCount > 0 && (
-              <Badge variant="secondary" className="ml-1 bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400">
+              <Badge variant="secondary" className="ml-1 bg-destructive/10 text-destructive border-destructive/20 text-[10px]">
                 {problematicCount}
               </Badge>
             )}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="success" className="space-y-4">
+        <TabsContent value="success" className="space-y-4 outline-none">
           {!successCases || successCases.length === 0 ? (
-            <EmptyState type="success" />
+            <EmptyStateComponent type="success" />
           ) : (
             successCases.map((caseData) => (
               <CaseCard
@@ -305,9 +304,9 @@ export default function EquipamentoRaioX() {
           )}
         </TabsContent>
 
-        <TabsContent value="problematic" className="space-y-4">
+        <TabsContent value="problematic" className="space-y-4 outline-none">
           {!problematicCases || problematicCases.length === 0 ? (
-            <EmptyState type="problematic" />
+            <EmptyStateComponent type="problematic" />
           ) : (
             problematicCases.map((caseData) => (
               <CaseCard

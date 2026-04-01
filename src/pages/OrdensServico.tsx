@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
 import { DateRangeFilter, DateRange } from '@/components/DateRangeFilter'
 import { OSList } from '@/components/OSList'
 import { OSForm } from '@/components/OSForm'
@@ -26,26 +25,12 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination'
 import {
-  Bot,
   Plus,
   Search,
   Filter,
   Loader2,
-  ArrowLeft,
-  User,
-  Building2,
-  Shield,
-  LogOut,
   FileDown,
 } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { toast } from '@/components/ui/sonner'
 import { handleError } from '@/lib/error-handler'
 import { exportOSListToPDF } from '@/components/OSListPdfExport'
@@ -86,10 +71,8 @@ export default function OrdensServico() {
   const {
     user,
     profile,
-    roles,
     isLoading: authLoading,
     isAdminKraflo,
-    signOut,
   } = useAuth()
 
   const {
@@ -142,7 +125,7 @@ export default function OrdensServico() {
 
       // Status filter
       if (statusFilter !== 'all') {
-        osQuery = osQuery.eq('status_os', statusFilter as "Aberta" | "Em manutenção" | "Fechada" | "Liberado para produção" | "Não liberado")
+        osQuery = osQuery.eq('status_os', statusFilter as any)
       }
 
       // Priority filter
@@ -157,9 +140,6 @@ export default function OrdensServico() {
       if (categoriaProblemaFilter !== 'all') {
         osQuery = osQuery.eq('categoria_problema_id', categoriaProblemaFilter)
       }
-
-      // Search filter (client-side for text search)
-      // We'll apply search after fetching since ilike on multiple columns needs OR
 
       if (searchQuery) {
         const query = searchQuery.trim()
@@ -180,7 +160,7 @@ export default function OrdensServico() {
       setOsList(osData || [])
       setTotalCount(count || 0)
 
-      // Load technicians (only once, no pagination needed)
+      // Load technicians
       let tecnicoQuery = supabase
         .from('tecnicos')
         .select('id_telegram, nome_completo')
@@ -219,11 +199,6 @@ export default function OrdensServico() {
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE)
 
-  const handleSignOut = async () => {
-    await signOut()
-    navigate('/auth')
-  }
-
   const handleEdit = (os: OS) => {
     setEditingOS(os)
     setIsFormOpen(true)
@@ -256,7 +231,7 @@ export default function OrdensServico() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
@@ -267,83 +242,14 @@ export default function OrdensServico() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Floating Command Bridge Header */}
-      <div className="pt-4 px-4 sticky top-0 z-50 w-full mb-6 relative">
-        <header className="glass-panel rounded-2xl mx-auto container p-3 flex items-center justify-between shadow-surface glow-border">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div className="p-2 bg-primary rounded-lg">
-                <Bot className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="font-mono text-xl font-bold text-foreground">
-                  Ordens de Serviço
-                </h1>
-                <p className="text-xs text-muted-foreground">
-                  Gerenciamento de OS
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              {isAdminKraflo ? (
-                <Badge
-                  variant="outline"
-                  className="bg-primary/10 text-primary border-primary/20"
-                >
-                  <Shield className="h-3 w-3 mr-1" />
-                  Admin Kraflo
-                </Badge>
-              ) : roles.includes('admin_empresa') ? (
-                <Badge
-                  variant="outline"
-                  className="bg-blue-500/10 text-blue-500 border-blue-500/20"
-                >
-                  <Building2 className="h-3 w-3 mr-1" />
-                  Admin Empresa
-                </Badge>
-              ) : null}
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col">
-                      <span className="font-medium">
-                        {profile?.nome_completo || 'Usuário'}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {user.email}
-                      </span>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sair
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+    <main className="space-y-6">
+      {/* Filters */}
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <div className="flex-1">
+            <DateRangeFilter value={dateRange} onChange={setDateRange} />
           </div>
-        </header>
-      </div>
-
-      <main className="container mx-auto px-4 pb-6 space-y-6 mt-2">
-        {/* Filters */}
-        <div className="space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <div className="flex-1">
-              <DateRangeFilter value={dateRange} onChange={setDateRange} />
-            </div>
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               onClick={handleExportListPDF}
@@ -361,154 +267,154 @@ export default function OrdensServico() {
               Nova OS
             </Button>
           </div>
-
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por equipamento, TAG ou descrição..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Status</SelectItem>
-                <SelectItem value="Aberta">Aberta</SelectItem>
-                <SelectItem value="Em manutenção">Em manutenção</SelectItem>
-                <SelectItem value="Não liberado">Não liberado</SelectItem>
-                <SelectItem value="Fechada">Fechada</SelectItem>
-                <SelectItem value="Liberado para produção">
-                  Liberado para produção
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={prioridadeFilter}
-              onValueChange={setPrioridadeFilter}
-            >
-              <SelectTrigger className="w-full md:w-48">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Prioridade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas Prioridades</SelectItem>
-                <SelectItem value="Baixa">Baixa</SelectItem>
-                <SelectItem value="Média">Média</SelectItem>
-                <SelectItem value="Alta">Alta</SelectItem>
-                <SelectItem value="Urgente">Urgente</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Category Filters Row */}
-          <div className="flex flex-col md:flex-row gap-4">
-            <Select
-              value={categoriaParadaFilter}
-              onValueChange={setCategoriaParadaFilter}
-            >
-              <SelectTrigger className="w-full md:w-56">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Motivo de Parada" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Motivos</SelectItem>
-                {categoriasParada.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={categoriaProblemaFilter}
-              onValueChange={setCategoriaProblemaFilter}
-            >
-              <SelectTrigger className="w-full md:w-56">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Causa Raiz" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as Causas</SelectItem>
-                {categoriasProblema.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>
-              Mostrando {osList.length} de {totalCount} ordens de serviço
-              {totalPages > 1 && ` — Página ${currentPage} de ${totalPages}`}
-            </span>
-          </div>
         </div>
 
-        {/* OS List */}
-        <OSList
-          osList={osList}
-          tecnicos={tecnicos}
-          isLoading={isLoading}
-          onView={(os) => setViewingOS(os)}
-          onEdit={handleEdit}
-          onDelete={() => {}}
-          onRefresh={loadData}
-        />
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por equipamento, TAG ou descrição..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                />
-              </PaginationItem>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let page: number
-                if (totalPages <= 5) {
-                  page = i + 1
-                } else if (currentPage <= 3) {
-                  page = i + 1
-                } else if (currentPage >= totalPages - 2) {
-                  page = totalPages - 4 + i
-                } else {
-                  page = currentPage - 2 + i
-                }
-                return (
-                  <PaginationItem key={page}>
-                    <PaginationLink
-                      isActive={page === currentPage}
-                      onClick={() => setCurrentPage(page)}
-                      className="cursor-pointer"
-                    >
-                      {page}
-                    </PaginationLink>
-                  </PaginationItem>
-                )
-              })}
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        )}
-      </main>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full md:w-48">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Status</SelectItem>
+              <SelectItem value="Aberta">Aberta</SelectItem>
+              <SelectItem value="Em manutenção">Em manutenção</SelectItem>
+              <SelectItem value="Não liberado">Não liberado</SelectItem>
+              <SelectItem value="Fechada">Fechada</SelectItem>
+              <SelectItem value="Liberado para produção">
+                Liberado para produção
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={prioridadeFilter}
+            onValueChange={setPrioridadeFilter}
+          >
+            <SelectTrigger className="w-full md:w-48">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Prioridade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas Prioridades</SelectItem>
+              <SelectItem value="Baixa">Baixa</SelectItem>
+              <SelectItem value="Média">Média</SelectItem>
+              <SelectItem value="Alta">Alta</SelectItem>
+              <SelectItem value="Urgente">Urgente</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Category Filters Row */}
+        <div className="flex flex-col md:flex-row gap-4">
+          <Select
+            value={categoriaParadaFilter}
+            onValueChange={setCategoriaParadaFilter}
+          >
+            <SelectTrigger className="w-full md:w-56">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Motivo de Parada" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Motivos</SelectItem>
+              {categoriasParada.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={categoriaProblemaFilter}
+            onValueChange={setCategoriaProblemaFilter}
+          >
+            <SelectTrigger className="w-full md:w-56">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Causa Raiz" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as Causas</SelectItem>
+              {categoriasProblema.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>
+            Mostrando {osList.length} de {totalCount} ordens de serviço
+            {totalPages > 1 && ` — Página ${currentPage} de ${totalPages}`}
+          </span>
+        </div>
+      </div>
+
+      {/* OS List */}
+      <OSList
+        osList={osList}
+        tecnicos={tecnicos}
+        isLoading={isLoading}
+        onView={(os) => setViewingOS(os)}
+        onEdit={handleEdit}
+        onDelete={() => {}}
+        onRefresh={loadData}
+      />
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+              />
+            </PaginationItem>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let page: number
+              if (totalPages <= 5) {
+                page = i + 1
+              } else if (currentPage <= 3) {
+                page = i + 1
+              } else if (currentPage >= totalPages - 2) {
+                page = totalPages - 4 + i
+              } else {
+                page = currentPage - 2 + i
+              }
+              return (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    isActive={page === currentPage}
+                    onClick={() => setCurrentPage(page)}
+                    className="cursor-pointer"
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              )
+            })}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
 
       {/* Dialogs */}
       <OSForm
@@ -524,6 +430,6 @@ export default function OrdensServico() {
         os={viewingOS}
         tecnicos={tecnicos}
       />
-    </div>
+    </main>
   )
 }

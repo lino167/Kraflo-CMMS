@@ -1,7 +1,3 @@
-/**
- * Prompt 11: Página "Biblioteca de Conhecimento"
- */
-
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import type { Database } from '@/integrations/supabase/types'
@@ -47,7 +43,6 @@ import {
 import { toast } from '@/components/ui/sonner'
 import { handleError } from '@/lib/error-handler'
 import {
-  Library,
   Search,
   FileText,
   CheckCircle2,
@@ -58,13 +53,10 @@ import {
   Globe,
   ChevronLeft,
   ChevronRight,
-  BookOpen,
   Wrench,
-  ExternalLink,
-  AlertTriangle,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns'
+import { subDays, startOfMonth, endOfMonth } from 'date-fns'
 import { Calendar as CalendarIcon } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar as CalendarComponent } from '@/components/ui/calendar'
@@ -127,7 +119,6 @@ export default function Biblioteca() {
   const [manualToDelete, setManualToDelete] = useState<Manual | null>(null)
   const { profile } = useAuth()
 
-  // Histórico de Reparos (Wiki) State
   const [wikiResults, setWikiResults] = useState<OS[]>([])
   const [isWikiLoading, setIsWikiLoading] = useState(false)
   const [wikiSearch, setWikiSearch] = useState('')
@@ -145,7 +136,6 @@ export default function Biblioteca() {
     try {
       let query = supabase.from('manuais').select('*', { count: 'exact' })
 
-      // Aplicar filtros
       if (search) {
         query = query.or(
           `nome_arquivo.ilike.%${search}%,fabricante.ilike.%${search}%,modelo.ilike.%${search}%`,
@@ -166,7 +156,6 @@ export default function Biblioteca() {
         query = query.eq('processado', false)
       }
 
-      // Paginação
       const from = (currentPage - 1) * PAGE_SIZE
       const to = from + PAGE_SIZE - 1
 
@@ -197,7 +186,6 @@ export default function Biblioteca() {
       let query = supabase
         .from('ordens_de_servico')
         .select('*', { count: 'exact' })
-        // Apenas OS fechadas servem como "wiki" de solução confirmada
         .eq('status_os', 'Fechada')
 
       if (profile?.empresa_id) {
@@ -259,8 +247,6 @@ export default function Biblioteca() {
   const handleReindex = async (manual: Manual) => {
     setReindexingId(manual.id)
     try {
-      // Reindexação via backfill-os-index (exemplo de uso da infraestrutura)
-      // OSService.runRetroactiveClassification(manual.empresa_id); 
       toast.info('Solicitação de reindexação enviada')
     } catch (error) {
       handleError(error)
@@ -328,369 +314,309 @@ export default function Biblioteca() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Floating Command Bridge Header */}
-      <div className="pt-4 px-4 sticky top-0 z-50 w-full mb-6 relative">
-        <header className="glass-panel rounded-2xl mx-auto container p-3 flex items-center justify-between shadow-surface glow-border">
-          <div className="flex items-center justify-between w-full gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary rounded-lg hidden sm:block">
-                <Library className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="font-mono text-xl font-bold text-foreground">
-                  Biblioteca de Conhecimento
-                </h1>
-                <p className="text-xs text-muted-foreground">
-                  Gerencie os manuais e documentos da base da IA
-                </p>
-              </div>
-            </div>
-            <Button onClick={loadManuais} variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Atualizar</span>
-            </Button>
-          </div>
-        </header>
+    <main className="space-y-6">
+      <div className="flex w-full mb-8 h-12 p-1 bg-muted/50 rounded-xl overflow-hidden shadow-inner border border-border/10">
+        <button
+          onClick={() => setActiveTab('manuals')}
+          className={`flex-1 flex items-center justify-center rounded-lg transition-all duration-300 font-medium text-sm ${
+            activeTab === 'manuals'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+          }`}
+        >
+          <FileText className="h-4 w-4 mr-2" />
+          Documentação (Manuais)
+        </button>
+        <button
+          onClick={() => setActiveTab('wiki')}
+          className={`flex-1 flex items-center justify-center rounded-lg transition-all duration-300 font-medium text-sm ${
+            activeTab === 'wiki'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+          }`}
+        >
+          <Wrench className="h-4 w-4 mr-2" />
+          Histórico de Reparos (Wiki)
+        </button>
       </div>
 
-      <main className="container mx-auto px-4 pb-6 space-y-6 mt-2">
-        <div className="flex w-full mb-8 h-12 p-1 bg-muted/50 rounded-xl overflow-hidden shadow-inner border border-border/10">
-          <button
-            onClick={() => setActiveTab('manuals')}
-            className={`flex-1 flex items-center justify-center rounded-lg transition-all duration-300 font-medium text-sm ${
-              activeTab === 'manuals'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Documentação (Manuais)
-          </button>
-          <button
-            onClick={() => setActiveTab('wiki')}
-            className={`flex-1 flex items-center justify-center rounded-lg transition-all duration-300 font-medium text-sm ${
-              activeTab === 'wiki'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
-          >
-            <Wrench className="h-4 w-4 mr-2" />
-            Histórico de Reparos (Wiki)
-          </button>
-        </div>
-
-        {activeTab === 'manuals' ? (
-          <div className="space-y-6 animate-in fade-in-50 duration-500">
-
-      {/* Filtros */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="lg:col-span-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome, fabricante ou modelo..."
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value)
+      {activeTab === 'manuals' ? (
+        <div className="space-y-6 animate-in fade-in-50 duration-500">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="lg:col-span-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por nome, fabricante ou modelo..."
+                      value={search}
+                      onChange={(e) => {
+                        setSearch(e.target.value)
+                        setCurrentPage(1)
+                      }}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <Select
+                  value={filterType}
+                  onValueChange={(v) => {
+                    setFilterType(v as any)
                     setCurrentPage(1)
                   }}
-                  className="pl-10"
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os tipos</SelectItem>
+                    {MANUAL_TYPES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>
+                        {t.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={filterCategory}
+                  onValueChange={(v) => {
+                    setFilterCategory(v as any)
+                    setCurrentPage(1)
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas categorias</SelectItem>
+                    {MANUAL_CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={filterStatus}
+                  onValueChange={(v) => {
+                    setFilterStatus(v)
+                    setCurrentPage(1)
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="indexed">Indexado</SelectItem>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-            <Select
-              value={filterType}
-              onValueChange={(v) => {
-                setFilterType(v as any)
-                setCurrentPage(1)
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os tipos</SelectItem>
-                {MANUAL_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={filterCategory}
-              onValueChange={(v) => {
-                setFilterCategory(v as any)
-                setCurrentPage(1)
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas categorias</SelectItem>
-                {MANUAL_CATEGORIES.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={filterStatus}
-              onValueChange={(v) => {
-                setFilterStatus(v)
-                setCurrentPage(1)
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="indexed">Indexado</SelectItem>
-                <SelectItem value="pending">Pendente</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {(search ||
-            (filterType && (filterType as string) !== 'all') ||
-            (filterCategory && (filterCategory as string) !== 'all') ||
-            (filterIndustry && (filterIndustry as string) !== 'all') ||
-            (filterStatus && (filterStatus as string) !== 'all')) && (
-            <div className="mt-4 flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Filtros ativos:
-              </span>
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
-                Limpar filtros
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              {(search ||
+                (filterType && (filterType as string) !== 'all') ||
+                (filterCategory && (filterCategory as string) !== 'all') ||
+                (filterIndustry && (filterIndustry as string) !== 'all') ||
+                (filterStatus && (filterStatus as string) !== 'all')) && (
+                <div className="mt-4 flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Filtros ativos:
+                  </span>
+                  <Button variant="ghost" size="sm" onClick={clearFilters}>
+                    Limpar filtros
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Tabela de Manuais */}
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Arquivo</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Fabricante / Modelo</TableHead>
-                <TableHead>Tags</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <Skeleton className="h-4 w-48" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-20" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-32" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-20" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-8" />
-                    </TableCell>
+          <Card className="industrial-card">
+            <CardContent className="p-0 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Arquivo</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Fabricante / Modelo</TableHead>
+                    <TableHead>Tags</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ))
-              ) : manuais.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="p-4 border-0">
-                    <EmptyState
-                      icon={FileText}
-                      title="Nenhum manual encontrado"
-                      description="Faça o upload de um novo arquivo PDF para enriquecer a base de conhecimento."
-                    />
-                  </TableCell>
-                </TableRow>
-              ) : (
-                manuais.map((manual) => (
-                  <TableRow key={manual.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-primary" />
-                        <div>
-                          <p className="font-medium text-sm">
-                            {manual.nome_arquivo}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {manual.total_paginas
-                              ? `${manual.total_paginas} páginas`
-                              : ''}
-                          </p>
-                        </div>
-                        {manual.is_public && (
-                          <span title="Biblioteca Pública">
-                            <Globe className="h-4 w-4 text-blue-500" />
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{getTypeBadge(manual)}</TableCell>
-                    <TableCell>
-                      {manual.category && (
-                        <span className="text-sm">
-                          {MANUAL_CATEGORIES.find(
-                            (c) => c.value === manual.category,
-                          )?.label || manual.category}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {manual.fabricante && <span>{manual.fabricante}</span>}
-                        {manual.fabricante && manual.modelo && <span> / </span>}
-                        {manual.modelo && <span>{manual.modelo}</span>}
-                        {!manual.fabricante &&
-                          !manual.modelo &&
-                          manual.equipamento_tipo && (
-                            <span className="text-muted-foreground">
-                              {manual.equipamento_tipo}
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-8 text-right" /></TableCell>
+                      </TableRow>
+                    ))
+                  ) : manuais.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="p-4 border-0">
+                        <EmptyState
+                          icon={FileText}
+                          title="Nenhum manual encontrado"
+                          description="Faça o upload de um novo arquivo PDF para enriquecer a base de conhecimento."
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    manuais.map((manual) => (
+                      <TableRow key={manual.id} className="hover:bg-white/5 transition-colors">
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-primary" />
+                            <div>
+                              <p className="font-medium text-sm">
+                                {manual.nome_arquivo}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {manual.total_paginas
+                                  ? `${manual.total_paginas} páginas`
+                                  : ''}
+                              </p>
+                            </div>
+                            {manual.is_public && (
+                              <span title="Biblioteca Pública">
+                                <Globe className="h-4 w-4 text-blue-500" />
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{getTypeBadge(manual)}</TableCell>
+                        <TableCell>
+                          {manual.category && (
+                            <span className="text-sm">
+                              {MANUAL_CATEGORIES.find(
+                                (c) => c.value === manual.category,
+                              )?.label || manual.category}
                             </span>
                           )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {manual.tags?.slice(0, 3).map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                        {manual.tags && manual.tags.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{manual.tags.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(manual)}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => handleReindex(manual)}
-                            disabled={reindexingId === manual.id}
-                          >
-                            <RefreshCw
-                              className={`h-4 w-4 mr-2 ${reindexingId === manual.id ? 'animate-spin' : ''}`}
-                            />
-                            Reindexar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setManualToDelete(manual)
-                              setDeleteDialogOpen(true)
-                            }}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Remover
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {manual.fabricante && <span>{manual.fabricante}</span>}
+                            {manual.fabricante && manual.modelo && <span> / </span>}
+                            {manual.modelo && <span>{manual.modelo}</span>}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {manual.tags?.slice(0, 2).map((tag) => (
+                              <Badge
+                                key={tag}
+                                variant="outline"
+                                className="text-[10px] px-1 py-0"
+                              >
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(manual)}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleReindex(manual)}
+                                disabled={reindexingId === manual.id}
+                              >
+                                <RefreshCw
+                                  className={`h-4 w-4 mr-2 ${reindexingId === manual.id ? 'animate-spin' : ''}`}
+                                />
+                                Reindexar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setManualToDelete(manual)
+                                  setDeleteDialogOpen(true)
+                                }}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Remover
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
 
-          {/* Paginação */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t">
-              <span className="text-sm text-muted-foreground">
-                Mostrando {(currentPage - 1) * PAGE_SIZE + 1} a{' '}
-                {Math.min(currentPage * PAGE_SIZE, totalCount)} de {totalCount}{' '}
-                manuais
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm">
-                  Página {currentPage} de {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-        ) : (
-          <div className="animate-in fade-in-50 duration-500">
-            <WikiTab
-              wikiResults={wikiResults}
-              isLoading={isWikiLoading}
-              search={wikiSearch}
-              setSearch={setWikiSearch}
-              totalCount={wikiTotalCount}
-              currentPage={wikiPage}
-              setCurrentPage={setWikiPage}
-              onRefresh={loadWiki}
-              dateFilter={wikiDateFilter}
-              setDateFilter={setWikiDateFilter}
-              dateRange={wikiDateRange}
-              setDateRange={setWikiDateRange}
-            />
-          </div>
-        )}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-border/10">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
+                    Página {currentPage} / {totalPages}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="animate-in fade-in-50 duration-500">
+          <WikiTab
+            wikiResults={wikiResults}
+            isLoading={isWikiLoading}
+            search={wikiSearch}
+            setSearch={setWikiSearch}
+            totalCount={wikiTotalCount}
+            currentPage={wikiPage}
+            setCurrentPage={setWikiPage}
+            onRefresh={loadWiki}
+            dateFilter={wikiDateFilter}
+            setDateFilter={setWikiDateFilter}
+            dateRange={wikiDateRange}
+            setDateRange={setWikiDateRange}
+          />
+        </div>
+      )}
 
       {/* Dialog de confirmação de exclusão */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="glass-panel border-white/10">
           <DialogHeader>
             <DialogTitle>Remover Manual</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja remover o manual "
-              {manualToDelete?.nome_arquivo}"? Esta ação não pode ser desfeita e
-              todos os chunks indexados serão removidos.
+              Tem certeza que deseja remover o manual "{manualToDelete?.nome_arquivo}"? 
+              Esta ação não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -706,8 +632,7 @@ export default function Biblioteca() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      </main>
-    </div>
+    </main>
   )
 }
 
@@ -742,7 +667,7 @@ function WikiTab({
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="industrial-card">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-[2]">
@@ -754,12 +679,12 @@ function WikiTab({
                   setSearch(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="pl-10 h-11 bg-background/50"
+                className="pl-10 h-11 bg-background/50 border-white/10"
               />
             </div>
             <div className="flex flex-1 gap-2">
               <Select value={dateFilter} onValueChange={setDateFilter}>
-                <SelectTrigger className="h-11 bg-background/50 min-w-[150px]">
+                <SelectTrigger className="h-11 bg-background/50 border-white/10 min-w-[150px]">
                   <CalendarIcon className="h-4 w-4 mr-2 text-primary" />
                   <SelectValue placeholder="Período" />
                 </SelectTrigger>
@@ -775,8 +700,8 @@ function WikiTab({
               {dateFilter === 'custom' && (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="h-11 bg-background/50 border-input px-3 shadow-sm hover:bg-accent group">
-                      <CalendarIcon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <Button variant="outline" className="h-11 bg-background/50 border-white/10 px-3 hover:bg-accent">
+                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="end">
@@ -797,90 +722,58 @@ function WikiTab({
               Pesquisar
             </Button>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Dica: O wiki busca em nomes de equipamentos, problemas relatados e soluções técnicas aplicadas.
-          </p>
         </CardContent>
       </Card>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-4">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="overflow-hidden border-border/40">
-              <CardContent className="p-0">
-                <div className="p-4 space-y-3">
-                  <Skeleton className="h-6 w-1/3" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                </div>
-              </CardContent>
-            </Card>
+            <Skeleton key={i} className="h-32 w-full rounded-xl" />
           ))
         ) : wikiResults.length === 0 ? (
           <EmptyState
-            icon={BookOpen}
-            title="Nenhum registro encontrado"
-            description="Tente usar termos mais genéricos ou verifique se as OS foram fechadas corretamente com diagnóstico."
+            icon={Wrench}
+            title="Nenhum registro histórico"
+            description="Pesquise por outros termos ou verifique se as OS estão fechadas."
           />
         ) : (
           wikiResults.map((os) => (
-            <Card key={os.id} className="overflow-hidden border-border/40 hover:border-primary/30 transition-all duration-300 shadow-sm group">
-              <div className="absolute top-0 left-0 w-1 h-full bg-primary/40 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardContent className="p-0">
-                <div className="p-5">
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="font-mono text-[10px] bg-secondary/50">
-                          #{os.id}
-                        </Badge>
-                        <h3 className="text-base font-bold text-foreground">
-                          {os.equipamento_nome}
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        {os.equipamento_tag && (
-                          <span className="flex items-center gap-1 font-mono">
-                            <Badge variant="secondary" className="px-1 text-[10px] h-4">TAG</Badge> {os.equipamento_tag}
-                          </span>
-                        )}
-                        <span>•</span>
-                        <span>{os.tipo_manutencao}</span>
-                        <span>•</span>
-                        <span>{os.data_fechamento ? format(new Date(os.data_fechamento), 'dd/MM/yyyy') : '-'}</span>
-                      </div>
+            <Card key={os.id} className="industrial-card group hover:border-primary/20 transition-all duration-300">
+              <CardContent className="p-5">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
+                      {os.equipamento_nome}
+                    </h3>
+                    <div className="flex items-center gap-3 mt-1">
+                      <Badge variant="outline" className="font-mono text-[10px]">
+                        {os.equipamento_tag || 'SEM TAG'}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {os.data_fechamento ? format(new Date(os.data_fechamento), 'dd/MM/yyyy') : ''}
+                      </span>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={() => window.open(`/ordens-servico?search=${os.id}`, '_blank')}>
-                      <ExternalLink className="h-3 w-3" />
-                      Ver Detalhes
-                    </Button>
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2 p-3 rounded-lg bg-orange-500/5 border border-orange-500/10">
-                      <div className="flex items-center gap-2 text-orange-400 font-semibold text-xs uppercase tracking-wider">
-                        <AlertTriangle className="h-3 w-3" />
-                        Problema Relatado
-                      </div>
-                      <p className="text-sm text-foreground/80 leading-relaxed italic">
-                        "{os.descricao_problema || 'Não descrito'}"
-                      </p>
-                    </div>
-
-                    <div className="space-y-2 p-3 rounded-lg bg-green-500/5 border border-green-500/10">
-                      <div className="flex items-center gap-2 text-green-400 font-semibold text-xs uppercase tracking-wider">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Diagnóstico e Solução
-                      </div>
-                      <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-medium">
-                        {os.diagnostico_solucao || 'Nenhuma solução detalhada.'}
-                      </div>
-                      {os.notas_finais && (
-                        <div className="mt-2 text-xs text-muted-foreground pt-2 border-t border-green-500/10">
-                          <strong>Notas:</strong> {os.notas_finais}
-                        </div>
-                      )}
-                    </div>
+                  <Badge className="bg-success/10 text-success border-success/20">
+                    Resolvido
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                      Problema Relatado
+                    </p>
+                    <p className="text-sm text-foreground/80 line-clamp-3">
+                      {os.descricao_problema}
+                    </p>
+                  </div>
+                  <div className="bg-primary/5 p-3 rounded-lg border border-primary/10">
+                    <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">
+                      Solução Técnica
+                    </p>
+                    <p className="text-sm text-foreground/90 font-medium line-clamp-3">
+                      {os.diagnostico_solucao || os.notas_finais}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -889,33 +782,25 @@ function WikiTab({
         )}
       </div>
 
-      {/* Paginação Wiki */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 bg-card rounded-lg border border-border/40">
-          <span className="text-sm text-muted-foreground font-mono">
-            {((currentPage - 1) * PAGE_SIZE) + 1}-{Math.min(currentPage * PAGE_SIZE, totalCount)} / {totalCount}
+        <div className="flex justify-center mt-6 gap-2">
+          <Button
+            variant="ghost"
+            onClick={() => setCurrentPage(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Anterior
+          </Button>
+          <span className="flex items-center px-4 text-sm font-mono">
+            {currentPage} / {totalPages}
           </span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-mono px-2">
-              {currentPage} de {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Próxima
+          </Button>
         </div>
       )}
     </div>

@@ -15,6 +15,8 @@ const IndexacaoAdmin = lazy(() => import("./pages/IndexacaoAdmin"));
 const EquipamentoRaioX = lazy(() => import("./pages/EquipamentoRaioX"));
 const PerfilTecnico = lazy(() => import("./pages/PerfilTecnico"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+import { AppLayout } from "@/components/AppLayout";
+
 
 const queryClient = new QueryClient();
 
@@ -31,16 +33,22 @@ const App = () => (
             </div>
           }>
             <Routes>
-              <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/ordens-servico" element={<OrdensServico />} />
-              <Route path="/biblioteca" element={<Biblioteca />} />
-              <Route path="/admin/indexacao" element={<IndexacaoAdmin />} />
-              <Route path="/equipamento" element={<EquipamentoRaioX />} />
-              <Route path="/equipamento/:tag" element={<EquipamentoRaioX />} />
-              <Route path="/meu-desempenho" element={<PerfilTecnico />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
+              
+              <Route path="/" element={<AppLayout><Index /></AppLayout>} />
+              <Route path="/assistente" element={<AppLayout><Index defaultTab="chat" /></AppLayout>} />
+              <Route path="/relatorios" element={<AppLayout><Index defaultTab="relatorios" /></AppLayout>} />
+              <Route path="/manuais" element={<AppLayout><Index defaultTab="manuais" /></AppLayout>} />
+              
+              <Route path="/ordens-servico" element={<AppLayout><OrdensServico /></AppLayout>} />
+
+              <Route path="/biblioteca" element={<AppLayout><Biblioteca /></AppLayout>} />
+              <Route path="/admin/indexacao" element={<AppLayout><IndexacaoAdmin /></AppLayout>} />
+              <Route path="/equipamento" element={<AppLayout><EquipamentoRaioX /></AppLayout>} />
+              <Route path="/equipamento/:tag" element={<AppLayout><EquipamentoRaioX /></AppLayout>} />
+              <Route path="/meu-desempenho" element={<AppLayout><PerfilTecnico /></AppLayout>} />
+              
+              <Route path="*" element={<AppLayout><NotFound /></AppLayout>} />
             </Routes>
           </Suspense>
         </BrowserRouter>
