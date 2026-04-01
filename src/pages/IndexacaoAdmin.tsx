@@ -101,7 +101,6 @@ export default function IndexacaoAdmin() {
   const {
     data: stats,
     isLoading: statsLoading,
-    refetch: refetchStats,
   } = useQuery({
     queryKey: ['index-stats'],
     queryFn: async (): Promise<IndexStats> => {
@@ -137,7 +136,6 @@ export default function IndexacaoAdmin() {
   const {
     data: jobs,
     isLoading: jobsLoading,
-    refetch: refetchJobs,
   } = useQuery({
     queryKey: ['index-jobs', statusFilter, searchTerm],
     queryFn: async (): Promise<IndexJob[]> => {
@@ -302,29 +300,7 @@ export default function IndexacaoAdmin() {
     : 0
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Indexação de OS</h1>
-          <p className="text-muted-foreground">
-            Gerenciamento de embeddings para o assistente IA
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => {
-              refetchStats()
-              refetchJobs()
-            }}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
-          </Button>
-        </div>
-      </div>
-
+    <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>

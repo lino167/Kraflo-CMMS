@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import {
@@ -10,7 +9,6 @@ import {
   CardDescription,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -34,9 +32,6 @@ import {
   Zap,
   Settings,
   AlertCircle,
-  ExternalLink,
-  Cpu,
-  Activity,
 } from 'lucide-react'
 import { MTTRLineChart } from '@/components/MTTRLineChart'
 import { TopMachinesChart } from '@/components/TopMachinesChart'
@@ -103,7 +98,6 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onAskAI }: DashboardProps) {
-  const navigate = useNavigate()
   const { profile, isAdminKraflo } = useAuth()
   const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfMonth(new Date()),
@@ -463,20 +457,6 @@ export function Dashboard({ onAskAI }: DashboardProps) {
       {/* Header with Filters */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-4 rounded-xl border-white/5 shadow-surface">
         <DateRangeFilter value={dateRange} onChange={setDateRange} />
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => navigate('/equipamento')} variant="outline" size="sm" className="bg-background/50 hover:bg-primary/20 hover:text-primary transition-colors border-white/10">
-            <Cpu className="h-4 w-4 mr-2" />
-            Raio-X Equipamento
-          </Button>
-          <Button onClick={() => navigate('/meu-desempenho')} variant="outline" size="sm" className="bg-background/50 hover:bg-primary/20 hover:text-primary transition-colors border-white/10">
-            <Activity className="h-4 w-4 mr-2" />
-            Meu Desempenho
-          </Button>
-          <Button onClick={() => navigate('/ordens-servico')} variant="outline" size="sm" className="bg-background/50 hover:bg-primary/20 hover:text-primary transition-colors border-white/10">
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Gerenciar OS
-          </Button>
-        </div>
       </div>
 
       <Tabs defaultValue="operacional" className="space-y-6 w-full">

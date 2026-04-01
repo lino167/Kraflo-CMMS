@@ -16,10 +16,8 @@ import {
   Shield,
   Building2,
   ChevronRight,
-  Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -78,12 +76,22 @@ export function AppLayout({ children }: AppLayoutProps) {
       isActive: location.pathname === "/biblioteca",
     },
     {
+      title: "Assistente IA",
+      icon: MessageSquare,
+      path: "/assistente",
+      isActive: location.pathname === "/assistente",
+    },
+    {
       title: "Relatórios IA",
       icon: BarChart3,
       path: "/relatorios",
-      // Since relocation of tabs in Index, some paths might be virtual or query based.
-      // But for the new layout, we might want real routes.
-      isActive: false, // Handled below
+      isActive: location.pathname === "/relatorios",
+    },
+    {
+      title: "Manuais",
+      icon: Upload,
+      path: "/manuais",
+      isActive: location.pathname === "/manuais",
     },
   ];
 
@@ -189,7 +197,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate('/meu-desempenho')}>
-                  <User className="mr-2 h-4 w-4" /> Perfil
+                  <Activity className="mr-2 h-4 w-4" /> Meu Desempenho
                 </DropdownMenuItem>
                 {isAdminKraflo && (
                   <DropdownMenuItem onClick={() => navigate('/admin/indexacao')}>
@@ -236,9 +244,6 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </Badge>
               ) : null}
               
-              <Button variant="outline" size="sm" className="hidden lg:flex border-white/10 bg-white/5 hover:bg-primary/20 hover:text-primary transition-all duration-300">
-                Acesso Rápido
-              </Button>
             </div>
           </header>
 
