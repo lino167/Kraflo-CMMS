@@ -284,20 +284,32 @@ export default function Biblioteca() {
           }
         } catch (storageError) {
           console.error('Error deleting from storage:', storageError)
-          // We continue to delete the record even if storage deletion fails
         }
       }
 
-      const { error } = await supabase
+      // 1. Delete associated chunks first to avoid foreign key violation
+      const { error: chunksError } = await supabase
+        .from('manual_chunks')
+        .delete()
+        .eq('manual_id', manualToDelete.id)
+
+      if (chunksError) {
+        console.error('Error deleting manual chunks:', chunksError)
+        throw new Error('Não foi possível remover os dados indexados do manual.')
+      }
+
+      // 2. Now delete the manual record
+      const { error: manualError } = await supabase
         .from('manuais')
         .delete()
         .eq('id', manualToDelete.id)
 
-      if (error) throw error
+      if (manualError) throw manualError
 
       toast.success('Manual removido com sucesso')
-    } catch (error) {
-      handleError(error)
+    } catch (error: any) {
+      console.error('Delete error:', error)
+      toast.error(error.message || 'Erro ao remover manual')
     } finally {
       setDeleteDialogOpen(false)
       setManualToDelete(null)
