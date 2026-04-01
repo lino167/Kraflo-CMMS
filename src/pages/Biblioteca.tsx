@@ -54,9 +54,15 @@ import {
   ChevronLeft,
   ChevronRight,
   Wrench,
+  Upload as UploadIcon,
+  Eye,
+  ExternalLink,
+  Settings,
+  User,
 } from 'lucide-react'
+import { ManualUpload } from '@/components/ManualUpload'
 import { useAuth } from '@/hooks/useAuth'
-import { subDays, startOfMonth, endOfMonth } from 'date-fns'
+import { subDays, startOfMonth, endOfMonth, format } from 'date-fns'
 import { Calendar as CalendarIcon } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar as CalendarComponent } from '@/components/ui/calendar'
@@ -80,6 +86,7 @@ interface Manual {
   total_paginas: number | null
   created_at: string
   empresa_id: string | null
+  url_arquivo?: string
 }
 
 interface OS {
@@ -117,6 +124,7 @@ export default function Biblioteca() {
   const [reindexingId, setReindexingId] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [manualToDelete, setManualToDelete] = useState<Manual | null>(null)
+  const [isUploadOpen, setIsUploadOpen] = useState(false)
   const { profile } = useAuth()
 
   const [wikiResults, setWikiResults] = useState<OS[]>([])
@@ -315,29 +323,41 @@ export default function Biblioteca() {
 
   return (
     <main className="space-y-6">
-      <div className="flex w-full mb-8 h-12 p-1 bg-muted/50 rounded-xl overflow-hidden shadow-inner border border-border/10">
-        <button
-          onClick={() => setActiveTab('manuals')}
-          className={`flex-1 flex items-center justify-center rounded-lg transition-all duration-300 font-medium text-sm ${
-            activeTab === 'manuals'
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
-        >
-          <FileText className="h-4 w-4 mr-2" />
-          Documentação (Manuais)
-        </button>
-        <button
-          onClick={() => setActiveTab('wiki')}
-          className={`flex-1 flex items-center justify-center rounded-lg transition-all duration-300 font-medium text-sm ${
-            activeTab === 'wiki'
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
-        >
-          <Wrench className="h-4 w-4 mr-2" />
-          Histórico de Reparos (Wiki)
-        </button>
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex w-full md:w-auto h-12 p-1 bg-muted/50 rounded-xl overflow-hidden shadow-inner border border-border/10">
+          <button
+            onClick={() => setActiveTab('manuals')}
+            className={`flex-1 md:px-8 flex items-center justify-center rounded-lg transition-all duration-300 font-medium text-sm ${
+              activeTab === 'manuals'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Documentação (Manuais)
+          </button>
+          <button
+            onClick={() => setActiveTab('wiki')}
+            className={`flex-1 md:px-8 flex items-center justify-center rounded-lg transition-all duration-300 font-medium text-sm ${
+              activeTab === 'wiki'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+          >
+            <Wrench className="h-4 w-4 mr-2" />
+            Histórico de Reparos (Wiki)
+          </button>
+        </div>
+
+        {activeTab === 'manuals' && (
+          <Button 
+            onClick={() => setIsUploadOpen(true)}
+            className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-neon transition-all duration-300"
+          >
+            <UploadIcon className="h-4 w-4 mr-2" />
+            Novo Manual
+          </Button>
+        )}
       </div>
 
       {activeTab === 'manuals' ? (
@@ -523,34 +543,55 @@ export default function Biblioteca() {
                         </TableCell>
                         <TableCell>{getStatusBadge(manual)}</TableCell>
                         <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
+                          <div className="flex items-center justify-end gap-2">
+                            {manual.url_arquivo && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-8 bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
+                                onClick={() => window.open(manual.url_arquivo, '_blank')}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                Visualizar
                               </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleReindex(manual)}
-                                disabled={reindexingId === manual.id}
-                              >
-                                <RefreshCw
-                                  className={`h-4 w-4 mr-2 ${reindexingId === manual.id ? 'animate-spin' : ''}`}
-                                />
-                                Reindexar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setManualToDelete(manual)
-                                  setDeleteDialogOpen(true)
-                                }}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Remover
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="glass-panel border-white/10">
+                                {manual.url_arquivo && (
+                                  <DropdownMenuItem
+                                    onClick={() => window.open(manual.url_arquivo, '_blank')}
+                                  >
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    Abrir em nova aba
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  onClick={() => handleReindex(manual)}
+                                  disabled={reindexingId === manual.id}
+                                >
+                                  <RefreshCw
+                                    className={`h-4 w-4 mr-2 ${reindexingId === manual.id ? 'animate-spin' : ''}`}
+                                  />
+                                  Reindexar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setManualToDelete(manual)
+                                    setDeleteDialogOpen(true)
+                                  }}
+                                  className="text-destructive focus:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Remover
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -611,25 +652,49 @@ export default function Biblioteca() {
 
       {/* Dialog de confirmação de exclusão */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="glass-panel border-white/10">
+        <DialogContent className="glass-panel border-white/10 shadow-surface">
           <DialogHeader>
-            <DialogTitle>Remover Manual</DialogTitle>
-            <DialogDescription>
-              Tem certeza que deseja remover o manual "{manualToDelete?.nome_arquivo}"? 
-              Esta ação não pode ser desfeita.
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Remover Manual
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Tem certeza que deseja remover o manual <span className="font-semibold text-foreground">"{manualToDelete?.nome_arquivo}"</span>? 
+              Esta ação removerá todos os dados indexados e não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
             <Button
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
+              className="border-white/10"
             >
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Remover
+            <Button variant="destructive" onClick={handleDelete} className="shadow-lg shadow-destructive/20">
+              Confirmar Remoção
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Upload */}
+      <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+        <DialogContent className="max-w-3xl glass-panel border-white/10 shadow-2xl p-0 overflow-hidden">
+          <div className="p-6 bg-primary/5 border-b border-white/5">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-mono flex items-center gap-2">
+                <UploadIcon className="h-6 w-6 text-primary" />
+                Indexação de Novo Manual
+              </DialogTitle>
+              <DialogDescription>
+                O arquivo será processado pela IA para se tornar uma fonte de consulta técnica.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="max-h-[80vh] overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white/10">
+            <ManualUpload />
+          </div>
         </DialogContent>
       </Dialog>
     </main>
@@ -741,40 +806,77 @@ function WikiTab({
             <Card key={os.id} className="industrial-card group hover:border-primary/20 transition-all duration-300">
               <CardContent className="p-5">
                 <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
-                      {os.equipamento_nome}
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
+                       <Settings className="h-4 w-4 text-primary/50" />
+                       {os.equipamento_nome}
                     </h3>
                     <div className="flex items-center gap-3 mt-1">
-                      <Badge variant="outline" className="font-mono text-[10px]">
+                      <Badge variant="outline" className="font-mono text-[10px] bg-white/5">
                         {os.equipamento_tag || 'SEM TAG'}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
                         {os.data_fechamento ? format(new Date(os.data_fechamento), 'dd/MM/yyyy') : ''}
                       </span>
                     </div>
                   </div>
-                  <Badge className="bg-success/10 text-success border-success/20">
-                    Resolvido
+                  <Badge className="bg-success/10 text-success border-success/20 animate-pulse">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Caso Resolvido
                   </Badge>
                 </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
-                      Problema Relatado
-                    </p>
-                    <p className="text-sm text-foreground/80 line-clamp-3">
-                      {os.descricao_problema}
-                    </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1 w-1 rounded-full bg-destructive" />
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                        Problema / Sintoma
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-black/20 border border-white/5 min-h-[80px]">
+                      <p className="text-sm text-foreground/70 leading-relaxed italic">
+                        "{os.descricao_problema}"
+                      </p>
+                    </div>
                   </div>
-                  <div className="bg-primary/5 p-3 rounded-lg border border-primary/10">
-                    <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">
-                      Solução Técnica
-                    </p>
-                    <p className="text-sm text-foreground/90 font-medium line-clamp-3">
-                      {os.diagnostico_solucao || os.notas_finais}
-                    </p>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1 w-1 rounded-full bg-primary" />
+                      <p className="text-[10px] font-bold text-primary uppercase tracking-widest">
+                         Procedimento Técnico Aplicado
+                      </p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 shadow-inner group-hover:bg-primary/20 transition-colors">
+                      <p className="text-sm text-foreground/90 font-semibold leading-relaxed">
+                        {os.diagnostico_solucao || os.notas_finais}
+                      </p>
+                    </div>
                   </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                     <div className="flex items-center gap-2">
+                       <div className="h-6 w-6 rounded-full bg-secondary/50 flex items-center justify-center border border-white/10">
+                         <User className="h-3 w-3 text-muted-foreground" />
+                       </div>
+                       <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Técnico Nível 3</span>
+                     </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 text-[10px] uppercase tracking-widest hover:text-primary"
+                    onClick={() => {
+                      navigator.clipboard.writeText(os.diagnostico_solucao || os.notas_finais || "")
+                      toast.success("Solução copiada para a área de transferência")
+                    }}
+                  >
+                    Copiar Solução
+                  </Button>
                 </div>
               </CardContent>
             </Card>
