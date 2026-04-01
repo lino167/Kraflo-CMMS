@@ -544,7 +544,7 @@ export default function Biblioteca() {
                         <TableCell>{getStatusBadge(manual)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            {manual.url_arquivo && (
+                            {manual.url_arquivo && manual.url_arquivo.startsWith('http') && (
                               <Button 
                                 variant="outline" 
                                 size="sm" 
@@ -562,7 +562,7 @@ export default function Biblioteca() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="glass-panel border-white/10">
-                                {manual.url_arquivo && (
+                                {manual.url_arquivo && manual.url_arquivo.startsWith('http') && (
                                   <DropdownMenuItem
                                     onClick={() => window.open(manual.url_arquivo, '_blank')}
                                   >

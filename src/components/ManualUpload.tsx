@@ -220,12 +220,26 @@ export function ManualUpload() {
       setProgressMessage('Enviando para processamento...')
 
       const formData = form.getValues()
+      
+      // Convert file to base64 for upload
+      const reader = new FileReader()
+      const fileContentPromise = new Promise<string>((resolve) => {
+        reader.onload = () => {
+          const result = reader.result as string
+          const base64 = result.split(',')[1]
+          resolve(base64)
+        }
+        reader.readAsDataURL(file)
+      })
+
+      const fileContent = await fileContentPromise
 
       const { data, error } = await supabase.functions.invoke('upload-manual', {
         body: {
           filename: file.name,
           texto_extraido: extractedText,
           total_paginas: numPages,
+          file_content: fileContent,
           // Novos campos de classificação
           manual_type: formData.manual_type,
           category: formData.category,
