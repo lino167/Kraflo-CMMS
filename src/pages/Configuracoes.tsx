@@ -290,55 +290,101 @@ export default function Configuracoes() {
 
           <Card className="glass-panel border-white/5 overflow-hidden">
             <CardContent className="p-0">
-              <Table>
-                <TableHeader className="bg-white/5">
-                  <TableRow>
-                    <TableHead className="w-[100px]">TAG</TableHead>
-                    <TableHead>Máquina</TableHead>
-                    <TableHead>Setor</TableHead>
-                    <TableHead>Fabricante/Modelo</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {maquinasLoading ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
-                  ) : maquinas?.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhuma máquina cadastrada.</TableCell></TableRow>
-                  ) : maquinas?.map((m) => (
-                    <TableRow key={m.id} className="hover:bg-white/5 transition-colors">
-                      <TableCell className="font-mono font-bold text-primary">{m.tag}</TableCell>
-                      <TableCell className="font-medium">{m.nome}</TableCell>
-                      <TableCell>
-                        {m.setores ? (
-                          <div className="flex items-center gap-2">
-                            <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                            {m.setores.nome}
-                          </div>
-                        ) : '-'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {m.fabricante} {m.modelo && `/ ${m.modelo}`}
-                      </TableCell>
-                      <TableCell className="text-right">
+              {/* Desktop Table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader className="bg-white/5">
+                    <TableRow>
+                      <TableHead className="w-[100px]">TAG</TableHead>
+                      <TableHead>Máquina</TableHead>
+                      <TableHead>Setor</TableHead>
+                      <TableHead>Fabricante/Modelo</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {maquinasLoading ? (
+                      <TableRow><TableCell colSpan={5} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                    ) : maquinas?.length === 0 ? (
+                      <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhuma máquina cadastrada.</TableCell></TableRow>
+                    ) : maquinas?.map((m) => (
+                      <TableRow key={m.id} className="hover:bg-white/5 transition-colors">
+                        <TableCell className="font-mono font-bold text-primary">{m.tag}</TableCell>
+                        <TableCell className="font-medium">{m.nome}</TableCell>
+                        <TableCell>
+                          {m.setores ? (
+                            <div className="flex items-center gap-2">
+                              <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                              {m.setores.nome}
+                            </div>
+                          ) : '-'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {m.fabricante} {m.modelo && `/ ${m.modelo}`}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => {
+                            setEditingMaquina(m);
+                            setIsMaquinaDialogOpen(true);
+                          }} className="hover:text-primary">
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => {
+                            if (window.confirm('Deseja realmente excluir esta máquina?')) {
+                              deleteMaquina.mutate(m.id);
+                            }
+                          }} className="hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden divide-y divide-white/5">
+                {maquinasLoading ? (
+                  <div className="py-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+                ) : maquinas?.length === 0 ? (
+                  <div className="py-12 text-center text-muted-foreground">Nenhuma máquina cadastrada.</div>
+                ) : maquinas?.map((m) => (
+                  <div key={m.id} className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-bold text-primary text-sm">{m.tag}</span>
+                      <div className="flex gap-1">
                         <Button variant="ghost" size="sm" onClick={() => {
                           setEditingMaquina(m);
                           setIsMaquinaDialogOpen(true);
-                        }} className="hover:text-primary">
+                        }} className="h-8 w-8 p-0">
                           <Edit2 className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => {
                           if (window.confirm('Deseja realmente excluir esta máquina?')) {
                             deleteMaquina.mutate(m.id);
                           }
-                        }} className="hover:text-destructive">
+                        }} className="h-8 w-8 p-0 text-destructive">
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-foreground">{m.nome}</h4>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Building2 className="h-3 w-3" />
+                          {m.setores?.nome || 'Sem setor'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Cpu className="h-3 w-3" />
+                          {m.fabricante || 'Fabricante N/A'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

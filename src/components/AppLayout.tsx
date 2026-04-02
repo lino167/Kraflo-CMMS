@@ -16,9 +16,13 @@ import {
   Building2,
   ChevronRight,
   Settings2,
+  Plus,
+  Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { OSForm } from '@/components/OSForm';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +54,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { user, profile, roles, isAdminKraflo, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isOSFormOpen, setIsOSFormOpen] = React.useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -215,39 +220,66 @@ export function AppLayout({ children }: AppLayoutProps) {
         </Sidebar>
 
         <SidebarInset className="bg-background flex flex-col min-w-0">
-          <header className="h-16 flex items-center justify-between px-6 border-b border-white/5 sticky top-0 bg-background/50 backdrop-blur-xl z-40">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger className="hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors" />
+          <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-white/5 sticky top-0 bg-background/50 backdrop-blur-xl z-40">
+            <div className="flex items-center gap-2 md:gap-4">
+              <SidebarTrigger className="hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors hidden md:flex" />
+              
+              {/* Mobile Logo */}
+              <div className="flex items-center gap-2 md:hidden">
+                <Bot className="h-5 w-5 text-primary" />
+                <span className="font-mono font-bold text-sm tracking-tighter">KRAFLO</span>
+              </div>
+
               <div className="h-4 w-[1px] bg-white/10 mx-2 hidden md:block" />
-              <div className="hidden md:flex flex-col">
-                <h2 className="text-sm font-semibold text-foreground tracking-tight">
+              <div className="flex flex-col">
+                <h2 className="text-xs md:text-sm font-semibold text-foreground tracking-tight line-clamp-1">
                   {location.pathname === "/" ? "Dashboard Operacional" : 
                    location.pathname.includes("ordens-servico") ? "Ordens de Serviço" :
                    location.pathname.includes("biblioteca") ? "Biblioteca de Manuais" :
-                   location.pathname.includes("equipamento") ? "Raio-X de Equipamento" : "Sistema Industrial"}
+                   location.pathname.includes("equipamento") ? "Raio-X de Equipamento" : 
+                   location.pathname.includes("configuracoes") ? "Gestão de Ativos" : "Sistema Industrial"}
                 </h2>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                <div className="hidden md:flex items-center gap-2 text-[10px] text-muted-foreground">
                   <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
                   Sistema Online • v3.0 Premium
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
               {isAdminKraflo ? (
-                <Badge variant="outline" className="hidden sm:flex bg-primary/10 text-primary border-primary/20 font-mono text-[10px] uppercase">
-                  <Shield className="h-3 w-3 mr-1" /> Admin
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-mono text-[9px] md:text-[10px] uppercase px-1.5">
+                  <Shield className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" /> Admin
                 </Badge>
               ) : roles.includes('admin_empresa') ? (
-                <Badge variant="outline" className="hidden sm:flex bg-blue-500/10 text-blue-500 border-blue-500/20 font-mono text-[10px] uppercase">
-                  <Building2 className="h-3 w-3 mr-1" /> Empresa
+                <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 font-mono text-[9px] md:text-[10px] uppercase px-1.5">
+                  <Building2 className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" /> Empresa
                 </Badge>
               ) : null}
               
+              {/* Mobile User Toggle */}
+              <div className="md:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-primary/10 border border-primary/20">
+                      <User className="h-4 w-4 text-primary" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 glass-panel border-white/10">
+                    <DropdownMenuItem onClick={() => navigate('/meu-desempenho')}>
+                      <Activity className="mr-2 h-4 w-4" /> Perfil
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" /> Sair
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
@@ -262,6 +294,76 @@ export function AppLayout({ children }: AppLayoutProps) {
             </AnimatePresence>
           </main>
         </SidebarInset>
+
+        {/* Mobile Bottom Navigation */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-panel border-t border-white/10 px-4 py-2 flex justify-around items-center safe-area-bottom shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
+          <button 
+            onClick={() => navigate('/')}
+            className={cn(
+              "flex flex-col items-center p-2 transition-all",
+              location.pathname === "/" ? "text-primary scale-110" : "text-muted-foreground"
+            )}
+          >
+            <Home className="h-5 w-5" />
+            <span className="text-[10px] mt-1 font-medium">Início</span>
+          </button>
+          
+          <button 
+            onClick={() => navigate('/ordens-servico')}
+            className={cn(
+              "flex flex-col items-center p-2 transition-all",
+              location.pathname === "/ordens-servico" ? "text-primary scale-110" : "text-muted-foreground"
+            )}
+          >
+            <ClipboardList className="h-5 w-5" />
+            <span className="text-[10px] mt-1 font-medium">O.S</span>
+          </button>
+
+          {/* Center FAB */}
+          <div className="relative -mt-10">
+            <Button 
+              size="icon" 
+              className="h-14 w-14 rounded-full bg-primary shadow-neon hover:scale-110 active:scale-95 transition-all duration-300 border-4 border-background"
+              onClick={() => setIsOSFormOpen(true)}
+            >
+              <Plus className="h-7 w-7 text-primary-foreground" />
+            </Button>
+          </div>
+
+          <button 
+            onClick={() => navigate('/assistente')}
+            className={cn(
+              "flex flex-col items-center p-2 transition-all",
+              location.pathname === "/assistente" ? "text-primary scale-110" : "text-muted-foreground"
+            )}
+          >
+            <MessageSquare className="h-5 w-5" />
+            <span className="text-[10px] mt-1 font-medium">IA</span>
+          </button>
+
+          <button 
+            onClick={() => navigate('/configuracoes')}
+            className={cn(
+              "flex flex-col items-center p-2 transition-all",
+              location.pathname === "/configuracoes" ? "text-primary scale-110" : "text-muted-foreground"
+            )}
+          >
+            <Settings2 className="h-5 w-5" />
+            <span className="text-[10px] mt-1 font-medium">Ativos</span>
+          </button>
+        </div>
+
+        {/* Global OS Form for FAB */}
+        <OSForm 
+          open={isOSFormOpen} 
+          onClose={() => setIsOSFormOpen(false)} 
+          onSuccess={() => {
+            setIsOSFormOpen(false);
+            // We can't easily refresh the child component from here, but 
+            // most child components use React Query which will auto-refetch
+            // or they can be manually refreshed by the user.
+          }}
+        />
       </div>
     </SidebarProvider>
   );
