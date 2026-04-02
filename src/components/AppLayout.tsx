@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   MessageSquare,
   BarChart3,
-  Upload,
   ClipboardList,
   Library,
   Cpu,
@@ -86,12 +85,6 @@ export function AppLayout({ children }: AppLayoutProps) {
       icon: BarChart3,
       path: "/relatorios",
       isActive: location.pathname === "/relatorios",
-    },
-    {
-      title: "Manuais",
-      icon: Upload,
-      path: "/manuais",
-      isActive: location.pathname === "/manuais",
     },
   ];
 

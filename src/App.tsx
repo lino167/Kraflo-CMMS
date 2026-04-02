@@ -38,7 +38,6 @@ const App = () => (
               <Route path="/" element={<AppLayout><Index /></AppLayout>} />
               <Route path="/assistente" element={<AppLayout><Index defaultTab="chat" /></AppLayout>} />
               <Route path="/relatorios" element={<AppLayout><Index defaultTab="relatorios" /></AppLayout>} />
-              <Route path="/manuais" element={<AppLayout><Index defaultTab="manuais" /></AppLayout>} />
               
               <Route path="/ordens-servico" element={<AppLayout><OrdensServico /></AppLayout>} />
 

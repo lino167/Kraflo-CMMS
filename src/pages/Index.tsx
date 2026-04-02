@@ -2,15 +2,12 @@ import { useState, useEffect } from "react";
 import { AIChat } from "@/components/AIChat";
 import { AIReport } from "@/components/AIReport";
 import { Dashboard } from "@/components/Dashboard";
-import { ManualUpload } from "@/components/ManualUpload";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Database,
-  FileText,
   LayoutDashboard,
   MessageSquare,
-  Upload,
   BarChart3,
   Loader2,
 } from "lucide-react";
@@ -131,13 +128,9 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
             <MessageSquare className="h-4 w-4" />
             <span className="hidden sm:inline">Assistente</span>
           </TabsTrigger>
-          <TabsTrigger value="relatorios" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Relatórios</span>
-          </TabsTrigger>
-          <TabsTrigger value="manuais" className="flex items-center gap-2">
-            <Upload className="h-4 w-4" />
-            <span className="hidden sm:inline">Manuais</span>
+          <TabsTrigger value="relatorios" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary transition-all">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Relatórios IA
           </TabsTrigger>
         </TabsList>
 
@@ -187,20 +180,6 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
                 )}
               </Card>
 
-              <Card className="p-4 bg-card border-border industrial-card">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <FileText className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-mono font-bold text-foreground">
-                      {stats.manuais}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Manuais</p>
-                  </div>
-                </div>
-              </Card>
-
               <Card className="p-4 bg-secondary/30 border-border">
                 <h3 className="font-mono text-xs font-semibold text-muted-foreground uppercase mb-2">
                   Dicas de Uso
@@ -225,12 +204,6 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
 
         <TabsContent value="relatorios">
           <AIReport empresaId={profile?.empresa_id || undefined} />
-        </TabsContent>
-
-        <TabsContent value="manuais">
-          <div className="max-w-2xl mx-auto">
-            <ManualUpload />
-          </div>
         </TabsContent>
       </Tabs>
     </main>
