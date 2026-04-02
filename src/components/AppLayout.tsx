@@ -15,6 +15,7 @@ import {
   Shield,
   Building2,
   ChevronRight,
+  Settings2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -73,6 +74,12 @@ export function AppLayout({ children }: AppLayoutProps) {
       icon: Library,
       path: "/biblioteca",
       isActive: location.pathname === "/biblioteca",
+    },
+    {
+      title: "Gestão de Ativos",
+      icon: Settings2,
+      path: "/configuracoes",
+      isActive: location.pathname === "/configuracoes",
     },
     {
       title: "Assistente IA",

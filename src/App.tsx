@@ -15,6 +15,7 @@ const IndexacaoAdmin = lazy(() => import("./pages/IndexacaoAdmin"));
 const EquipamentoRaioX = lazy(() => import("./pages/EquipamentoRaioX"));
 const PerfilTecnico = lazy(() => import("./pages/PerfilTecnico"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 import { AppLayout } from "@/components/AppLayout";
 
 
@@ -40,8 +41,8 @@ const App = () => (
               <Route path="/relatorios" element={<AppLayout><Index defaultTab="relatorios" /></AppLayout>} />
               
               <Route path="/ordens-servico" element={<AppLayout><OrdensServico /></AppLayout>} />
-
               <Route path="/biblioteca" element={<AppLayout><Biblioteca /></AppLayout>} />
+              <Route path="/configuracoes" element={<AppLayout><Configuracoes /></AppLayout>} />
               <Route path="/admin/indexacao" element={<AppLayout><IndexacaoAdmin /></AppLayout>} />
               <Route path="/equipamento" element={<AppLayout><EquipamentoRaioX /></AppLayout>} />
               <Route path="/equipamento/:tag" element={<AppLayout><EquipamentoRaioX /></AppLayout>} />

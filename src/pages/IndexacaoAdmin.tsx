@@ -258,9 +258,7 @@ export default function IndexacaoAdmin() {
   // Reindex specific OS mutation
   const reindexOsMutation = useMutation({
     mutationFn: async (osId: number) => {
-      const { error } = await supabase.rpc('enqueue_os_index', {
-        p_os_id: osId,
-      })
+      const { error } = await (supabase.rpc as any)('enqueue_os_index', { p_os_id: Number(osId) })
       if (error) throw error
     },
     onSuccess: () => {
