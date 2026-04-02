@@ -291,24 +291,16 @@ export default function Biblioteca() {
         }
       }
 
-      // 1. Delete associated chunks first to avoid foreign key violation
-      const { error: chunksError } = await supabase
-        .from('manual_chunks')
-        .delete()
-        .eq('manual_id', manualToDelete.id)
-
-      if (chunksError) {
-        console.error('Error deleting manual chunks:', chunksError)
-        throw new Error(`Erro ao remover dados indexados: ${chunksError.message}`)
-      }
-
-      // 2. Now delete the manual record
+      // Delete the manual record. Database CASCADE will handle manual_chunks and other related data.
       const { error: manualError } = await supabase
         .from('manuais')
         .delete()
         .eq('id', manualToDelete.id)
 
-      if (manualError) throw manualError
+      if (manualError) {
+        console.error('Error deleting manual record:', manualError)
+        throw new Error(`Erro ao remover registro do manual: ${manualError.message}`)
+      }
 
       toast.success('Manual removido com sucesso')
     } catch (error: any) {

@@ -142,7 +142,7 @@ export function AIChat({
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.resposta,
+        content: data.resposta || 'Não obtive uma resposta válida.',
         fontes: data.fontes,
         timestamp: new Date(),
       }
@@ -192,8 +192,34 @@ export function AIChat({
     }
   }
 
-  const renderMarkdown = (content: string) => {
-    const lines = content.split('\n')
+  const formatInlineMarkdown = (text: string) => {
+    if (!text) return null
+    
+    // Safety check: ensure text is a string
+    const stringText = String(text);
+    
+    let html = stringText.replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong class='text-primary'>$1</strong>",
+    )
+    html = html.replace(
+      /`([^`]+)`/g,
+      "<code class='bg-secondary px-1 py-0.5 rounded text-sm'>$1</code>",
+    )
+
+    const sanitizedHtml = DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ['strong', 'code'],
+      ALLOWED_ATTR: ['class'],
+    })
+
+    return <span dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
+  }
+
+  const renderMarkdown = (content: string | undefined | null) => {
+    if (!content) return null
+    const stringContent = String(content);
+    const lines = stringContent.split('\n')
+    
     return lines.map((line, index) => {
       if (line.startsWith('### ')) {
         return (
@@ -245,24 +271,6 @@ export function AIChat({
         </p>
       )
     })
-  }
-
-  const formatInlineMarkdown = (text: string) => {
-    text = text.replace(
-      /\*\*(.*?)\*\*/g,
-      "<strong class='text-primary'>$1</strong>",
-    )
-    text = text.replace(
-      /`([^`]+)`/g,
-      "<code class='bg-secondary px-1 py-0.5 rounded text-sm'>$1</code>",
-    )
-
-    const sanitizedHtml = DOMPurify.sanitize(text, {
-      ALLOWED_TAGS: ['strong', 'code'],
-      ALLOWED_ATTR: ['class'],
-    })
-
-    return <span dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
   }
 
   return (
