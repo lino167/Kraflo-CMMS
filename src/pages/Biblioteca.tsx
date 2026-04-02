@@ -146,6 +146,10 @@ export default function Biblioteca() {
     try {
       let query = supabase.from('manuais').select('*', { count: 'exact' })
 
+      if (profile?.empresa_id) {
+        query = query.or(`empresa_id.eq.${profile.empresa_id},is_public.eq.true`)
+      }
+
       if (search) {
         query = query.or(
           `nome_arquivo.ilike.%${search}%,fabricante.ilike.%${search}%,modelo.ilike.%${search}%`,
@@ -295,7 +299,7 @@ export default function Biblioteca() {
 
       if (chunksError) {
         console.error('Error deleting manual chunks:', chunksError)
-        throw new Error('Não foi possível remover os dados indexados do manual.')
+        throw new Error(`Erro ao remover dados indexados: ${chunksError.message}`)
       }
 
       // 2. Now delete the manual record
@@ -626,34 +630,39 @@ export default function Biblioteca() {
                                     Abrir em nova aba
                                   </DropdownMenuItem>
                                 )}
-                                  <DropdownMenuItem
-                                    onClick={() => {
-                                      setManualToEdit(manual)
-                                      setIsEditDialogOpen(true)
-                                    }}
-                                  >
-                                    <Pencil className="h-4 w-4 mr-2" />
-                                    Editar Informações
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleReindex(manual)}
-                                    disabled={reindexingId === manual.id}
-                                  >
-                                  <RefreshCw
-                                    className={`h-4 w-4 mr-2 ${reindexingId === manual.id ? 'animate-spin' : ''}`}
-                                  />
-                                  Reindexar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setManualToDelete(manual)
-                                    setDeleteDialogOpen(true)
-                                  }}
-                                  className="text-destructive focus:bg-destructive/10"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Remover
-                                </DropdownMenuItem>
+                                
+                                {profile?.empresa_id === manual.empresa_id && (
+                                  <>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setManualToEdit(manual)
+                                        setIsEditDialogOpen(true)
+                                      }}
+                                    >
+                                      <Pencil className="h-4 w-4 mr-2" />
+                                      Editar Informações
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => handleReindex(manual)}
+                                      disabled={reindexingId === manual.id}
+                                    >
+                                      <RefreshCw
+                                        className={`h-4 w-4 mr-2 ${reindexingId === manual.id ? 'animate-spin' : ''}`}
+                                      />
+                                      Reindexar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setManualToDelete(manual)
+                                        setDeleteDialogOpen(true)
+                                      }}
+                                      className="text-destructive focus:bg-destructive/10"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Remover
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
