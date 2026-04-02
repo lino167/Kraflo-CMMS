@@ -87,11 +87,10 @@ interface OSData {
 // deno-lint-ignore no-explicit-any
 type SupabaseClientAny = ReturnType<typeof createClient<any>>
 
-// Generate embedding via Lovable AI Gateway using gemini-2.5-flash-lite
-// Uses tool calling to extract structured embedding representation
+// Generate embedding via Lovable AI Gateway using text-embedding-3-small
 async function generateEmbedding(text: string): Promise<number[]> {
   const response = await fetch(
-    'https://ai.gateway.lovable.dev/v1/chat/completions',
+    'https://ai.gateway.lovable.dev/v1/embeddings',
     {
       method: 'POST',
       headers: {
@@ -99,46 +98,9 @@ async function generateEmbedding(text: string): Promise<number[]> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-lite',
-        messages: [
-          {
-            role: 'system',
-            content: `Você é um gerador de embeddings semânticos para busca de ordens de serviço de manutenção industrial.
-Analise o texto fornecido e gere um vetor de 768 dimensões que capture o significado semântico.
-Os valores devem estar normalizados entre -1 e 1.
-Foque em: equipamento, problema, solução, localização, tipo de manutenção.`,
-          },
-          {
-            role: 'user',
-            content: `Gere o embedding para o seguinte texto de ordem de serviço:\n\n${text}`,
-          },
-        ],
-        tools: [
-          {
-            type: 'function',
-            function: {
-              name: 'store_embedding',
-              description: 'Armazena o vetor de embedding gerado',
-              parameters: {
-                type: 'object',
-                properties: {
-                  embedding: {
-                    type: 'array',
-                    items: { type: 'number' },
-                    description:
-                      'Vetor de 768 dimensões com valores entre -1 e 1',
-                  },
-                },
-                required: ['embedding'],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: {
-          type: 'function',
-          function: { name: 'store_embedding' },
-        },
+        model: 'text-embedding-3-small',
+        input: text,
+        dimensions: 768,
       }),
     },
   )
@@ -149,31 +111,13 @@ Foque em: equipamento, problema, solução, localização, tipo de manutenção.
   }
 
   const data = await response.json()
+  const embedding = data.data?.[0]?.embedding
 
-  // Extract embedding from tool call
-  const toolCall = data.choices?.[0]?.message?.tool_calls?.[0]
-  if (!toolCall || toolCall.function.name !== 'store_embedding') {
-    throw new Error('Resposta inesperada do modelo - tool call não encontrada')
+  if (!Array.isArray(embedding) || embedding.length !== 768) {
+    throw new Error(`Embedding inválido retornado pelo modelo. Esperado 768, recebido ${embedding?.length || 0}`)
   }
 
-  const args = JSON.parse(toolCall.function.arguments)
-  const embedding = args.embedding
-
-  if (!Array.isArray(embedding) || embedding.length === 0) {
-    throw new Error('Embedding vazio ou inválido retornado pelo modelo')
-  }
-
-  // Pad or truncate to 768 dimensions
-  const targetDim = 768
-  let result = embedding.slice(0, targetDim)
-  while (result.length < targetDim) {
-    result.push(0)
-  }
-
-  // Normalize values to [-1, 1]
-  result = result.map((v: number) => Math.max(-1, Math.min(1, Number(v) || 0)))
-
-  return result
+  return embedding
 }
 
 // Build indexed text from OS data

@@ -6,6 +6,7 @@ import {
   isServiceRoleToken,
   getUserFromToken,
   getClientIp,
+  getServiceClient,
 } from "../_shared/auth.ts";
 import type { SupabaseClient } from "../_shared/auth.ts";
 import { generateEmbedding } from "../_shared/ai.ts";
@@ -15,7 +16,8 @@ const RATE_LIMIT_MAX_REQUESTS = 30;
 const rateMap = new Map<string, { count: number; start: number }>();
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-const USE_EMBEDDINGS = (Deno.env.get("USE_EMBEDDINGS") || "false").toLowerCase() === "true";
+// Habilita embeddings por padrão se a chave estiver presente, a menos que explicitamente desabilitado
+const USE_EMBEDDINGS = (Deno.env.get("USE_EMBEDDINGS") || (LOVABLE_API_KEY ? "true" : "false")).toLowerCase() === "true";
 
 const SYSTEM_PROMPT = `Você é o Assistente de Manutenção Kraflo, um especialista técnico em manutenção industrial de teares.
 
