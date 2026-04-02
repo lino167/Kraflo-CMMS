@@ -537,7 +537,7 @@ Gere o JSON estruturado com recomendações específicas e acionáveis baseadas 
           "x-correlation-id": correlationId,
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-1.5-flash",
           messages: [
             { role: "system", content: REPORT_SYSTEM_PROMPT },
             { role: "user", content: reportPrompt },
