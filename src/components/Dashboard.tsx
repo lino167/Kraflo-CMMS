@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
+import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -9,6 +12,12 @@ import {
   CardDescription,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -97,6 +106,24 @@ interface DashboardProps {
   onAskAI?: (question: string) => void
 }
 
+function HelpBadge({ text }: { text: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span 
+          className="inline-flex items-center justify-center rounded-full bg-primary/10 hover:bg-primary/25 text-primary h-4.5 w-4.5 text-[11px] font-mono font-bold cursor-help transition-all ml-1.5 border border-primary/20 hover:scale-110 select-none shadow-sm shadow-primary/5 shrink-0" 
+          onClick={(e) => e.stopPropagation()}
+        >
+          ?
+        </span>
+      </TooltipTrigger>
+      <TooltipContent className="bg-secondary/95 backdrop-blur-md border border-white/10 text-muted-foreground text-xs p-3 rounded-xl max-w-[260px] shadow-neon animate-in fade-in-50 zoom-in-95 z-50">
+        <p className="font-sans leading-relaxed text-foreground/90 font-medium">{text}</p>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
 export function Dashboard({ onAskAI }: DashboardProps) {
   const { profile, isAdminKraflo } = useAuth()
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -128,15 +155,12 @@ export function Dashboard({ onAskAI }: DashboardProps) {
   const [osReincidentes, setOsReincidentes] = useState(0)
   const [idadeMediaAbertasHoras, setIdadeMediaAbertasHoras] = useState(0)
   
-  
   const [atrasadas, setAtrasadas] = useState(0)
   const [dentroPrazo, setDentroPrazo] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
 
-  const loadDashboardData = useCallback(async () => {
-    try {
-      setIsLoading(true)
-
+  const { data: allOS, isLoading } = useQuery<OS[]>({
+    queryKey: ['dashboardData', dateRange, profile?.empresa_id, isAdminKraflo],
+    queryFn: async () => {
       let query = supabase
         .from('ordens_de_servico')
         .select('*')
@@ -147,32 +171,31 @@ export function Dashboard({ onAskAI }: DashboardProps) {
         query = query.eq('empresa_id', profile.empresa_id)
       }
 
-      const { data: allOS, error } = await query.order('data_abertura', {
+      const { data, error } = await query.order('data_abertura', {
         ascending: false,
       })
 
-      if (error) throw error
-
-      if (allOS) {
-        calculateStats(allOS)
-        calculateEquipamentosProblematicos(allOS)
-        calculateTendencias(allOS)
-        calculateTiposManutencao(allOS)
-        calculateReincidencia(allOS)
-        calculateOperacional(allOS)
-        calculateMensal(allOS)
-        setRecentOS(allOS.slice(0, 8))
+      if (error) {
+        toast.error('Erro ao carregar dados do dashboard')
+        throw error
       }
-    } catch (error) {
-      console.error('Error loading dashboard data:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [profile, isAdminKraflo, dateRange])
+      return data as OS[]
+    },
+    enabled: !!profile || isAdminKraflo,
+  })
 
   useEffect(() => {
-    loadDashboardData()
-  }, [loadDashboardData])
+    if (allOS) {
+      calculateStats(allOS)
+      calculateEquipamentosProblematicos(allOS)
+      calculateTendencias(allOS)
+      calculateTiposManutencao(allOS)
+      calculateReincidencia(allOS)
+      calculateOperacional(allOS)
+      calculateMensal(allOS)
+      setRecentOS(allOS.slice(0, 8))
+    }
+  }, [allOS])
 
   const calculateStats = (allOS: OS[]) => {
     const abertas = allOS.filter(
@@ -453,231 +476,268 @@ export function Dashboard({ onAskAI }: DashboardProps) {
   }
 
   return (
-    <div className="space-y-6 animate-slide-up-fade">
-      {/* Header with Filters */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-4 rounded-xl border-white/5 shadow-surface">
-        <DateRangeFilter value={dateRange} onChange={setDateRange} />
-      </div>
+    <TooltipProvider delayDuration={150}>
+      <div className="space-y-6 animate-slide-up-fade">
+        {/* Header with Filters */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-4 rounded-xl border-white/5 shadow-surface">
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
+        </div>
 
-      <Tabs defaultValue="operacional" className="space-y-6 w-full">
-        <TabsList className="grid w-full md:w-fit grid-cols-3 glass-panel border border-white/10 p-1 h-auto rounded-xl">
-          <TabsTrigger value="operacional" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
-            Visão Operacional
-          </TabsTrigger>
-          <TabsTrigger value="equipamentos" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
-            Equipamentos
-          </TabsTrigger>
-          <TabsTrigger value="inteligencia" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
-            Análises & Histórico
-          </TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="operacional" className="space-y-6 w-full">
+          <TabsList className="grid w-full md:w-fit grid-cols-3 glass-panel border border-white/10 p-1 h-auto rounded-xl">
+            <TabsTrigger value="operacional" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
+              Visão Operacional
+            </TabsTrigger>
+            <TabsTrigger value="equipamentos" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
+              Equipamentos
+            </TabsTrigger>
+            <TabsTrigger value="inteligencia" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
+              Análises & Histórico
+            </TabsTrigger>
+          </TabsList>
 
-        {/* --- ABA OPERACIONAL --- */}
-        <TabsContent value="operacional" className="space-y-6 animate-slide-in-right">
-          {/* KPI Cards - Bento Grid High Density */}
-          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4">
-            <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">OS Abertas</CardTitle>
-                <ClipboardList className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-mono font-bold text-primary">{stats.osAbertas}</div>
-                <p className="text-xs text-muted-foreground mt-1">aguardando resolução</p>
-              </CardContent>
-            </Card>
+          {/* --- ABA OPERACIONAL --- */}
+          <TabsContent value="operacional" className="space-y-6 animate-slide-in-right">
+            {/* KPI Cards - Bento Grid High Density */}
+            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4">
+              <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                    OS Abertas
+                    <HelpBadge text="📋 Serviços na fila esperando início do trabalho." />
+                  </CardTitle>
+                  <ClipboardList className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-mono font-bold text-primary">{stats.osAbertas}</div>
+                  <p className="text-xs text-muted-foreground mt-1">aguardando resolução</p>
+                </CardContent>
+              </Card>
 
-            <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Fechadas Hoje</CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-mono font-bold text-foreground">{stats.osFechadasHoje}</div>
-                <p className="text-xs text-muted-foreground mt-1">concluídas nas últimas 24h</p>
-              </CardContent>
-            </Card>
+              <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                    Fechadas Hoje
+                    <HelpBadge text="🛠️ Consertos finalizados e entregues para a produção hoje." />
+                  </CardTitle>
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-mono font-bold text-foreground">{stats.osFechadasHoje}</div>
+                  <p className="text-xs text-muted-foreground mt-1">concluídas nas últimas 24h</p>
+                </CardContent>
+              </Card>
 
-            <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5 relative overflow-hidden group">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">OS Urgentes</CardTitle>
-                <AlertTriangle className="h-4 w-4 text-red-500 group-hover:scale-110 transition-transform" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-mono font-bold text-foreground">{stats.osUrgentes}</div>
-                <p className="text-xs text-muted-foreground mt-1">prioridade alta/urgente</p>
-              </CardContent>
-              {stats.osUrgentes > 0 && <div className="absolute top-0 right-0 w-1 h-full bg-red-500 animate-pulse-neon" />}
-            </Card>
+              <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5 relative overflow-hidden group">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                    OS Urgentes
+                    <HelpBadge text="🚨 Máquinas com falhas graves que precisam de atenção imediata." />
+                  </CardTitle>
+                  <AlertTriangle className="h-4 w-4 text-red-500 group-hover:scale-110 transition-transform" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-mono font-bold text-foreground">{stats.osUrgentes}</div>
+                  <p className="text-xs text-muted-foreground mt-1">prioridade alta/urgente</p>
+                </CardContent>
+                {stats.osUrgentes > 0 && <div className="absolute top-0 right-0 w-1 h-full bg-red-500 animate-pulse-neon" />}
+              </Card>
 
-            <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">MTTR</CardTitle>
-                <Clock className="h-4 w-4 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-mono font-bold text-foreground">{stats.tempoMedioResolucao}h</div>
-                <p className="text-xs text-muted-foreground mt-1">tempo médio de resolução</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="industrial-card border-white/5">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground">Idade Média (Abertas)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-mono font-bold text-foreground">{idadeMediaAbertasHoras}h</div>
-              </CardContent>
-            </Card>
-
-            <Card className="industrial-card border-white/5">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground">Atrasadas (≥24h)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-mono font-bold text-red-400">{atrasadas}</div>
-                <p className="text-xs text-muted-foreground mt-1">no prazo: {dentroPrazo}</p>
-              </CardContent>
-            </Card>
-
-             <Card className="industrial-card border-white/5">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground">Aberturas (7 dias)</CardTitle>
-                {tendenciaAbertura.variacao <= 0 ? <TrendingDown className="h-3 w-3 text-green-500" /> : <TrendingUp className="h-3 w-3 text-red-500" />}
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-mono font-bold text-foreground flex items-baseline gap-2">
-                  {tendenciaAbertura.semanaAtual}
-                  <span className={`text-xs ${tendenciaAbertura.variacao <= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {tendenciaAbertura.variacao > 0 ? '+' : ''}{tendenciaAbertura.variacao}%
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="industrial-card border-white/5">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground">Fechamentos (7 dias)</CardTitle>
-                {tendenciaFechamento.variacao >= 0 ? <TrendingUp className="h-3 w-3 text-green-500" /> : <TrendingDown className="h-3 w-3 text-red-500" />}
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-mono font-bold text-foreground flex items-baseline gap-2">
-                  {tendenciaFechamento.semanaAtual}
-                  <span className={`text-xs ${tendenciaFechamento.variacao >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {tendenciaFechamento.variacao > 0 ? '+' : ''}{tendenciaFechamento.variacao}%
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="glow-border rounded-xl">
-              <TrendChart dateRange={dateRange} />
+              <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                    Velocidade (MTTR)
+                    <HelpBadge text="⏱️ MTTR: Nosso tempo médio real para consertar e devolver uma máquina rodando." />
+                  </CardTitle>
+                  <Clock className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-mono font-bold text-foreground">{stats.tempoMedioResolucao}h</div>
+                  <p className="text-xs text-muted-foreground mt-1">tempo médio de resolução (MTTR)</p>
+                </CardContent>
+              </Card>
             </div>
-            <div className="glow-border rounded-xl">
-              <MTTRLineChart dateRange={dateRange} />
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="industrial-card border-white/5">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
+                    Tempo na Fila (Idade Média)
+                    <HelpBadge text="⏳ Quanto tempo os chamados esperam por nós na fila." />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-mono font-bold text-foreground">{idadeMediaAbertasHoras}h</div>
+                  <p className="text-xs text-muted-foreground mt-1">idade média das OS abertas</p>
+                </CardContent>
+              </Card>
+
+              <Card className="industrial-card border-white/5">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
+                    Atrasadas (≥24h)
+                    <HelpBadge text="⚠️ Serviços atrasados há mais de 1 dia na fila." />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-mono font-bold text-red-400">{atrasadas}</div>
+                  <p className="text-xs text-muted-foreground mt-1">no prazo: {dentroPrazo}</p>
+                </CardContent>
+              </Card>
+
+               <Card className="industrial-card border-white/5">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
+                    Novas Quebras (7 dias)
+                    <HelpBadge text="📊 Novos chamados de manutenção abertos nesta semana." />
+                  </CardTitle>
+                  {tendenciaAbertura.variacao <= 0 ? <TrendingDown className="h-3 w-3 text-green-500" /> : <TrendingUp className="h-3 w-3 text-red-500" />}
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-mono font-bold text-foreground flex items-baseline gap-2">
+                    {tendenciaAbertura.semanaAtual}
+                    <span className={`text-xs ${tendenciaAbertura.variacao <= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {tendenciaAbertura.variacao > 0 ? '+' : ''}{tendenciaAbertura.variacao}%
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">novas OS abertas na semana</p>
+                </CardContent>
+              </Card>
+
+              <Card className="industrial-card border-white/5">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
+                    Consertos Entregues (7 dias)
+                    <HelpBadge text="🛠️ Consertos finalizados e entregues nesta semana." />
+                  </CardTitle>
+                  {tendenciaFechamento.variacao >= 0 ? <TrendingUp className="h-3 w-3 text-green-500" /> : <TrendingDown className="h-3 w-3 text-red-500" />}
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-mono font-bold text-foreground flex items-baseline gap-2">
+                    {tendenciaFechamento.semanaAtual}
+                    <span className={`text-xs ${tendenciaFechamento.variacao >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {tendenciaFechamento.variacao > 0 ? '+' : ''}{tendenciaFechamento.variacao}%
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">OS concluídas na semana</p>
+                </CardContent>
+              </Card>
             </div>
-          </div>
-        </TabsContent>
 
-        {/* --- ABA EQUIPAMENTOS --- */}
-        <TabsContent value="equipamentos" className="space-y-6 animate-slide-in-right">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="col-span-2 industrial-card border-white/5">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Taxa de Resolução</CardTitle>
-                <Target className="h-4 w-4 text-green-400" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-mono font-bold text-foreground">{taxaResolucao}%</div>
-                <Progress value={taxaResolucao} className="mt-2 h-2 [&>div]:bg-green-400" />
-              </CardContent>
-            </Card>
-
-            <Card className="col-span-2 industrial-card border-white/5">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">OS Reincidentes</CardTitle>
-                <Repeat className="h-4 w-4 text-orange-400" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-mono font-bold text-orange-400">{osReincidentes}</div>
-                <p className="text-xs text-muted-foreground mt-2">equipamentos com múltiplas OS no período</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="glow-border rounded-xl">
-              <TopMachinesChart />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="glow-border rounded-xl">
+                <TrendChart dateRange={dateRange} />
+              </div>
+              <div className="glow-border rounded-xl">
+                <MTTRLineChart dateRange={dateRange} />
+              </div>
             </div>
-            <div className="glow-border rounded-xl">
-              <FrequentProblemsCard dateRange={dateRange} onAskAI={onAskAI} />
+          </TabsContent>
+
+          {/* --- ABA EQUIPAMENTOS --- */}
+          <TabsContent value="equipamentos" className="space-y-6 animate-slide-in-right">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="col-span-2 industrial-card border-white/5">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                    Taxa de Resolução
+                    <HelpBadge text="🎯 Porcentagem de ordens abertas que já conseguimos consertar." />
+                  </CardTitle>
+                  <Target className="h-4 w-4 text-green-400" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-mono font-bold text-foreground">{taxaResolucao}%</div>
+                  <Progress value={taxaResolucao} className="mt-2 h-2 [&>div]:bg-green-400" />
+                </CardContent>
+              </Card>
+
+              <Card className="col-span-2 industrial-card border-white/5">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                    OS Reincidentes
+                    <HelpBadge text="🔄 Máquinas que voltaram a quebrar ou apresentaram novos chamados no período." />
+                  </CardTitle>
+                  <Repeat className="h-4 w-4 text-orange-400" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-mono font-bold text-orange-400">{osReincidentes}</div>
+                  <p className="text-xs text-muted-foreground mt-2">equipamentos com múltiplas OS no período</p>
+                </CardContent>
+              </Card>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-             <div className="glow-border rounded-xl">
-              <ParetoCrossAnalysisCard dateRange={dateRange} />
-             </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="glow-border rounded-xl">
+                <TopMachinesChart />
+              </div>
+              <div className="glow-border rounded-xl">
+                <FrequentProblemsCard dateRange={dateRange} onAskAI={onAskAI} />
+              </div>
+            </div>
 
-             {/* Equipamentos Problemáticos */}
-             <Card className="glass-panel border-white/5">
-              <CardHeader>
-                <CardTitle className="font-mono text-lg flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-orange-500" />
-                  Equipamentos Críticos
-                </CardTitle>
-                <CardDescription>
-                  Menor MTBF (Mean Time Between Failures)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {equipamentosProblematicos.length > 0 ? (
-                    equipamentosProblematicos.map((equip, index) => (
-                      <div key={index} className="p-3 rounded-lg bg-secondary/30 border border-white/5 hover:bg-secondary/50 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <Settings className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium text-sm truncate text-foreground">{equip.nome}</span>
-                              {equip.tag && (
-                                <Badge variant="outline" className="text-xs bg-black/20 border-white/10">{equip.tag}</Badge>
-                              )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+               <div className="glow-border rounded-xl">
+                <ParetoCrossAnalysisCard dateRange={dateRange} />
+               </div>
+
+               {/* Equipamentos Problemáticos */}
+               <Card className="glass-panel border-white/5">
+                <CardHeader>
+                  <CardTitle className="font-mono text-lg flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-orange-500" />
+                    Equipamentos Críticos
+                    <HelpBadge text="🚨 As máquinas com menor MTBF (que quebram no menor espaço de tempo)." />
+                  </CardTitle>
+                  <CardDescription>
+                    Menor MTBF (Mean Time Between Failures)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {equipamentosProblematicos.length > 0 ? (
+                      equipamentosProblematicos.map((equip: EquipamentoProblematico, index: number) => (
+                        <div key={index} className="p-3 rounded-lg bg-secondary/30 border border-white/5 hover:bg-secondary/50 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <Settings className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium text-sm truncate text-foreground">{equip.nome}</span>
+                                {equip.tag && (
+                                  <Badge variant="outline" className="text-xs bg-black/20 border-white/10">{equip.tag}</Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                                <span>Consertos: {equip.totalOS}</span>
+                                {equip.osAbertas > 0 && <span className="text-red-400">{equip.osAbertas} abertas</span>}
+                                <span className="flex items-center gap-1">
+                                  MTBF: {equip.mtbf} dias
+                                  <HelpBadge text="⏱️ MTBF: Tempo médio de funcionamento da máquina antes de quebrar novamente." />
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                              <span>Total: {equip.totalOS}</span>
-                              {equip.osAbertas > 0 && <span className="text-red-400">{equip.osAbertas} abertas</span>}
-                              <span>MTBF: {equip.mtbf} dias</span>
+                            <div className={`text-lg font-mono font-bold ${equip.mtbf < 7 ? 'text-red-500' : equip.mtbf < 14 ? 'text-orange-500' : 'text-primary'}`}>
+                              {equip.totalOS}
                             </div>
-                          </div>
-                          <div className={`text-lg font-mono font-bold ${equip.mtbf < 7 ? 'text-red-500' : equip.mtbf < 14 ? 'text-orange-500' : 'text-primary'}`}>
-                            {equip.totalOS}
                           </div>
                         </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-6 text-muted-foreground text-sm">Nenhum equipamento crítico.</div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+                      ))
+                    ) : (
+                      <div className="text-center py-6 text-muted-foreground text-sm">Nenhum equipamento crítico.</div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
-        {/* --- ABA INTELIGENCIA & OS --- */}
-        <TabsContent value="inteligencia" className="space-y-6 animate-slide-in-right">
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-             <div className="glow-border rounded-xl">
-               <CategoryDistributionCard dateRange={dateRange} />
-             </div>
-
-             <Card className="glass-panel border-white/5">
-              <CardHeader>
+          {/* --- ABA INTELIGENCIA & OS --- */}
+          <TabsContent value="inteligencia" className="space-y-6 animate-slide-in-right">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="glow-border rounded-xl">
+                <CategoryDistributionCard dateRange={dateRange} />
+              </div>
+              <Card className="glass-panel border-white/5">
+                <CardHeader>
                 <CardTitle className="font-mono text-lg flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-primary" />
                   Distribuição por Tipo
@@ -685,7 +745,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-5">
-                  {tiposManutencao.map((tipo, index) => (
+                  {tiposManutencao.map((tipo: TipoManutencaoStats, index: number) => (
                     <div key={index}>
                       <div className="flex items-center justify-between mb-2">
                         <span className={`text-sm font-medium ${getTipoColor(tipo.tipo)}`}>
@@ -730,7 +790,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
             <CardContent>
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-3">
-                  {recentOS.map((os, index) => (
+                  {recentOS.map((os: OS, index: number) => (
                     <div key={os.id} className={`p-4 rounded-xl bg-secondary/30 border border-white/5 hover:bg-secondary/60 transition-colors animate-slide-up-fade stagger-${(index % 5) + 1}`}>
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
@@ -766,5 +826,6 @@ export function Dashboard({ onAskAI }: DashboardProps) {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  </TooltipProvider>
+)
 }

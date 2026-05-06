@@ -45,6 +45,7 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -55,6 +56,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOSFormOpen, setIsOSFormOpen] = React.useState(false);
+  const queryClient = useQueryClient();
 
   const handleSignOut = async () => {
     await signOut();
@@ -359,9 +361,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           onClose={() => setIsOSFormOpen(false)} 
           onSuccess={() => {
             setIsOSFormOpen(false);
-            // We can't easily refresh the child component from here, but 
-            // most child components use React Query which will auto-refetch
-            // or they can be manually refreshed by the user.
+            queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
+            queryClient.invalidateQueries({ queryKey: ['ordens-servico'] });
           }}
         />
       </div>
