@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
+
 import {
   Card,
   CardContent,
@@ -46,6 +46,7 @@ import { MTTRLineChart } from '@/components/MTTRLineChart'
 import { TopMachinesChart } from '@/components/TopMachinesChart'
 import { CategoryDistributionCard } from '@/components/CategoryDistributionCard'
 import { ParetoCrossAnalysisCard } from '@/components/ParetoCrossAnalysisCard'
+import { PlanejamentoFacilities } from '@/components/PlanejamentoFacilities'
 import {
   format,
   differenceInHours,
@@ -484,12 +485,15 @@ export function Dashboard({ onAskAI }: DashboardProps) {
         </div>
 
         <Tabs defaultValue="operacional" className="space-y-6 w-full">
-          <TabsList className="grid w-full md:w-fit grid-cols-3 glass-panel border border-white/10 p-1 h-auto rounded-xl">
+          <TabsList className="grid w-full md:w-fit grid-cols-2 md:grid-cols-4 glass-panel border border-white/10 p-1 h-auto rounded-xl gap-1">
             <TabsTrigger value="operacional" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
               Visão Operacional
             </TabsTrigger>
             <TabsTrigger value="equipamentos" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
               Equipamentos
+            </TabsTrigger>
+            <TabsTrigger value="planning" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
+              Gestão & Facilities
             </TabsTrigger>
             <TabsTrigger value="inteligencia" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
               Análises & Histórico
@@ -632,6 +636,11 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                 <MTTRLineChart dateRange={dateRange} />
               </div>
             </div>
+          </TabsContent>
+
+          {/* --- ABA PLANEJAMENTO E FACILITIES --- */}
+          <TabsContent value="planning" className="space-y-6 animate-slide-in-right">
+            <PlanejamentoFacilities />
           </TabsContent>
 
           {/* --- ABA EQUIPAMENTOS --- */}
