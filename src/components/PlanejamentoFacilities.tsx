@@ -20,9 +20,10 @@ import {
   ExternalLink,
   Lock,
   ClipboardCheck,
-  Eye,
   Activity,
   AlertTriangle,
+  UserCheck,
+  Eye,
 } from 'lucide-react';
 import {
   Card,
@@ -159,6 +160,7 @@ export function PlanejamentoFacilities() {
   const [formValor, setFormValor] = useState('');
   const [formMin, setFormMin] = useState('');
   const [formMax, setFormMax] = useState('');
+  const [autoAssignActive, setAutoAssignActive] = useState(true);
 
   // --- CARREGAMENTO DE DADOS ---
   const loadData = async () => {
@@ -488,9 +490,46 @@ export function PlanejamentoFacilities() {
         status: 'Ativo',
       };
 
-      // Tenta criar OS automática no Supabase para dados reais!
+      // Tenta criar OS automática no Supabase para dados reais com Autoatribuição Inteligente!
       if (profile?.empresa_id) {
         const supabaseAny = supabase as any;
+        
+        let targetTechId: number | null = null;
+        let targetTechName: string | null = null;
+        let targetTechFuncao: string | null = null;
+
+        if (autoAssignActive) {
+          const { data: techs, error: techsErr } = await supabaseAny
+            .from('tecnicos')
+            .select('*')
+            .eq('empresa_id', profile.empresa_id);
+
+          if (!techsErr && techs && techs.length > 0) {
+            const varLower = formVariavel.toLowerCase();
+            let matchedTech = null;
+
+            if (varLower.includes('temp') || varLower.includes('press') || varLower.includes('vibr') || varLower.includes('óle') || varLower.includes('mecan')) {
+              matchedTech = techs.find((t: any) => 
+                t.funcao?.toLowerCase().includes('mecan') || 
+                t.funcao?.toLowerCase().includes('lubrif') || 
+                t.funcao?.toLowerCase().includes('hvac') ||
+                t.funcao?.toLowerCase().includes('manutenc')
+              );
+            } else if (varLower.includes('tens') || varLower.includes('corr') || varLower.includes('elét') || varLower.includes('elet') || varLower.includes('pain')) {
+              matchedTech = techs.find((t: any) => 
+                t.funcao?.toLowerCase().includes('eletri') || 
+                t.funcao?.toLowerCase().includes('instrum') || 
+                t.funcao?.toLowerCase().includes('autom')
+              );
+            }
+
+            const finalTech = matchedTech || techs[0];
+            targetTechId = finalTech.id_telegram;
+            targetTechName = finalTech.nome_completo;
+            targetTechFuncao = finalTech.funcao || 'Técnico';
+          }
+        }
+
         const { data: osData, error: osErr } = await supabaseAny
           .from('ordens_de_servico')
           .insert({
@@ -502,13 +541,18 @@ export function PlanejamentoFacilities() {
             origem: 'facilities',
             tipo_manutencao: 'Corretiva',
             empresa_id: profile.empresa_id,
+            tecnico_id: targetTechId,
           })
           .select();
 
         if (!osErr && osData && osData.length > 0) {
           newAlert.os_gerada_id = osData[0].id;
+          const assignedMsg = targetTechName 
+            ? `Atribuída automaticamente ao técnico: ${targetTechName} (${targetTechFuncao})`
+            : 'Ordem de serviço registrada automaticamente na fila do Supabase.';
+          
           toast.success(`Alerta Preditivo e Ordem de Serviço #${osData[0].id} gerados com sucesso!`, {
-            description: 'Ordem de serviço registrada automaticamente na fila do Supabase.',
+            description: assignedMsg,
             icon: <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />,
           });
         } else {
@@ -1275,8 +1319,9 @@ export function PlanejamentoFacilities() {
           {activeSubTab === 'medicoes' && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Form de Medição */}
-                <Card className="glass-panel border-white/5 lg:col-span-1">
+                {/* Coluna da Esquerda: Form de Medição & Autoatribuição */}
+                <div className="lg:col-span-1 space-y-6">
+                  <Card className="glass-panel border-white/5">
                   <CardHeader>
                     <CardTitle className="font-mono text-lg flex items-center gap-2">
                       <Activity className="h-5 w-5 text-primary animate-pulse" />
@@ -1353,6 +1398,60 @@ export function PlanejamentoFacilities() {
                     </Button>
                   </CardContent>
                 </Card>
+
+                {/* Card de Autoatribuição Inteligente */}
+                <Card className="glass-panel border-white/5 overflow-hidden relative">
+                  <div className="absolute top-0 right-0 p-3">
+                    <Badge className={autoAssignActive ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-muted/10 text-muted-foreground border-white/5"}>
+                      {autoAssignActive ? "ATIVO" : "INATIVO"}
+                    </Badge>
+                  </div>
+                  <CardHeader>
+                    <CardTitle className="font-mono text-sm flex items-center gap-2">
+                      <UserCheck className="h-4 w-4 text-primary" />
+                      Distribuição de Tarefas
+                    </CardTitle>
+                    <CardDescription className="text-[11px]">
+                      Autoatribuição instantânea e autônoma baseada na especialidade técnica requerida pela falha.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/10 border border-white/5">
+                      <span className="text-xs font-medium">Distribuição Autônoma</span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className={`h-7 px-3 rounded-full border transition-all ${autoAssignActive ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20 hover:text-green-300" : "bg-secondary/30 text-muted-foreground border-white/5 hover:bg-secondary/50"}`}
+                        onClick={() => setAutoAssignActive(!autoAssignActive)}
+                      >
+                        {autoAssignActive ? "Ativado" : "Desativado"}
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Matriz de Especialidades</span>
+                      <div className="space-y-2 font-mono text-[11px]">
+                        <div className="p-2 rounded bg-background/50 border border-white/5 flex items-center justify-between">
+                          <span className="text-muted-foreground">🌡️ Hidráulica / HVAC</span>
+                          <span className="text-primary font-bold">Mecânico / HVAC</span>
+                        </div>
+                        <div className="p-2 rounded bg-background/50 border border-white/5 flex items-center justify-between">
+                          <span className="text-muted-foreground">⚡ Eletroeletrônica</span>
+                          <span className="text-primary font-bold">Eletricista</span>
+                        </div>
+                        <div className="p-2 rounded bg-background/50 border border-white/5 flex items-center justify-between">
+                          <span className="text-muted-foreground">⚙️ Outras Variáveis</span>
+                          <span className="text-primary font-bold">Técnico Plantão</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                      Ao disparar um alerta, a OS correspondente no Supabase é associada ao `tecnico_id` do profissional qualificado disponível, sem intervenção humana dos planejadores.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
 
                 {/* Histórico de Medições e Alertas Ativos */}
                 <div className="lg:col-span-2 space-y-6">
