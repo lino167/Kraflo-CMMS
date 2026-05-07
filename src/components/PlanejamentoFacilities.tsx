@@ -21,6 +21,8 @@ import {
   Lock,
   ClipboardCheck,
   Eye,
+  Activity,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   Card,
@@ -84,9 +86,29 @@ interface RealOS {
   data_fechamento: string | null;
 }
 
+interface Measurement {
+  id: string;
+  equipamento_nome: string;
+  variavel: string;
+  valor: number;
+  min_esperado: number;
+  max_esperado: number;
+  data_medicao: string;
+  status: 'Normal' | 'Crítico';
+}
+
+interface MeasurementAlert {
+  id: string;
+  equipamento_nome: string;
+  descricao: string;
+  data_alerta: string;
+  status: 'Ativo' | 'Tratado';
+  os_gerada_id?: number;
+}
+
 export function PlanejamentoFacilities() {
   const { profile } = useAuth();
-  const [activeSubTab, setActiveSubTab] = useState<'sla' | 'calendario' | 'orcamentos' | 'checklists' | 'relatorios' | 'guest' | 'solicitacoes'>('sla');
+  const [activeSubTab, setActiveSubTab] = useState<'sla' | 'calendario' | 'orcamentos' | 'checklists' | 'relatorios' | 'guest' | 'solicitacoes' | 'medicoes'>('sla');
   const [isLoading, setIsLoading] = useState(true);
 
   // --- ESTADOS DO BANCO ---
@@ -97,6 +119,46 @@ export function PlanejamentoFacilities() {
   const [links, setLinks] = useState<GuestLink[]>([]);
   const [realOSList, setRealOSList] = useState<RealOS[]>([]);
   const [selectedDay, setSelectedDay] = useState<number>(new Date().getDate());
+
+  // --- ESTADOS DE CONDITION MONITORING ---
+  const [measurements, setMeasurements] = useState<Measurement[]>([
+    {
+      id: 'm1',
+      equipamento_nome: 'Compressor de Ar HVAC #1',
+      variavel: 'Temperatura (ºC)',
+      valor: 74,
+      min_esperado: 20,
+      max_esperado: 80,
+      data_medicao: new Date(Date.now() - 3600000).toISOString(),
+      status: 'Normal',
+    },
+    {
+      id: 'm2',
+      equipamento_nome: 'Gerador Auxiliar de Emergência',
+      variavel: 'Pressão de Óleo (bar)',
+      valor: 1.8,
+      min_esperado: 2.5,
+      max_esperado: 5.0,
+      data_medicao: new Date(Date.now() - 7200000).toISOString(),
+      status: 'Crítico',
+    }
+  ]);
+
+  const [alerts, setAlerts] = useState<MeasurementAlert[]>([
+    {
+      id: 'a1',
+      equipamento_nome: 'Gerador Auxiliar de Emergência',
+      descricao: 'Pressão de Óleo abaixo da faixa operacional crítica (1.8 bar - Mínimo esperado: 2.5 bar).',
+      data_alerta: new Date(Date.now() - 7200000).toISOString(),
+      status: 'Ativo',
+    }
+  ]);
+
+  const [formEquipamento, setFormEquipamento] = useState('');
+  const [formVariavel, setFormVariavel] = useState('Temperatura (ºC)');
+  const [formValor, setFormValor] = useState('');
+  const [formMin, setFormMin] = useState('');
+  const [formMax, setFormMax] = useState('');
 
   // --- CARREGAMENTO DE DADOS ---
   const loadData = async () => {
@@ -385,6 +447,137 @@ export function PlanejamentoFacilities() {
     toast.success('Link copiado com token criptográfico do Supabase!');
   };
 
+  const handleAddMeasurement = async () => {
+    if (!formEquipamento.trim() || !formValor || !formMin || !formMax) {
+      toast.error('Por favor, preencha todos os campos da medição.');
+      return;
+    }
+
+    const valorNum = parseFloat(formValor);
+    const minNum = parseFloat(formMin);
+    const maxNum = parseFloat(formMax);
+
+    if (isNaN(valorNum) || isNaN(minNum) || isNaN(maxNum)) {
+      toast.error('Os valores inseridos devem ser numéricos.');
+      return;
+    }
+
+    const isCritico = valorNum < minNum || valorNum > maxNum;
+    const status: 'Normal' | 'Crítico' = isCritico ? 'Crítico' : 'Normal';
+
+    const newMeasurement: Measurement = {
+      id: 'med_' + Date.now(),
+      equipamento_nome: formEquipamento.trim(),
+      variavel: formVariavel,
+      valor: valorNum,
+      min_esperado: minNum,
+      max_esperado: maxNum,
+      data_medicao: new Date().toISOString(),
+      status,
+    };
+
+    setMeasurements(prev => [newMeasurement, ...prev]);
+
+    if (isCritico) {
+      const alertDesc = `${formVariavel} (${valorNum}) fora do intervalo saudável estabelecido de [${minNum} - ${maxNum}].`;
+      const newAlert: MeasurementAlert = {
+        id: 'alrt_' + Date.now(),
+        equipamento_nome: formEquipamento.trim(),
+        descricao: alertDesc,
+        data_alerta: new Date().toISOString(),
+        status: 'Ativo',
+      };
+
+      // Tenta criar OS automática no Supabase para dados reais!
+      if (profile?.empresa_id) {
+        const supabaseAny = supabase as any;
+        const { data: osData, error: osErr } = await supabaseAny
+          .from('ordens_de_servico')
+          .insert({
+            equipamento_nome: formEquipamento.trim(),
+            localizacao: 'Setor de Facilities',
+            descricao_problema: `[FALHA DE PARÂMETRO PREDITIVO] ${alertDesc} Necessário realizar intervenção corretiva urgente para evitar colapso do ativo.`,
+            prioridade: 'Alta',
+            status_os: 'Aberta',
+            origem: 'facilities',
+            tipo_manutencao: 'Corretiva',
+            empresa_id: profile.empresa_id,
+          })
+          .select();
+
+        if (!osErr && osData && osData.length > 0) {
+          newAlert.os_gerada_id = osData[0].id;
+          toast.success(`Alerta Preditivo e Ordem de Serviço #${osData[0].id} gerados com sucesso!`, {
+            description: 'Ordem de serviço registrada automaticamente na fila do Supabase.',
+            icon: <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />,
+          });
+        } else {
+          toast.warning('Medição fora dos limites registrada localmente, mas falhou ao inserir OS no Supabase.');
+        }
+      }
+
+      setAlerts(prev => [newAlert, ...prev]);
+    } else {
+      toast.success('Medição registrada com sucesso!', {
+        description: 'Os parâmetros estão operacionais e dentro do intervalo saudável.',
+        icon: <Check className="h-4 w-4 text-green-500" />,
+      });
+    }
+
+    // Reset form
+    setFormEquipamento('');
+    setFormValor('');
+    setFormMin('');
+    setFormMax('');
+    loadData();
+  };
+
+  // Alertas dinâmicos baseados no volume de Ordens de Serviço reais do Supabase agrupados por TAG no mês atual!
+  const getDynamicOSVolumeAlerts = (): MeasurementAlert[] => {
+    const tagCounts: Record<string, { count: number; nome: string }> = {};
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    realOSList.forEach(os => {
+      const date = new Date(os.data_abertura);
+      const isCurrentMonth = date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      
+      if (isCurrentMonth) {
+        const tag = os.equipamento_tag?.trim();
+        if (tag) {
+          if (!tagCounts[tag]) {
+            tagCounts[tag] = { count: 0, nome: os.equipamento_nome || 'Equipamento' };
+          }
+          tagCounts[tag].count += 1;
+        }
+      }
+    });
+
+    const calculatedAlerts: MeasurementAlert[] = [];
+    Object.entries(tagCounts).forEach(([tag, data]) => {
+      if (data.count >= 3) {
+        calculatedAlerts.push({
+          id: 'dyn_alrt_' + tag,
+          equipamento_nome: `${data.nome} (TAG: ${tag})`,
+          descricao: `[PREDITIVO - RECORRÊNCIA CRÍTICA] O ativo com TAG ${tag} acumulou ${data.count} Ordens de Serviço neste mês no Supabase. Alto risco de desgaste acelerado e parada mecânica não planejada.`,
+          data_alerta: new Date().toISOString(),
+          status: 'Ativo',
+        });
+      } else if (data.count >= 2) {
+        calculatedAlerts.push({
+          id: 'dyn_alrt_warn_' + tag,
+          equipamento_nome: `${data.nome} (TAG: ${tag})`,
+          descricao: `[ALERTA DE DESGASTE] Ativo com TAG ${tag} possui recorrência de ${data.count} Ordens de Serviço neste mês. Recomenda-se programar revisão e lubrificação técnica.`,
+          data_alerta: new Date().toISOString(),
+          status: 'Ativo',
+        });
+      }
+    });
+
+    return calculatedAlerts;
+  };
+
   // --- CALENDÁRIO COM DADOS REAIS ---
   const getTasksForDay = (day: number) => {
     return realOSList.filter(os => {
@@ -462,6 +655,16 @@ export function PlanejamentoFacilities() {
           className={`rounded-lg ${activeSubTab === 'guest' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
         >
           <Users className="h-4 w-4 mr-2" /> Leitores Ilimitados
+        </Button>
+        <Button
+          variant={activeSubTab === 'medicoes' ? 'default' : 'ghost'}
+          onClick={() => setActiveSubTab('medicoes')}
+          className={`rounded-lg relative ${activeSubTab === 'medicoes' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+        >
+          <Activity className="h-4 w-4 mr-2" /> Medições Preditivas
+          {(alerts.filter(a => a.status === 'Ativo').length > 0 || getDynamicOSVolumeAlerts().length > 0) && (
+            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+          )}
         </Button>
       </div>
 
@@ -1067,6 +1270,170 @@ export function PlanejamentoFacilities() {
                 </Button>
               </CardContent>
             </Card>
+          )}
+
+          {activeSubTab === 'medicoes' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Form de Medição */}
+                <Card className="glass-panel border-white/5 lg:col-span-1">
+                  <CardHeader>
+                    <CardTitle className="font-mono text-lg flex items-center gap-2">
+                      <Activity className="h-5 w-5 text-primary animate-pulse" />
+                      Registrar Medição
+                    </CardTitle>
+                    <CardDescription>
+                      Insira os parâmetros de operação e defina os limites críticos para geração automática de alertas e OS.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground">Equipamento / Ativo</label>
+                      <Input
+                        placeholder="Ex: Motor de Resfriamento Principal"
+                        value={formEquipamento}
+                        onChange={(e) => setFormEquipamento(e.target.value)}
+                        className="bg-secondary/20 border-white/5"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground">Variável Analisada</label>
+                      <select
+                        value={formVariavel}
+                        onChange={(e) => setFormVariavel(e.target.value)}
+                        className="w-full bg-secondary/20 border border-white/5 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      >
+                        <option value="Temperatura (ºC)" className="bg-background text-foreground">Temperatura (ºC)</option>
+                        <option value="Pressão de Óleo (bar)" className="bg-background text-foreground">Pressão de Óleo (bar)</option>
+                        <option value="Corrente Elétrica (A)" className="bg-background text-foreground">Corrente Elétrica (A)</option>
+                        <option value="Vibração (mm/s)" className="bg-background text-foreground">Vibração (mm/s)</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground">Valor Medido</label>
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="Ex: 85.4"
+                        value={formValor}
+                        onChange={(e) => setFormValor(e.target.value)}
+                        className="bg-secondary/20 border-white/5 font-mono"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Mínimo Esperado</label>
+                        <Input
+                          type="number"
+                          step="any"
+                          placeholder="Ex: 20"
+                          value={formMin}
+                          onChange={(e) => setFormMin(e.target.value)}
+                          className="bg-secondary/20 border-white/5 font-mono"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Máximo Esperado</label>
+                        <Input
+                          type="number"
+                          step="any"
+                          placeholder="Ex: 80"
+                          value={formMax}
+                          onChange={(e) => setFormMax(e.target.value)}
+                          className="bg-secondary/20 border-white/5 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <Button className="w-full shadow-neon gap-1.5" onClick={handleAddMeasurement}>
+                      <Plus className="h-4 w-4" /> Registrar Medição Operacional
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Histórico de Medições e Alertas Ativos */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Alertas Ativos */}
+                  <Card className="glass-panel border-white/5 border-red-500/20 bg-red-500/5">
+                    <CardHeader>
+                      <CardTitle className="font-mono text-lg flex items-center gap-2 text-red-400">
+                        <AlertTriangle className="h-5 w-5 animate-pulse" />
+                        Alertas Ativos & Ordens de Serviço Automatizadas
+                      </CardTitle>
+                    <CardDescription className="text-red-300/60">
+                        Análise de desvios físicos e de fadiga por recorrência de Ordens de Serviço reais registradas no Supabase.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {(() => {
+                        const allAlerts = [
+                          ...alerts.filter(a => a.status === 'Ativo'),
+                          ...getDynamicOSVolumeAlerts()
+                        ];
+
+                        if (allAlerts.length > 0) {
+                          return allAlerts.map(alert => (
+                            <div key={alert.id} className="p-4 rounded-xl bg-background/50 border border-red-500/20 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold text-sm text-red-400">{alert.equipamento_nome}</span>
+                                <Badge className="bg-red-500/10 text-red-400 border border-red-500/20 font-mono text-[10px]">
+                                  {alert.id.startsWith('dyn_alrt_') ? 'RECORRÊNCIA' : 'CRÍTICO'}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground">{alert.descricao}</p>
+                              <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-white/5">
+                                <span>Gerado em: {new Date(alert.data_alerta).toLocaleString('pt-BR')}</span>
+                                {alert.os_gerada_id && (
+                                  <span className="font-mono text-primary font-bold">OS Gerada: #{alert.os_gerada_id}</span>
+                                )}
+                              </div>
+                            </div>
+                          ));
+                        }
+
+                        return (
+                          <div className="text-center py-6 text-muted-foreground text-xs">
+                            <CheckCircle2 className="h-6 w-6 text-green-500 mx-auto mb-2" />
+                            Nenhum alerta ativo! Todos os parâmetros em conformidade operacional.
+                          </div>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+
+                  {/* Lista de Medições Recentes */}
+                  <Card className="glass-panel border-white/5">
+                    <CardHeader>
+                      <CardTitle className="font-mono text-lg">Histórico de Medições de Condition Monitoring</CardTitle>
+                      <CardDescription>
+                        Trilha de auditoria das últimas medições registradas por planejadores e técnicos.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {measurements.map(med => (
+                          <div key={med.id} className="p-3 rounded-xl bg-secondary/10 border border-white/5 flex items-center justify-between gap-4">
+                            <div>
+                              <h4 className="font-semibold text-sm text-foreground">{med.equipamento_nome}</h4>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {med.variavel}: <span className="font-mono font-bold text-foreground">{med.valor}</span> (Limite: {med.min_esperado} - {med.max_esperado})
+                              </p>
+                              <div className="text-[10px] text-muted-foreground mt-1">Registrado em: {new Date(med.data_medicao).toLocaleString('pt-BR')}</div>
+                            </div>
+                            <Badge variant="outline" className={med.status === 'Crítico' ? 'border-red-500/20 text-red-400 bg-red-500/10' : 'border-green-500/20 text-green-400 bg-green-500/10'}>
+                              {med.status}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </div>
           )}
         </motion.div>
       </AnimatePresence>
