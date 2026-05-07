@@ -100,7 +100,10 @@ export function PlanejamentoFacilities() {
 
   // --- CARREGAMENTO DE DADOS ---
   const loadData = async () => {
-    if (!profile?.empresa_id) return;
+    if (!profile?.empresa_id) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
 
     const supabaseAny = supabase as any;

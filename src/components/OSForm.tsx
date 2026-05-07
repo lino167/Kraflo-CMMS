@@ -54,6 +54,19 @@ interface OSFormProps {
     status_os: string
     url_foto?: string | null
   }
+  prefilledData?: {
+    equipamento_nome: string
+    equipamento_tag?: string | null
+    localizacao?: string | null
+    tipo_manutencao?: 'Preventiva' | 'Corretiva' | 'Preditiva'
+    prioridade?: 'Baixa' | 'Média' | 'Alta' | 'Urgente'
+    descricao_problema?: string | null
+    execucao_origem_id?: string | null
+    plano_origem_id?: string | null
+    categoria_parada_id?: string | null
+    subcategoria_parada_id?: string | null
+    solicitacao_origem_id?: string | null
+  }
 }
 
 interface ReincidenciaData {
@@ -79,7 +92,7 @@ function FormReincidenciaAlert({ control, data }: { control: Control<OSFormData>
   return <ReincidenciaAlert data={data} tag={tag || ''} />
 }
 
-export function OSForm({ open, onClose, onSuccess, editingOS }: OSFormProps) {
+export function OSForm({ open, onClose, onSuccess, editingOS, prefilledData }: OSFormProps) {
   const { profile, isAdminKraflo } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([])
@@ -135,7 +148,7 @@ export function OSForm({ open, onClose, onSuccess, editingOS }: OSFormProps) {
     }
     setCheckingReincidencia(true)
     try {
-      const { data, error } = await supabase.rpc('fn_check_reincidencia', {
+      const { data, error } = await (supabase as any).rpc('fn_check_reincidencia', {
         p_empresa_id: profile.empresa_id,
         p_tag: tag.trim(),
         p_dias_limite: 60,
@@ -215,6 +228,28 @@ export function OSForm({ open, onClose, onSuccess, editingOS }: OSFormProps) {
         if (editingOS.url_foto) {
           setFotoPreview(editingOS.url_foto)
         }
+      } else if (prefilledData) {
+        setValue('equipamento_nome', prefilledData.equipamento_nome)
+        setValue('equipamento_tag', prefilledData.equipamento_tag || '')
+        setValue('localizacao', prefilledData.localizacao || '')
+        setValue('tipo_manutencao', prefilledData.tipo_manutencao || undefined)
+        setValue('prioridade', prefilledData.prioridade || undefined)
+        setValue('descricao_problema', prefilledData.descricao_problema || '')
+        setValue('diagnostico_solucao', '')
+        setValue('notas_finais', '')
+        if (prefilledData.categoria_parada_id) {
+          setCategoriaParadaId(prefilledData.categoria_parada_id)
+        } else {
+          setCategoriaParadaId('')
+        }
+        if (prefilledData.subcategoria_parada_id) {
+          setSubcategoriaParadaId(prefilledData.subcategoria_parada_id)
+        } else {
+          setSubcategoriaParadaId('')
+        }
+        setFoto(null)
+        setFotoPreview(null)
+        setReincidenciaData(null)
       } else {
         reset()
         setSelectedTecnico('')
@@ -226,7 +261,7 @@ export function OSForm({ open, onClose, onSuccess, editingOS }: OSFormProps) {
         setReincidenciaData(null)
       }
     }
-  }, [open, editingOS, loadTecnicos, reset, setValue])
+  }, [open, editingOS, prefilledData, loadTecnicos, reset, setValue])
 
   // Auto-scroll to first error
   useEffect(() => {
@@ -279,7 +314,7 @@ export function OSForm({ open, onClose, onSuccess, editingOS }: OSFormProps) {
         urlFoto = publicUrl.publicUrl
       }
 
-      const osData = {
+      const osData: any = {
         equipamento_nome: data.equipamento_nome,
         equipamento_tag: data.equipamento_tag || null,
         localizacao: data.localizacao || null,
@@ -300,6 +335,11 @@ export function OSForm({ open, onClose, onSuccess, editingOS }: OSFormProps) {
             : null,
       }
 
+      if (prefilledData?.execucao_origem_id) {
+        osData.execucao_origem_id = prefilledData.execucao_origem_id
+        osData.plano_origem_id = prefilledData.plano_origem_id || null
+      }
+
       if (editingOS) {
         const { error } = await supabase
           .from('ordens_de_servico')
@@ -309,12 +349,47 @@ export function OSForm({ open, onClose, onSuccess, editingOS }: OSFormProps) {
         if (error) throw error
         toast.success('OS atualizada com sucesso!')
       } else {
-        const { error } = await supabase
+        const { data: insertedOS, error } = await supabase
           .from('ordens_de_servico')
           .insert([osData])
+          .select()
 
         if (error) throw error
         toast.success('OS criada com sucesso!')
+
+        // Se veio de Preventiva Pendente, atualiza o agendamento correspondente no Supabase
+        if (prefilledData?.execucao_origem_id && insertedOS && insertedOS.length > 0) {
+          const { error: updErr } = await supabase
+            .from('execucoes_preventivas')
+            .update({
+              status: 'em_andamento',
+              os_gerada_id: insertedOS[0].id,
+              tecnico_id: parseInt(selectedTecnico)
+            })
+            .eq('id', prefilledData.execucao_origem_id)
+
+          if (updErr) {
+            console.error('Erro ao atualizar execução preventiva vinculada:', updErr)
+          } else {
+            toast.success('Agendamento preventivo atualizado para Em Andamento!')
+          }
+        }
+
+        // Se veio de Solicitação, atualiza a solicitação para verificado no Supabase
+        if (prefilledData?.solicitacao_origem_id) {
+          const { error: updReqErr } = await (supabase as any)
+            .from('solicitacoes_manutencao')
+            .update({
+              status: 'verificado'
+            })
+            .eq('id', prefilledData.solicitacao_origem_id)
+
+          if (updReqErr) {
+            console.error('Erro ao atualizar solicitação vinculada:', updReqErr)
+          } else {
+            toast.success('Solicitação marcada como verificada!')
+          }
+        }
       }
 
       onSuccess()
