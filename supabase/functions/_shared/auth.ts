@@ -3,18 +3,19 @@ import type { Database } from "./database.types.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "*")
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
 
 export function buildCorsHeaders(req: Request) {
-  const origin = req.headers.get("Origin") || "*";
-  const allowOrigin = ALLOWED_ORIGINS.includes("*")
-    ? "*"
-    : ALLOWED_ORIGINS.includes(origin)
-    ? origin
-    : ALLOWED_ORIGINS[0] || "*";
+  const origin = req.headers.get("Origin") || "";
+  const isAllowed = ALLOWED_ORIGINS.includes("*") || 
+                    (origin && ALLOWED_ORIGINS.includes(origin)) ||
+                    (origin && (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")));
+  
+  const allowOrigin = isAllowed ? origin : (ALLOWED_ORIGINS[0] || "");
+  
   return {
     "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Headers":
@@ -78,5 +79,28 @@ export function getClientIp(req: Request): string {
     req.headers.get("x-real-ip") ||
     "unknown"
   );
+}
+
+export async function assertUserAccessToEmpresa(userId: string, empresaId: string): Promise<boolean> {
+  const supabase = getServiceClient();
+  
+  // 1. Administradores globais (admin_kraflo) possuem acesso total bypass
+  const { data: isAdminKraflo } = await supabase.rpc("is_admin_kraflo", {
+    _user_id: userId,
+  });
+  if (isAdminKraflo) return true;
+
+  // 2. Verifica se a empresa_id do perfil do usuário confere com o parâmetro enviado
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("empresa_id")
+    .eq("id", userId)
+    .single();
+    
+  if (error || !profile) {
+    return false;
+  }
+  
+  return profile.empresa_id === empresaId;
 }
 

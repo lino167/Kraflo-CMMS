@@ -31,6 +31,22 @@ serve(async (req: Request) => {
 
   const correlationId = req.headers.get('x-correlation-id') || crypto.randomUUID();
 
+  // Validate Telegram Webhook Secret Token
+  const telegramWebhookSecret = Deno.env.get('TELEGRAM_WEBHOOK_SECRET');
+  const telegramBotToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+  const expectedSecret = telegramWebhookSecret || telegramBotToken;
+
+  if (expectedSecret) {
+    const receivedSecret = req.headers.get('x-telegram-bot-api-secret-token');
+    if (receivedSecret !== expectedSecret) {
+      logger.error('Unauthorized webhook request - invalid secret token', { correlationId });
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized', correlation_id: correlationId }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
   try {
     const body: TelegramUpdate = await req.json();
     logger.info('Webhook received', { 

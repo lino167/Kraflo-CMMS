@@ -7,6 +7,7 @@ import {
   getUserFromToken,
   getClientIp,
   getServiceClient,
+  assertUserAccessToEmpresa,
 } from "../_shared/auth.ts";
 import type { SupabaseClient } from "../_shared/auth.ts";
 import { generateEmbedding } from "../_shared/ai.ts";
@@ -477,6 +478,18 @@ serve(async (req) => {
       mode = 'chat', // 'chat' | 'report'
       reportData // Structured report data when mode === 'report'
     } = await req.json();
+
+    // Validate multi-tenant access: if not a service call, verify the user has access to the specified empresa_id
+    if (!isServiceCall && empresa_id && user) {
+      const hasAccess = await assertUserAccessToEmpresa(user.id, empresa_id);
+      if (!hasAccess) {
+        console.warn(`[${correlationId}] User ${user.id} tried to access unauthorized company ${empresa_id}`);
+        return new Response(JSON.stringify({ error: "Acesso não autorizado para esta empresa" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     if (!mensagem && mode !== 'report') {
       return new Response(JSON.stringify({ error: "Mensagem é obrigatória" }), {
