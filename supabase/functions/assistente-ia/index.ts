@@ -469,15 +469,27 @@ serve(async (req) => {
     }
     console.log(`[${correlationId}] Auth ok for`, callerId);
 
+    const rawBody = await req.json();
     const { 
-      mensagem, 
       empresa_id, 
       conversa_id, 
       tecnico_id,
       // New parameters for structured report
       mode = 'chat', // 'chat' | 'report'
       reportData // Structured report data when mode === 'report'
-    } = await req.json();
+    } = rawBody;
+
+    // Sanitização e validação da mensagem
+    const rawMensagem: string = rawBody.mensagem ?? '';
+    const MAX_MENSAGEM_LENGTH = 5000;
+    if (typeof rawMensagem !== 'string' || rawMensagem.length > MAX_MENSAGEM_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: `Mensagem excede o limite de ${MAX_MENSAGEM_LENGTH} caracteres` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    // Remove caracteres de controle que podem causar prompt injection
+    const mensagem = rawMensagem.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
 
     // Validate multi-tenant access: if not a service call, verify the user has access to the specified empresa_id
     if (!isServiceCall && empresa_id && user) {

@@ -173,8 +173,9 @@ export default function IndexacaoAdmin() {
         throw new Error('Sessão expirada. Faça login novamente.')
       }
 
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const response = await fetch(
-        `https://stqjixdsolguzpvjfrmr.supabase.co/functions/v1/backfill-os-index`,
+        `${supabaseUrl}/functions/v1/backfill-os-index`,
         {
           method: 'POST',
           headers: {
@@ -220,8 +221,9 @@ export default function IndexacaoAdmin() {
         throw new Error('Sessão expirada. Faça login novamente.')
       }
 
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const response = await fetch(
-        `https://stqjixdsolguzpvjfrmr.supabase.co/functions/v1/process-os-index-queue`,
+        `${supabaseUrl}/functions/v1/process-os-index-queue`,
         {
           method: 'POST',
           headers: {
