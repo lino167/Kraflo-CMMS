@@ -1,1 +1,0 @@
-src/components/CategoryDistributionCard.tsx(7,1): error TS6133: 'Progress' is declared but its value is never read.
