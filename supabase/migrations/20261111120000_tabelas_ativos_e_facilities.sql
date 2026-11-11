@@ -95,6 +95,8 @@ CREATE TABLE IF NOT EXISTS public.orcamentos_manutencao (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.orcamentos_manutencao
+  ADD COLUMN IF NOT EXISTS equipamento_nome text,
+  ADD COLUMN IF NOT EXISTS equipamento_tag text,
   ADD COLUMN IF NOT EXISTS decidido_por uuid,
   ADD COLUMN IF NOT EXISTS decidido_em timestamptz,
   ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
