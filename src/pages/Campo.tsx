@@ -72,9 +72,13 @@ function statusLabel(op: OfflineOp): { text: string; className: string } {
 }
 
 export default function Campo() {
-  const { profile } = useAuth()
+  const { profile, user } = useAuth()
   const empresaId = profile?.empresa_id ?? null
-  const { online, ops, syncing, lastReport, sync, refresh } = useOfflineSync()
+  const ownerId = user?.id ?? null
+  const { online, ops: todasOps, syncing, lastReport, sync, refresh } = useOfflineSync(ownerId)
+  // Cada usuário vê e envia só os próprios lançamentos
+  const ops = useMemo(() => todasOps.filter((o) => o.owner_id === ownerId), [todasOps, ownerId])
+  const acessoExpirado = !online && !profile
 
   const [snap, setSnap] = useState<RefSnapshot | null>(null)
   const [tab, setTab] = useState<Tab>('nova')
@@ -157,7 +161,7 @@ export default function Campo() {
 
   async function submitOpen(e: React.FormEvent) {
     e.preventDefault()
-    if (!empresaId) return
+    if (!empresaId || !ownerId) return
     const maq = snap?.maquinas.find((m) => m.id === form.maquina_id)
     const equipamento = maq ? maq.nome : form.equipamento_manual.trim()
     const tecnicoId = profile?.id_telegram ?? Number(form.tecnico_id)
@@ -183,7 +187,7 @@ export default function Campo() {
         subcategoria_parada_id: form.subcategoria_parada_id || null,
         opened_at: new Date().toISOString(),
       },
-    })
+    }, ownerId)
 
     setForm({ ...emptyForm, tecnico_id: form.tecnico_id })
     await refresh()
@@ -210,7 +214,7 @@ export default function Campo() {
 
   async function submitClose(e: React.FormEvent) {
     e.preventDefault()
-    if (!closing) return
+    if (!closing || !ownerId) return
     if (!closeForm.categoria_problema_id) return toast.error('Selecione a causa raiz.')
     if (closeForm.diagnostico_solucao.trim().length < 5) return toast.error('Descreva o diagnóstico e a solução (mínimo de 5 caracteres).')
 
@@ -227,7 +231,7 @@ export default function Campo() {
         subcategoria_problema_id: closeForm.subcategoria_problema_id || null,
         closed_at: new Date().toISOString(),
       },
-    })
+    }, ownerId)
 
     setClosing(null)
     setCloseForm(emptyClose)
@@ -313,6 +317,18 @@ export default function Campo() {
           </button>
         ))}
       </div>
+
+      {acessoExpirado && (
+        <Card className="glass-panel border-red-500/30">
+          <CardContent className="space-y-1 p-4 text-sm">
+            <p className="font-medium text-red-300">Acesso offline indisponível</p>
+            <p className="text-xs text-muted-foreground">
+              Este aparelho não validou seu acesso com o servidor nos últimos 7 dias, ou você saiu da conta.
+              Conecte-se à internet e entre novamente para continuar.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {tab === 'nova' && (
         <form onSubmit={submitOpen} className="space-y-4">
@@ -425,7 +441,7 @@ export default function Campo() {
             <Textarea id="descricao" rows={4} value={form.descricao_problema} onChange={(e) => setForm({ ...form, descricao_problema: e.target.value })} />
           </div>
 
-          <Button type="submit" className="h-12 w-full text-base" disabled={!snap}>
+          <Button type="submit" className="h-12 w-full text-base" disabled={!snap || !profile}>
             <Plus className="mr-2 h-5 w-5" /> Salvar OS
           </Button>
           {!snap && (

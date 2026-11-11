@@ -47,6 +47,8 @@ export interface PecaOffline {
 
 interface BaseOp {
   id: string
+  /** Usuário que fez o lançamento: só ele envia pela própria sessão */
+  owner_id: string
   created_at: string
   attempts: number
   status: 'pending' | 'conflict' | 'error'
@@ -120,12 +122,18 @@ export class OfflineQueue {
     return this.locked(() => this.read())
   }
 
-  add(op: NewOfflineOp): Promise<OfflineOp> {
+  /** Apaga toda a fila do aparelho (usado no logout, depois de confirmação). */
+  clear(): Promise<void> {
+    return this.locked(() => this.write([]))
+  }
+
+  add(op: NewOfflineOp, ownerId: string): Promise<OfflineOp> {
     return this.locked(async () => {
       const ops = await this.read()
       const full = {
         ...op,
         id: newId(),
+        owner_id: ownerId,
         created_at: new Date().toISOString(),
         attempts: 0,
         status: 'pending',
@@ -156,7 +164,7 @@ export class OfflineQueue {
   /**
    * Envia as operações pendentes em ordem. Chamadas simultâneas reutilizam o envio em curso.
    */
-  sync(send: (op: OfflineOp) => Promise<SendResult>): Promise<SyncReport> {
+  sync(send: (op: OfflineOp) => Promise<SendResult>, ownerId: string): Promise<SyncReport> {
     if (this.syncing) return this.syncing
 
     const run = this.locked(async () => {
@@ -164,7 +172,8 @@ export class OfflineQueue {
       let ops = await this.read()
 
       for (const op of ops) {
-        if (op.status !== 'pending') continue
+        // Lançamentos de outro usuário ficam na fila, sem serem enviados com esta sessão
+        if (op.status !== 'pending' || op.owner_id !== ownerId) continue
 
         const result = await send(op)
 

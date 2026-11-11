@@ -12,7 +12,7 @@ const SYNC_INTERVAL_MS = 30_000
  * Estado da conexão e da fila de envio. Envia automaticamente quando a conexão volta,
  * quando o app volta a ficar visível e a cada 30 s enquanto estiver aberto.
  */
-export function useOfflineSync() {
+export function useOfflineSync(ownerId: string | null) {
   const [online, setOnline] = useState(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine,
   )
@@ -25,17 +25,18 @@ export function useOfflineSync() {
   }, [])
 
   const sync = useCallback(async (): Promise<SyncReport | null> => {
+    if (!ownerId) return null
     if (typeof navigator !== 'undefined' && !navigator.onLine) return null
     setSyncing(true)
     try {
-      const report = await offlineQueue.sync(sendOp)
+      const report = await offlineQueue.sync(sendOp, ownerId)
       setLastReport(report)
       return report
     } finally {
       setSyncing(false)
       await refresh()
     }
-  }, [refresh])
+  }, [refresh, ownerId])
 
   useEffect(() => {
     void refresh()

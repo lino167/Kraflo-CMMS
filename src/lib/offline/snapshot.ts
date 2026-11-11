@@ -117,3 +117,8 @@ export async function readSnapshot(store: KVStore, empresaId: string): Promise<R
   const snap = await store.get<RefSnapshot>(SNAPSHOT_KEY)
   return snap && snap.empresa_id === empresaId ? snap : null
 }
+
+/** Apaga os dados de apoio do aparelho (logout). */
+export async function clearSnapshot(store: KVStore): Promise<void> {
+  await store.del(SNAPSHOT_KEY)
+}

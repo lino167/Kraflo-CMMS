@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { OSForm } from '@/components/OSForm';
+import { offlineQueue } from '@/hooks/useOfflineSync';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,6 +67,16 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [authLoading, user, navigate]);
 
   const handleSignOut = async () => {
+    // Lançamentos de OS ainda não enviados seriam apagados: pede confirmação antes
+    const pendentes = await offlineQueue.list();
+    if (pendentes.length > 0) {
+      const ok = window.confirm(
+        `Há ${pendentes.length} lançamento(s) de OS que ainda não foram enviados. ` +
+        'Se você sair, eles serão apagados deste aparelho. Sair mesmo assim?'
+      );
+      if (!ok) return;
+      await offlineQueue.clear();
+    }
     await signOut();
     navigate('/auth');
   };

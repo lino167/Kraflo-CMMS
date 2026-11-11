@@ -1,6 +1,9 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { idbStore } from '@/lib/offline/store';
+import { clearSnapshot } from '@/lib/offline/snapshot';
+import { isOfflineAccessValid } from '@/lib/offline/access';
 
 type AppRole = 'admin_kraflo' | 'admin_empresa';
 
@@ -17,12 +20,23 @@ interface UserProfile {
 
 const PROFILE_CACHE_KEY = 'kraflo:profile-cache';
 
+function clearCachedProfile(): void {
+  try {
+    localStorage.removeItem(PROFILE_CACHE_KEY);
+  } catch {
+    // nada a fazer
+  }
+}
+
 function readCachedProfile(userId: string): { profile: UserProfile; roles: AppRole[] } | null {
   try {
     const raw = localStorage.getItem(PROFILE_CACHE_KEY);
     if (!raw) return null;
-    const cached = JSON.parse(raw) as { userId: string; profile: UserProfile; roles: AppRole[] };
-    return cached.userId === userId ? { profile: cached.profile, roles: cached.roles } : null;
+    const cached = JSON.parse(raw) as { userId: string; validatedAt: number; profile: UserProfile; roles: AppRole[] };
+    if (cached.userId !== userId) return null;
+    // Acesso offline expira se não houve validação com o servidor no prazo máximo
+    if (!isOfflineAccessValid(cached.validatedAt)) return null;
+    return { profile: cached.profile, roles: cached.roles };
   } catch {
     return null;
   }
@@ -30,7 +44,7 @@ function readCachedProfile(userId: string): { profile: UserProfile; roles: AppRo
 
 function writeCachedProfile(userId: string, profile: UserProfile, roles: AppRole[]): void {
   try {
-    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({ userId, profile, roles }));
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({ userId, validatedAt: Date.now(), profile, roles }));
   } catch {
     // armazenamento cheio ou bloqueado: segue sem cache
   }
@@ -167,6 +181,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Logout apaga os dados locais deste usuário (a fila é tratada antes, na tela, com aviso)
+    await clearSnapshot(idbStore);
+    clearCachedProfile();
     await supabase.auth.signOut();
   };
 
