@@ -28,6 +28,8 @@ export interface OpenFields {
   categoria_parada_id: string
   subcategoria_parada_id: string | null
   opened_at: string
+  /** Foto do problema (JPEG reduzido, como data URL) */
+  foto: string | null
 }
 
 export interface CloseFields {
@@ -43,6 +45,8 @@ export interface PecaOffline {
   nome_peca: string
   tag_peca: string | null
   quantidade: number
+  /** Item do estoque (baixa automática no servidor); null = peça avulsa */
+  peca_estoque_id: string | null
 }
 
 interface BaseOp {
@@ -63,8 +67,10 @@ export type OfflineOp =
       kind: 'close_os'
       os_client_uuid: string | null
       os_id: number | null
+      empresa_id: string
       close: CloseFields
       pecas: PecaOffline[]
+      foto: string | null
     })
 
 export type NewOfflineOp =
@@ -73,8 +79,10 @@ export type NewOfflineOp =
       kind: 'close_os'
       os_client_uuid: string | null
       os_id: number | null
+      empresa_id: string
       close: CloseFields
       pecas: PecaOffline[]
+      foto: string | null
     }
 
 export type SendResult =
@@ -91,7 +99,7 @@ export interface SyncReport {
   offline: boolean
 }
 
-const QUEUE_KEY = 'offline:queue:v1'
+const QUEUE_KEY = 'offline:queue:v2'
 
 function newId(): string {
   return globalThis.crypto.randomUUID()

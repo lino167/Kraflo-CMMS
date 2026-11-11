@@ -40,6 +40,14 @@ export interface OSAbertaRef {
   data_abertura: string
 }
 
+export interface PecaEstoqueRef {
+  id: string
+  nome: string
+  codigo: string | null
+  unidade: string
+  quantidade: number
+}
+
 export interface RefSnapshot {
   saved_at: string
   empresa_id: string
@@ -49,9 +57,10 @@ export interface RefSnapshot {
   subcategorias: SubcategoriaRef[]
   tecnicos: TecnicoRef[]
   os_abertas: OSAbertaRef[]
+  pecas_estoque: PecaEstoqueRef[]
 }
 
-const SNAPSHOT_KEY = 'offline:snapshot:v1'
+const SNAPSHOT_KEY = 'offline:snapshot:v2'
 
 /** Baixa os dados de apoio do servidor. Lança erro se algo falhar (o cache anterior é mantido). */
 export async function refreshSnapshot(store: KVStore, empresaId: string): Promise<RefSnapshot> {
@@ -86,6 +95,15 @@ export async function refreshSnapshot(store: KVStore, empresaId: string): Promis
     if (r.error) throw r.error
   }
 
+  // Estoque é opcional: se o módulo não estiver ativo no banco, segue sem ele
+  const estoque = await supabase
+    .from('pecas_estoque')
+    .select('id, nome, codigo, unidade, quantidade')
+    .eq('empresa_id', empresaId)
+    .eq('ativo', true)
+    .gt('quantidade', 0)
+    .order('nome')
+
   const snapshot: RefSnapshot = {
     saved_at: new Date().toISOString(),
     empresa_id: empresaId,
@@ -106,6 +124,7 @@ export async function refreshSnapshot(store: KVStore, empresaId: string): Promis
     })),
     tecnicos: tec.data ?? [],
     os_abertas: os.data ?? [],
+    pecas_estoque: estoque.error ? [] : (estoque.data ?? []),
   }
 
   await store.set(SNAPSHOT_KEY, snapshot)

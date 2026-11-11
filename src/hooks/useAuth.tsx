@@ -2,7 +2,8 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { idbStore } from '@/lib/offline/store';
-import { clearSnapshot } from '@/lib/offline/snapshot';
+import { wipeLocalData } from '@/lib/offline/pin';
+import { secureStore } from '@/lib/offline/local';
 import { isOfflineAccessValid } from '@/lib/offline/access';
 
 type AppRole = 'admin_kraflo' | 'admin_empresa';
@@ -181,8 +182,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    // Logout apaga os dados locais deste usuário (a fila é tratada antes, na tela, com aviso)
-    await clearSnapshot(idbStore);
+    // Logout apaga PIN, dados de apoio e fila deste aparelho (a tela avisa antes sobre envios pendentes)
+    await wipeLocalData(idbStore);
+    secureStore.lock();
     clearCachedProfile();
     await supabase.auth.signOut();
   };

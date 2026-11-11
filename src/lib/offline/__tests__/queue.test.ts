@@ -17,6 +17,7 @@ const openOp = (uuid: string, nome = 'Tear 01'): NewOfflineOp => ({
     categoria_parada_id: 'cat-1',
     subcategoria_parada_id: null,
     opened_at: '2026-11-11T10:00:00.000Z',
+    foto: null,
   },
 })
 
@@ -24,7 +25,9 @@ const closeOp = (osClientUuid: string | null, osId: number | null): NewOfflineOp
   kind: 'close_os',
   os_client_uuid: osClientUuid,
   os_id: osId,
-  pecas: [{ nome_peca: 'Óleo', tag_peca: null, quantidade: 2 }],
+  empresa_id: 'emp',
+  foto: null,
+  pecas: [{ nome_peca: 'Óleo', tag_peca: null, quantidade: 2, peca_estoque_id: null }],
   close: {
     status_os: 'Fechada',
     diagnostico_solucao: 'Troca de retentor',

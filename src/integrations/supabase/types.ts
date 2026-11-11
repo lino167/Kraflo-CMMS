@@ -1490,6 +1490,21 @@ export type Database = {
       }
     }
     Functions: {
+      fn_campo_fechar_os: {
+        Args: {
+          p_categoria_problema_id: string | null
+          p_client_uuid: string | null
+          p_closed_at: string
+          p_diagnostico: string
+          p_notas: string | null
+          p_os_id: number | null
+          p_pecas?: Json
+          p_status: string
+          p_subcategoria_problema_id: string | null
+          p_url_arquivo?: string | null
+        }
+        Returns: Json
+      }
       fn_check_reincidencia: {
         Args: {
           p_descricao?: string

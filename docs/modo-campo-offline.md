@@ -16,19 +16,26 @@ Tela `/campo`: abre e fecha OS sem internet e envia tudo automaticamente quando 
 
 ## Segurança do acesso offline
 
-- **Prazo**: o acesso offline vale até 7 dias após a última validação com o servidor (`src/lib/offline/access.ts`). Depois disso, o aparelho precisa de conexão para entrar de novo.
-- **Logout**: apaga os dados de apoio e o perfil guardados no aparelho. Se houver lançamentos não enviados, o app avisa e só sai depois de confirmação, que descarta a fila.
-- **Dono do lançamento**: cada lançamento guarda quem o criou. Só a própria sessão envia; lançamentos de outro usuário ficam na fila sem serem enviados com outra conta.
-- **O servidor continua decidindo**: toda escrita passa pelas regras de acesso do banco (RLS). Um técnico desligado não consegue gravar mesmo com a fila no aparelho.
-- **Risco residual**: os dados ficam no aparelho sem criptografia própria. Quem tiver o celular desbloqueado pode ver máquinas, OS abertas e lançamentos pendentes. Recomenda-se senha de tela no aparelho; um PIN do app é o próximo passo.
+- **PIN e criptografia**: os dados de apoio e a fila ficam cifrados no aparelho (AES-GCM) com uma chave derivada do PIN do técnico (PBKDF2, 310 mil iterações). A chave existe só na memória: ao reabrir o app, é preciso digitar o PIN. Código em `src/lib/offline/crypto.ts`, `secure-store.ts` e `pin.ts`.
+- **Tentativas**: 5 erros seguidos de PIN apagam os dados offline do aparelho. PINs triviais (123456, 111111) são recusados.
+- **Prazo**: o acesso offline vale até 7 dias após a última validação com o servidor.
+- **Logout**: apaga PIN, dados de apoio, fila e perfil guardados. Se houver (ou puder haver) lançamentos não enviados, o app avisa antes.
+- **Dono do lançamento**: cada lançamento guarda quem o criou; só a própria sessão envia.
+- **O servidor continua decidindo**: toda escrita passa pelo RLS. O fechamento usa `fn_campo_fechar_os`, que grava peças e fechamento numa única transação.
+- **Limite**: um PIN numérico de 6 dígitos protege contra quem pega o celular desbloqueado, não contra extração forense do armazenamento. A senha de tela do aparelho continua necessária. Esquecer o PIN exige apagar os dados offline.
+
+## Fotos e peças
+
+- A foto é reduzida no aparelho (até 1280 px, JPEG), entra cifrada na fila e sobe no envio. Se o servidor recusar o arquivo, a OS segue sem o anexo.
+- Peças podem ser escolhidas do estoque guardado no aparelho; a baixa acontece no servidor, no envio. Se o saldo real for insuficiente, o fechamento volta como erro para revisão.
 
 ## Limites conhecidos
 
-- Sem background sync: o envio só acontece com o app aberto. No iPhone e no Android, a fila é enviada na próxima vez que o técnico abrir o app com sinal.
-- Fotos e baixa automática de peças do estoque ainda não funcionam offline (peça entra como texto livre).
-- `data_abertura` usa o relógio do aparelho; relógio errado gera data errada.
-- Primeiro acesso e renovação de sessão exigem internet.
+- Sem envio em segundo plano: a fila sai quando o app está aberto e com sinal.
+- `data_abertura` usa o relógio do aparelho.
+- Primeiro acesso, criação do PIN e renovação de sessão exigem internet.
 
 ## Migration necessária
 
-`supabase/migrations/20261111120300_os_client_uuid_campo.sql` precisa estar aplicada no banco antes do envio funcionar.
+- `20261111120300_os_client_uuid_campo.sql` (já aplicada em produção): identificador do aparelho.
+- `20261111120500_campo_fechar_os_atomico.sql`: fechamento em transação única. Enquanto não for aplicada, o app usa o envio em etapas automaticamente.

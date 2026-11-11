@@ -307,3 +307,12 @@ supabase secrets set LOVABLE_API_KEY=sua-chave
 supabase secrets set TELEGRAM_BOT_TOKEN=seu-token
 supabase secrets set ALLOWED_ORIGINS=https://seudominio.com
 ```
+
+---
+
+## Segurança do bot do Telegram
+
+- **Token secreto do webhook**: defina `TELEGRAM_WEBHOOK_SECRET` nos segredos da função e registre o webhook com o mesmo valor (`scripts/set-telegram-webhook.sh`). Com o segredo definido, chamadas sem o cabeçalho `X-Telegram-Bot-Api-Secret-Token` correto recebem 401. Sem o segredo, a função aceita qualquer chamada e registra um aviso no log a cada requisição.
+- **Autorização por OS**: fechar, editar e excluir conferem se a OS é da empresa do técnico; editar e excluir exigem ser o dono da OS ou administrador. A confirmação de exclusão só vale para a OS selecionada na mesma conversa.
+- **Reenvio**: a função responde 200 mesmo em erro, para o Telegram não repetir a mensagem.
+- **Conversa abandonada** expira em 2 horas.

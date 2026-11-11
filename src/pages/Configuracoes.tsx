@@ -433,7 +433,12 @@ export default function Configuracoes() {
                 ) : maquinasFiltradas.map((m) => (
                   <div key={m.id} className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-primary text-sm">{m.tag}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-primary text-sm">{m.tag}</span>
+                        <Badge variant="outline" className={(CRITICIDADE[m.criticidade] ?? CRITICIDADE.B).className}>
+                          {(CRITICIDADE[m.criticidade] ?? CRITICIDADE.B).label}
+                        </Badge>
+                      </div>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm" disabled={!m.tag} aria-label={`QR code de ${m.nome}`} onClick={() => setQrMaquina(m)} className="h-8 w-8 p-0">
                           <QrCode className="h-4 w-4" />

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { AlertTriangle, CheckCircle2, Clock, Loader2, Plus, RefreshCw, Trash2, Wifi, WifiOff, X } from 'lucide-react'
+import { AlertTriangle, Camera, CheckCircle2, Clock, Loader2, Lock, Plus, RefreshCw, Trash2, Wifi, WifiOff, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { useOfflineSync, offlineQueue } from '@/hooks/useOfflineSync'
-import { idbStore } from '@/lib/offline/store'
+import { useOfflineSync } from '@/hooks/useOfflineSync'
+import { offlineQueue, secureStore } from '@/lib/offline/local'
+import { compressPhoto } from '@/lib/offline/photo'
+import { PinGate } from '@/components/PinGate'
 import { readSnapshot, refreshSnapshot, type RefSnapshot } from '@/lib/offline/snapshot'
 import type { OfflineOp, PecaOffline } from '@/lib/offline/queue'
 import { Badge } from '@/components/ui/badge'
@@ -51,6 +53,7 @@ const emptyForm = {
   localizacao: '',
   descricao_problema: '',
   tecnico_id: '',
+  foto: null as string | null,
 }
 
 const emptyClose = {
@@ -63,6 +66,8 @@ const emptyClose = {
   peca_nome: '',
   peca_tag: '',
   peca_qtd: '1',
+  peca_estoque_id: '',
+  foto: null as string | null,
 }
 
 function statusLabel(op: OfflineOp): { text: string; className: string } {
@@ -71,11 +76,39 @@ function statusLabel(op: OfflineOp): { text: string; className: string } {
   return { text: 'Aguardando envio', className: 'border-yellow-500/30 text-yellow-400' }
 }
 
+function FotoField({ id, label, value, onPick, onClear }: {
+  id: string
+  label: string
+  value: string | null
+  onPick: (file: File | undefined) => void
+  onClear: () => void
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      {value ? (
+        <div className="relative overflow-hidden rounded-md border border-white/10">
+          <img src={value} alt="Foto anexada" className="h-40 w-full object-cover" />
+          <Button type="button" size="icon" variant="secondary" aria-label="Remover foto" className="absolute right-2 top-2 h-8 w-8" onClick={onClear}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <label htmlFor={id} className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-white/15 text-sm text-muted-foreground">
+          <Camera className="h-4 w-4" /> Tirar ou escolher foto
+          <input id={id} type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => { onPick(e.target.files?.[0]); e.target.value = '' }} />
+        </label>
+      )}
+    </div>
+  )
+}
+
 export default function Campo() {
   const { profile, user } = useAuth()
   const empresaId = profile?.empresa_id ?? null
   const ownerId = user?.id ?? null
-  const { online, ops: todasOps, syncing, lastReport, sync, refresh } = useOfflineSync(ownerId)
+  const [unlocked, setUnlocked] = useState(secureStore.isUnlocked)
+  const { online, ops: todasOps, syncing, lastReport, sync, refresh } = useOfflineSync(ownerId, unlocked)
   // Cada usuário vê e envia só os próprios lançamentos
   const ops = useMemo(() => todasOps.filter((o) => o.owner_id === ownerId), [todasOps, ownerId])
   const acessoExpirado = !online && !profile
@@ -88,18 +121,18 @@ export default function Campo() {
 
   // Dados de apoio: primeiro o que está no aparelho, depois atualiza se houver conexão
   useEffect(() => {
-    if (!empresaId) return
-    void readSnapshot(idbStore, empresaId).then((s) => s && setSnap(s))
-  }, [empresaId])
+    if (!empresaId || !unlocked) return
+    void readSnapshot(secureStore, empresaId).then((s) => s && setSnap(s))
+  }, [empresaId, unlocked])
 
   const loadSnapshot = useCallback(async () => {
-    if (!empresaId || !navigator.onLine) return
+    if (!empresaId || !unlocked || !navigator.onLine) return
     try {
-      setSnap(await refreshSnapshot(idbStore, empresaId))
+      setSnap(await refreshSnapshot(secureStore, empresaId))
     } catch (err) {
       console.warn('Não foi possível atualizar os dados de campo:', err)
     }
-  }, [empresaId])
+  }, [empresaId, unlocked])
 
   useEffect(() => {
     void loadSnapshot()
@@ -186,6 +219,7 @@ export default function Campo() {
         categoria_parada_id: form.categoria_parada_id,
         subcategoria_parada_id: form.subcategoria_parada_id || null,
         opened_at: new Date().toISOString(),
+        foto: form.foto,
       },
     }, ownerId)
 
@@ -198,23 +232,38 @@ export default function Campo() {
 
   function addPeca() {
     const qtd = Math.floor(Number(closeForm.peca_qtd))
-    if (!closeForm.peca_nome.trim()) return toast.error('Informe o nome da peça.')
     if (!(qtd >= 1)) return toast.error('Quantidade deve ser pelo menos 1.')
+    const item = snap?.pecas_estoque.find((x) => x.id === closeForm.peca_estoque_id)
+    if (item) {
+      const reservado = closeForm.pecas.filter((x) => x.peca_estoque_id === item.id).reduce((t, x) => t + x.quantidade, 0)
+      if (qtd > item.quantidade - reservado) {
+        return toast.error(`Saldo no aparelho: ${item.quantidade - reservado} ${item.unidade}.`)
+      }
+      setCloseForm({
+        ...closeForm,
+        pecas: [...closeForm.pecas, { nome_peca: item.nome, tag_peca: item.codigo, quantidade: qtd, peca_estoque_id: item.id }],
+        peca_qtd: '1',
+        peca_estoque_id: '',
+      })
+      return
+    }
+    if (!closeForm.peca_nome.trim()) return toast.error('Informe o nome da peça.')
     setCloseForm({
       ...closeForm,
       pecas: [
         ...closeForm.pecas,
-        { nome_peca: closeForm.peca_nome.trim(), tag_peca: closeForm.peca_tag.trim() || null, quantidade: qtd },
+        { nome_peca: closeForm.peca_nome.trim(), tag_peca: closeForm.peca_tag.trim() || null, quantidade: qtd, peca_estoque_id: null },
       ],
       peca_nome: '',
       peca_tag: '',
       peca_qtd: '1',
+      peca_estoque_id: '',
     })
   }
 
   async function submitClose(e: React.FormEvent) {
     e.preventDefault()
-    if (!closing || !ownerId) return
+    if (!closing || !ownerId || !empresaId) return
     if (!closeForm.categoria_problema_id) return toast.error('Selecione a causa raiz.')
     if (closeForm.diagnostico_solucao.trim().length < 5) return toast.error('Descreva o diagnóstico e a solução (mínimo de 5 caracteres).')
 
@@ -222,6 +271,8 @@ export default function Campo() {
       kind: 'close_os',
       os_client_uuid: closing.os_client_uuid,
       os_id: closing.os_id,
+      empresa_id: empresaId,
+      foto: closeForm.foto,
       pecas: closeForm.pecas,
       close: {
         status_os: closeForm.status_os,
@@ -252,10 +303,23 @@ export default function Campo() {
     if (online) void sync()
   }
 
+  async function pickFoto(file: File | undefined, apply: (dataUrl: string) => void) {
+    if (!file) return
+    try {
+      apply(await compressPhoto(file))
+    } catch {
+      toast.error('Não foi possível processar a foto.')
+    }
+  }
+
   const describe = (op: OfflineOp) =>
     op.kind === 'open_os'
       ? `Abertura: ${op.open.equipamento_nome}`
       : `Fechamento: ${op.os_id ? `OS #${op.os_id}` : 'OS aberta offline'}`
+
+  if (!unlocked) {
+    return <PinGate ownerId={ownerId} onUnlocked={() => setUnlocked(true)} />
+  }
 
   return (
     <div className="mx-auto max-w-xl space-y-4 pb-24">
@@ -268,10 +332,25 @@ export default function Campo() {
               : 'Conecte-se uma vez para baixar máquinas e categorias.'}
           </p>
         </div>
-        <Badge variant="outline" className={online ? 'border-green-500/30 text-green-400' : 'border-yellow-500/30 text-yellow-400'}>
-          {online ? <Wifi className="mr-1 h-3 w-3" /> : <WifiOff className="mr-1 h-3 w-3" />}
-          {online ? 'Online' : 'Offline'}
-        </Badge>
+        <div className="flex shrink-0 items-center gap-2">
+          <Badge variant="outline" className={online ? 'border-green-500/30 text-green-400' : 'border-yellow-500/30 text-yellow-400'}>
+            {online ? <Wifi className="mr-1 h-3 w-3" /> : <WifiOff className="mr-1 h-3 w-3" />}
+            {online ? 'Online' : 'Offline'}
+          </Badge>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9"
+            aria-label="Bloquear Modo Campo"
+            onClick={() => {
+              secureStore.lock()
+              setSnap(null)
+              setUnlocked(false)
+            }}
+          >
+            <Lock className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <Card className="glass-panel border-white/5">
@@ -441,6 +520,8 @@ export default function Campo() {
             <Textarea id="descricao" rows={4} value={form.descricao_problema} onChange={(e) => setForm({ ...form, descricao_problema: e.target.value })} />
           </div>
 
+          <FotoField id="foto-abertura" label="Foto do problema (opcional)" value={form.foto} onPick={(f) => pickFoto(f, (d) => setForm((prev) => ({ ...prev, foto: d })))} onClear={() => setForm({ ...form, foto: null })} />
+
           <Button type="submit" className="h-12 w-full text-base" disabled={!snap || !profile}>
             <Plus className="mr-2 h-5 w-5" /> Salvar OS
           </Button>
@@ -600,6 +681,7 @@ export default function Campo() {
                   <span>
                     {p.quantidade}× {p.nome_peca}
                     {p.tag_peca ? ` (${p.tag_peca})` : ''}
+                    {p.peca_estoque_id ? ' · estoque' : ''}
                   </span>
                   <button
                     type="button"
@@ -610,8 +692,23 @@ export default function Campo() {
                   </button>
                 </div>
               ))}
+              {(snap?.pecas_estoque.length ?? 0) > 0 && (
+                <select
+                  aria-label="Origem da peça"
+                  className={selectClass}
+                  value={closeForm.peca_estoque_id}
+                  onChange={(e) => setCloseForm({ ...closeForm, peca_estoque_id: e.target.value })}
+                >
+                  <option value="">Peça avulsa (fora do estoque)</option>
+                  {snap?.pecas_estoque.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.nome} — {x.quantidade} {x.unidade}
+                    </option>
+                  ))}
+                </select>
+              )}
               <div className="grid grid-cols-6 gap-2">
-                <Input aria-label="Nome da peça" placeholder="Peça" className="col-span-3 h-10" value={closeForm.peca_nome} onChange={(e) => setCloseForm({ ...closeForm, peca_nome: e.target.value })} />
+                <Input aria-label="Nome da peça" placeholder="Peça" disabled={!!closeForm.peca_estoque_id} className="col-span-3 h-10" value={closeForm.peca_estoque_id ? (snap?.pecas_estoque.find((x) => x.id === closeForm.peca_estoque_id)?.nome ?? '') : closeForm.peca_nome} onChange={(e) => setCloseForm({ ...closeForm, peca_nome: e.target.value })} />
                 <Input aria-label="Quantidade" type="number" min={1} className="col-span-1 h-10" value={closeForm.peca_qtd} onChange={(e) => setCloseForm({ ...closeForm, peca_qtd: e.target.value })} />
                 <Button type="button" variant="secondary" className="col-span-2 h-10" onClick={addPeca}>
                   Adicionar
@@ -623,6 +720,8 @@ export default function Campo() {
               <Label htmlFor="notas">Notas finais (opcional)</Label>
               <Textarea id="notas" rows={2} value={closeForm.notas_finais} onChange={(e) => setCloseForm({ ...closeForm, notas_finais: e.target.value })} />
             </div>
+
+            <FotoField id="foto-fechamento" label="Foto do serviço (opcional)" value={closeForm.foto} onPick={(f) => pickFoto(f, (d) => setCloseForm((prev) => ({ ...prev, foto: d })))} onClear={() => setCloseForm({ ...closeForm, foto: null })} />
 
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setClosing(null)}>

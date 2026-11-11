@@ -20,12 +20,15 @@ import {
   Home,
   Boxes,
   Smartphone,
+  Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { OSForm } from '@/components/OSForm';
-import { offlineQueue } from '@/hooks/useOfflineSync';
+import { offlineQueue, secureStore } from '@/lib/offline/local';
+import { idbStore } from '@/lib/offline/store';
+import { pinOwner } from '@/lib/offline/pin';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,14 +71,18 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const handleSignOut = async () => {
     // Lançamentos de OS ainda não enviados seriam apagados: pede confirmação antes
-    const pendentes = await offlineQueue.list();
-    if (pendentes.length > 0) {
-      const ok = window.confirm(
-        `Há ${pendentes.length} lançamento(s) de OS que ainda não foram enviados. ` +
-        'Se você sair, eles serão apagados deste aparelho. Sair mesmo assim?'
-      );
-      if (!ok) return;
-      await offlineQueue.clear();
+    let aviso: string | null = null;
+    if (secureStore.isUnlocked) {
+      const pendentes = await offlineQueue.list();
+      if (pendentes.length > 0) {
+        aviso = `Há ${pendentes.length} lançamento(s) de OS que ainda não foram enviados. `;
+      }
+    } else if (await pinOwner(idbStore)) {
+      // Bloqueado: não dá para contar sem o PIN, então avisa que pode haver pendências
+      aviso = 'O Modo Campo está bloqueado e pode ter lançamentos de OS ainda não enviados. ';
+    }
+    if (aviso && !window.confirm(aviso + 'Se você sair, eles serão apagados deste aparelho. Sair mesmo assim?')) {
+      return;
     }
     await signOut();
     navigate('/auth');
@@ -147,6 +154,10 @@ export function AppLayout({ children }: AppLayoutProps) {
       isActive: location.pathname === "/meu-desempenho",
     },
   ];
+
+  const maisAtivo = [...navItems, ...technicalItems].some(
+    (item) => item.isActive && !["/", "/ordens-servico", "/campo"].includes(item.path)
+  );
 
   return (
     <SidebarProvider>
@@ -275,7 +286,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </h2>
                 <div className="hidden md:flex items-center gap-2 text-[10px] text-muted-foreground">
                   <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-                  Sistema Online • v3.0 Premium
+                  Sistema Online
                 </div>
               </div>
             </div>
@@ -358,33 +369,56 @@ export function AppLayout({ children }: AppLayoutProps) {
             <Button 
               size="icon" 
               className="h-14 w-14 rounded-full bg-primary shadow-neon hover:scale-110 active:scale-95 transition-all duration-300 border-4 border-background"
-              onClick={() => setIsOSFormOpen(true)}
+              aria-label="Nova OS"
+              onClick={() => {
+                // Sem conexão o formulário online não grava: abre o Modo Campo, que funciona offline
+                if (!navigator.onLine) navigate('/campo');
+                else setIsOSFormOpen(true);
+              }}
             >
               <Plus className="h-7 w-7 text-primary-foreground" />
             </Button>
           </div>
 
           <button 
-            onClick={() => navigate('/assistente')}
+            onClick={() => navigate('/campo')}
             className={cn(
               "flex flex-col items-center p-2 transition-all",
-              location.pathname === "/assistente" ? "text-primary scale-110" : "text-muted-foreground"
+              location.pathname === "/campo" ? "text-primary scale-110" : "text-muted-foreground"
             )}
           >
-            <MessageSquare className="h-5 w-5" />
-            <span className="text-[10px] mt-1 font-medium">IA</span>
+            <Smartphone className="h-5 w-5" />
+            <span className="text-[10px] mt-1 font-medium">Campo</span>
           </button>
 
-          <button 
-            onClick={() => navigate('/configuracoes')}
-            className={cn(
-              "flex flex-col items-center p-2 transition-all",
-              location.pathname === "/configuracoes" ? "text-primary scale-110" : "text-muted-foreground"
-            )}
-          >
-            <Settings2 className="h-5 w-5" />
-            <span className="text-[10px] mt-1 font-medium">Ativos</span>
-          </button>
+          {/* Demais telas: no celular a barra lateral não aparece */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                aria-label="Mais telas"
+                className={cn(
+                  "flex flex-col items-center p-2 transition-all",
+                  maisAtivo ? "text-primary scale-110" : "text-muted-foreground"
+                )}
+              >
+                <Menu className="h-5 w-5" />
+                <span className="text-[10px] mt-1 font-medium">Mais</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="top" className="w-60 glass-panel border-white/10 mb-2">
+              {[...navItems, ...technicalItems]
+                .filter((item) => !["/", "/ordens-servico", "/campo"].includes(item.path))
+                .map((item) => (
+                  <DropdownMenuItem
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={cn("h-11", item.isActive && "text-primary")}
+                  >
+                    <item.icon className="mr-3 h-4 w-4" /> {item.title}
+                  </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Global OS Form for FAB */}

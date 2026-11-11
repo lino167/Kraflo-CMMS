@@ -216,6 +216,63 @@ export default function Estoque() {
     onError: (error) => toast.error(getErrorMessage(error)),
   })
 
+  const acoes = (p: Peca) => (
+    <div className="flex justify-end gap-1">
+      {podeGerenciar && (
+        <Button
+          variant="ghost"
+          size="sm"
+          title="Entrada"
+          aria-label={`Entrada de ${p.nome}`}
+          onClick={() => setMovDialog({ peca: p, tipo: 'entrada' })}
+        >
+          <ArrowDownToLine className="h-4 w-4 text-green-400" />
+        </Button>
+      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        title="Saída"
+        aria-label={`Saída de ${p.nome}`}
+        disabled={p.quantidade <= 0}
+        onClick={() => setMovDialog({ peca: p, tipo: 'saida' })}
+      >
+        <ArrowUpFromLine className="h-4 w-4 text-red-400" />
+      </Button>
+      {podeGerenciar && (
+        <Button
+          variant="ghost"
+          size="sm"
+          title="Ajuste de inventário"
+          aria-label={`Ajustar ${p.nome}`}
+          onClick={() => setMovDialog({ peca: p, tipo: 'ajuste' })}
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+        </Button>
+      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        title="Histórico"
+        aria-label={`Histórico de ${p.nome}`}
+        onClick={() => setHistoricoPeca(p)}
+      >
+        <History className="h-4 w-4" />
+      </Button>
+      {podeGerenciar && (
+        <Button
+          variant="ghost"
+          size="sm"
+          title="Editar"
+          aria-label={`Editar ${p.nome}`}
+          onClick={() => setPecaDialog({ open: true, peca: p })}
+        >
+          <Edit2 className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  )
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -303,7 +360,37 @@ export default function Estoque() {
               />
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              <ul className="divide-y divide-white/5 md:hidden">
+                {filtradas.map((p) => {
+                  const repor = sugestaoReposicao(p)
+                  return (
+                    <li key={p.id} className="space-y-3 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium">{p.nome}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {[p.codigo, p.localizacao].filter(Boolean).join(' · ') || 'Sem código'}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="font-mono text-lg font-bold leading-tight">
+                            {formatQtd(p.quantidade)} <span className="text-xs font-normal">{p.unidade}</span>
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">mín. {formatQtd(p.estoque_minimo)}</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <NivelBadge peca={p} />
+                        {repor > 0 && <span>Repor {formatQtd(repor)} {p.unidade}</span>}
+                        <span className="ml-auto font-mono">{formatBRL(p.custo_unitario)}</span>
+                      </div>
+                      {acoes(p)}
+                    </li>
+                  )
+                })}
+              </ul>
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader className="bg-white/5">
                   <TableRow>
@@ -343,60 +430,7 @@ export default function Estoque() {
                         </TableCell>
                         <TableCell className="text-right font-mono">{formatBRL(p.custo_unitario)}</TableCell>
                         <TableCell>
-                          <div className="flex justify-end gap-1">
-                            {podeGerenciar && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Entrada"
-                                aria-label={`Entrada de ${p.nome}`}
-                                onClick={() => setMovDialog({ peca: p, tipo: 'entrada' })}
-                              >
-                                <ArrowDownToLine className="h-4 w-4 text-green-400" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Saída"
-                              aria-label={`Saída de ${p.nome}`}
-                              disabled={p.quantidade <= 0}
-                              onClick={() => setMovDialog({ peca: p, tipo: 'saida' })}
-                            >
-                              <ArrowUpFromLine className="h-4 w-4 text-red-400" />
-                            </Button>
-                            {podeGerenciar && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Ajuste de inventário"
-                                aria-label={`Ajustar ${p.nome}`}
-                                onClick={() => setMovDialog({ peca: p, tipo: 'ajuste' })}
-                              >
-                                <SlidersHorizontal className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Histórico"
-                              aria-label={`Histórico de ${p.nome}`}
-                              onClick={() => setHistoricoPeca(p)}
-                            >
-                              <History className="h-4 w-4" />
-                            </Button>
-                            {podeGerenciar && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Editar"
-                                aria-label={`Editar ${p.nome}`}
-                                onClick={() => setPecaDialog({ open: true, peca: p })}
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
+                          {acoes(p)}
                         </TableCell>
                       </TableRow>
                     )
@@ -404,6 +438,7 @@ export default function Estoque() {
                 </TableBody>
               </Table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>

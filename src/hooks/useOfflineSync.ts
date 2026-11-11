@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
-import { idbStore } from '@/lib/offline/store'
-import { OfflineQueue, type OfflineOp, type SyncReport } from '@/lib/offline/queue'
+import { offlineQueue } from '@/lib/offline/local'
+import type { OfflineOp, SyncReport } from '@/lib/offline/queue'
 import { sendOp } from '@/lib/offline/remote'
 
-/** Fila única do aparelho, compartilhada por todas as telas. */
-export const offlineQueue = new OfflineQueue(idbStore)
+export { offlineQueue }
 
 const SYNC_INTERVAL_MS = 30_000
 
 /**
  * Estado da conexão e da fila de envio. Envia automaticamente quando a conexão volta,
  * quando o app volta a ficar visível e a cada 30 s enquanto estiver aberto.
+ * `unlocked`: os dados offline só ficam acessíveis depois do PIN.
  */
-export function useOfflineSync(ownerId: string | null) {
+export function useOfflineSync(ownerId: string | null, unlocked: boolean) {
   const [online, setOnline] = useState(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine,
   )
@@ -21,11 +21,15 @@ export function useOfflineSync(ownerId: string | null) {
   const [lastReport, setLastReport] = useState<SyncReport | null>(null)
 
   const refresh = useCallback(async () => {
+    if (!unlocked) {
+      setOps([])
+      return
+    }
     setOps(await offlineQueue.list())
-  }, [])
+  }, [unlocked])
 
   const sync = useCallback(async (): Promise<SyncReport | null> => {
-    if (!ownerId) return null
+    if (!ownerId || !unlocked) return null
     if (typeof navigator !== 'undefined' && !navigator.onLine) return null
     setSyncing(true)
     try {
@@ -36,10 +40,11 @@ export function useOfflineSync(ownerId: string | null) {
       setSyncing(false)
       await refresh()
     }
-  }, [refresh, ownerId])
+  }, [refresh, ownerId, unlocked])
 
   useEffect(() => {
     void refresh()
+    void sync()
 
     const handleOnline = () => {
       setOnline(true)
