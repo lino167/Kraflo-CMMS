@@ -263,7 +263,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
     const monthName = today.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     
     const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-    const blanks = Array.from({ length: firstDayIndex }, (_, i) => null);
+    const blanks = Array.from({ length: firstDayIndex }, () => null);
     const gridDays = [...blanks, ...daysArray];
 
     const osForActiveDay = osList.filter((os) => {

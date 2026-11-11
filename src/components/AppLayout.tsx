@@ -18,6 +18,7 @@ import {
   Settings2,
   Plus,
   Home,
+  Boxes,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -52,11 +53,16 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const { user, profile, roles, isAdminKraflo, signOut } = useAuth();
+  const { user, profile, roles, isAdminKraflo, isLoading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isOSFormOpen, setIsOSFormOpen] = React.useState(false);
   const queryClient = useQueryClient();
+
+  // Nenhuma tela interna deve abrir sem sessão
+  React.useEffect(() => {
+    if (!authLoading && !user) navigate('/auth', { replace: true });
+  }, [authLoading, user, navigate]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -87,6 +93,12 @@ export function AppLayout({ children }: AppLayoutProps) {
       icon: Settings2,
       path: "/configuracoes",
       isActive: location.pathname === "/configuracoes",
+    },
+    {
+      title: "Estoque de Peças",
+      icon: Boxes,
+      path: "/estoque",
+      isActive: location.pathname === "/estoque",
     },
     {
       title: "Assistente IA",
@@ -239,7 +251,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                    location.pathname.includes("ordens-servico") ? "Ordens de Serviço" :
                    location.pathname.includes("biblioteca") ? "Biblioteca de Manuais" :
                    location.pathname.includes("equipamento") ? "Raio-X de Equipamento" : 
-                   location.pathname.includes("configuracoes") ? "Gestão de Ativos" : "Sistema Industrial"}
+                   location.pathname.includes("configuracoes") ? "Gestão de Ativos" :
+                   location.pathname.includes("estoque") ? "Estoque de Peças" : "Sistema Industrial"}
                 </h2>
                 <div className="hidden md:flex items-center gap-2 text-[10px] text-muted-foreground">
                   <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />

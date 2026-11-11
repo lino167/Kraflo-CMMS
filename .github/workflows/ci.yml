@@ -22,8 +22,12 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
+    # O tsconfig raiz tem "files": [] — é preciso apontar o projeto do app para checar de fato
     - name: TypeScript Compiler Check (tsc)
-      run: npx tsc --noEmit
+      run: npx tsc --noEmit -p tsconfig.app.json
+
+    - name: Unit tests
+      run: npm test
 
     - name: Build Project
       run: npm run build

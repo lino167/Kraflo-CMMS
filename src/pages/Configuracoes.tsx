@@ -11,7 +11,8 @@ import {
   Trash2, 
   Settings2,
   Loader2,
-  Check
+  Check,
+  QrCode
 } from 'lucide-react';
 import { 
   Card, 
@@ -49,6 +50,10 @@ import {
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { QRCodeDialog, type QRCodeItem } from '@/components/QRCodeDialog';
+import { getErrorMessage } from '@/lib/error-handler';
+import { equipamentoUrl, portalUrl } from '@/lib/estoque';
 
 interface Setor {
   id: string;
@@ -64,8 +69,15 @@ interface Maquina {
   modelo: string | null;
   setor_id: string | null;
   situacao: string | null;
-  setores?: { nome: string };
+  criticidade: string;
+  setores?: { nome: string } | null;
 }
+
+const CRITICIDADE: Record<string, { label: string; className: string }> = {
+  A: { label: 'A · Crítica', className: 'border-red-500/30 bg-red-500/10 text-red-400' },
+  B: { label: 'B · Média', className: 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400' },
+  C: { label: 'C · Baixa', className: 'border-white/10 bg-white/5 text-muted-foreground' },
+};
 
 export default function Configuracoes() {
   const { profile } = useAuth();
@@ -77,14 +89,16 @@ export default function Configuracoes() {
   const [isMaquinaDialogOpen, setIsMaquinaDialogOpen] = useState(false);
   const [editingSetor, setEditingSetor] = useState<Setor | null>(null);
   const [editingMaquina, setEditingMaquina] = useState<Maquina | null>(null);
+  const [qrMaquina, setQrMaquina] = useState<Maquina | null>(null);
+  const [buscaMaquina, setBuscaMaquina] = useState('');
 
   // Queries
   const { data: setores, isLoading: setoresLoading } = useQuery({
     queryKey: ['setores', profile?.empresa_id],
     queryFn: async () => {
       if (!profile?.empresa_id) return [];
-      const { data, error } = await (supabase
-        .from('setores') as any)
+      const { data, error } = await supabase
+        .from('setores')
         .select('*')
         .eq('empresa_id', profile.empresa_id as string)
         .order('nome');
@@ -98,23 +112,61 @@ export default function Configuracoes() {
     queryKey: ['maquinas', profile?.empresa_id],
     queryFn: async () => {
       if (!profile?.empresa_id) return [];
-      const { data, error } = await (supabase
-        .from('maquinas') as any)
+      const { data, error } = await supabase
+        .from('maquinas')
         .select('*, setores(nome)')
         .eq('empresa_id', profile.empresa_id as string)
         .order('tag');
       if (error) throw error;
-      return (data as any) as (Maquina & { setores: { nome: string } | null })[];
+      return data as Maquina[];
     },
     enabled: !!profile?.empresa_id
   });
+
+  // Link ativo do portal de solicitações (para o QR "abrir chamado" da máquina)
+  const { data: portalToken } = useQuery({
+    queryKey: ['portal-link', profile?.empresa_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('links_acesso_convidado')
+        .select('token, expires_at')
+        .eq('empresa_id', profile!.empresa_id as string)
+        .eq('ativo', true)
+        .order('created_at', { ascending: false });
+      const valido = (data ?? []).find((l) => !l.expires_at || new Date(l.expires_at) > new Date());
+      return valido?.token ?? null;
+    },
+    enabled: !!profile?.empresa_id
+  });
+
+  const maquinasFiltradas = (maquinas ?? []).filter((m) => {
+    const termo = buscaMaquina.trim().toLowerCase();
+    return !termo || m.nome.toLowerCase().includes(termo) || (m.tag ?? '').toLowerCase().includes(termo);
+  });
+
+  const qrItems: QRCodeItem[] = qrMaquina?.tag
+    ? [
+        {
+          label: 'Histórico',
+          hint: 'Para técnicos: abre o Raio-X do equipamento (exige login)',
+          url: equipamentoUrl(window.location.origin, qrMaquina.tag),
+        },
+        ...(portalToken
+          ? [{
+              label: 'Abrir chamado',
+              hint: 'Para operadores: abre a solicitação já com esta máquina',
+              url: portalUrl(window.location.origin, portalToken, qrMaquina.tag),
+            }]
+          : []),
+      ]
+    : [];
 
   // Mutations - Setor
   const upsertSetor = useMutation({
     mutationFn: async (values: Partial<Setor>) => {
       if (!profile?.empresa_id) throw new Error("Empresa não identificada");
       
-      const table = supabase.from('setores') as any;
+      const table = supabase.from('setores');
       if (editingSetor) {
         const { error } = await table
           .update(values)
@@ -122,7 +174,7 @@ export default function Configuracoes() {
         if (error) throw error;
       } else {
         const { error } = await table
-          .insert([{ ...values, empresa_id: profile.empresa_id }]);
+          .insert([{ nome: values.nome ?? '', descricao: values.descricao, empresa_id: profile.empresa_id }]);
         if (error) throw error;
       }
     },
@@ -131,26 +183,28 @@ export default function Configuracoes() {
       setIsSetorDialogOpen(false);
       setEditingSetor(null);
       toast.success('Setor salvo com sucesso!');
-    }
+    },
+    onError: (error) => toast.error(getErrorMessage(error))
   });
 
   const deleteSetor = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase.from('setores') as any).delete().eq('id', id);
+      const { error } = await supabase.from('setores').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['setores'] });
       toast.success('Setor removido.');
-    }
+    },
+    onError: (error) => toast.error(getErrorMessage(error))
   });
 
   // Mutations - Maquina
   const upsertMaquina = useMutation({
-    mutationFn: async (values: Partial<Maquina>) => {
+    mutationFn: async (values: Partial<Omit<Maquina, 'setores'>>) => {
       if (!profile?.empresa_id) throw new Error("Empresa não identificada");
 
-      const table = supabase.from('maquinas') as any;
+      const table = supabase.from('maquinas');
       if (editingMaquina) {
         const { error } = await table
           .update(values)
@@ -158,7 +212,7 @@ export default function Configuracoes() {
         if (error) throw error;
       } else {
         const { error } = await table
-          .insert([{ ...values, empresa_id: profile.empresa_id }]);
+          .insert([{ ...values, nome: values.nome ?? '', empresa_id: profile.empresa_id }]);
         if (error) throw error;
       }
     },
@@ -167,18 +221,20 @@ export default function Configuracoes() {
       setIsMaquinaDialogOpen(false);
       setEditingMaquina(null);
       toast.success('Máquina salva com sucesso!');
-    }
+    },
+    onError: (error) => toast.error(getErrorMessage(error))
   });
 
   const deleteMaquina = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase.from('maquinas') as any).delete().eq('id', id);
+      const { error } = await supabase.from('maquinas').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maquinas'] });
       toast.success('Máquina removida.');
-    }
+    },
+    onError: (error) => toast.error(getErrorMessage(error))
   });
 
   return (
@@ -213,7 +269,7 @@ export default function Configuracoes() {
           <div className="flex items-center justify-between gap-4">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar máquina..." className="pl-9 glass-input" />
+              <Input placeholder="Buscar máquina..." className="pl-9 glass-input" value={buscaMaquina} onChange={(e) => setBuscaMaquina(e.target.value)} />
             </div>
             
             <Dialog open={isMaquinaDialogOpen} onOpenChange={(open) => {
@@ -235,6 +291,7 @@ export default function Configuracoes() {
                     fabricante: formData.get('fabricante') as string,
                     modelo: formData.get('modelo') as string,
                     setor_id: formData.get('setor_id') as string || null,
+                    criticidade: (formData.get('criticidade') as string) || 'B',
                   });
                 }}>
                   <DialogHeader>
@@ -263,6 +320,21 @@ export default function Configuracoes() {
                             {setores?.map((s) => (
                               <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
                             ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="criticidade" className="text-right">Criticidade</Label>
+                      <div className="col-span-3">
+                        <Select name="criticidade" defaultValue={editingMaquina?.criticidade || 'B'}>
+                          <SelectTrigger id="criticidade" className="glass-input">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="A">A · Crítica (para a produção)</SelectItem>
+                            <SelectItem value="B">B · Média (reduz capacidade)</SelectItem>
+                            <SelectItem value="C">C · Baixa (sem impacto direto)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -298,16 +370,17 @@ export default function Configuracoes() {
                       <TableHead className="w-[100px]">TAG</TableHead>
                       <TableHead>Máquina</TableHead>
                       <TableHead>Setor</TableHead>
+                      <TableHead>Criticidade</TableHead>
                       <TableHead>Fabricante/Modelo</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {maquinasLoading ? (
-                      <TableRow><TableCell colSpan={5} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
-                    ) : maquinas?.length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhuma máquina cadastrada.</TableCell></TableRow>
-                    ) : maquinas?.map((m) => (
+                      <TableRow><TableCell colSpan={6} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                    ) : maquinasFiltradas.length === 0 ? (
+                      <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhuma máquina cadastrada.</TableCell></TableRow>
+                    ) : maquinasFiltradas.map((m) => (
                       <TableRow key={m.id} className="hover:bg-white/5 transition-colors">
                         <TableCell className="font-mono font-bold text-primary">{m.tag}</TableCell>
                         <TableCell className="font-medium">{m.nome}</TableCell>
@@ -319,10 +392,18 @@ export default function Configuracoes() {
                             </div>
                           ) : '-'}
                         </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={(CRITICIDADE[m.criticidade] ?? CRITICIDADE.B).className}>
+                            {(CRITICIDADE[m.criticidade] ?? CRITICIDADE.B).label}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {m.fabricante} {m.modelo && `/ ${m.modelo}`}
                         </TableCell>
                         <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" disabled={!m.tag} title="QR code" aria-label={`QR code de ${m.nome}`} onClick={() => setQrMaquina(m)} className="hover:text-primary">
+                            <QrCode className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="sm" onClick={() => {
                             setEditingMaquina(m);
                             setIsMaquinaDialogOpen(true);
@@ -347,13 +428,16 @@ export default function Configuracoes() {
               <div className="md:hidden divide-y divide-white/5">
                 {maquinasLoading ? (
                   <div className="py-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-                ) : maquinas?.length === 0 ? (
+                ) : maquinasFiltradas.length === 0 ? (
                   <div className="py-12 text-center text-muted-foreground">Nenhuma máquina cadastrada.</div>
-                ) : maquinas?.map((m) => (
+                ) : maquinasFiltradas.map((m) => (
                   <div key={m.id} className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="font-mono font-bold text-primary text-sm">{m.tag}</span>
                       <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" disabled={!m.tag} aria-label={`QR code de ${m.nome}`} onClick={() => setQrMaquina(m)} className="h-8 w-8 p-0">
+                          <QrCode className="h-4 w-4" />
+                        </Button>
                         <Button variant="ghost" size="sm" onClick={() => {
                           setEditingMaquina(m);
                           setIsMaquinaDialogOpen(true);
@@ -447,6 +531,14 @@ export default function Configuracoes() {
           ))}
         </TabsContent>
       </Tabs>
+
+      <QRCodeDialog
+        open={!!qrMaquina}
+        onOpenChange={(open) => !open && setQrMaquina(null)}
+        title={qrMaquina ? `${qrMaquina.tag} — ${qrMaquina.nome}` : ''}
+        subtitle={portalToken ? undefined : 'Gere um link do portal em Dashboard › Gestão & Facilities › Portal de Solicitações para ter também o QR de abrir chamado.'}
+        items={qrItems}
+      />
 
       {/* Setor Dialog */}
       <Dialog open={isSetorDialogOpen} onOpenChange={(open) => {

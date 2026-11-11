@@ -148,7 +148,7 @@ export function OSForm({ open, onClose, onSuccess, editingOS, prefilledData }: O
     }
     setCheckingReincidencia(true)
     try {
-      const { data, error } = await (supabase as any).rpc('fn_check_reincidencia', {
+      const { data, error } = await supabase.rpc('fn_check_reincidencia', {
         p_empresa_id: profile.empresa_id,
         p_tag: tag.trim(),
         p_dias_limite: 60,
@@ -377,10 +377,11 @@ export function OSForm({ open, onClose, onSuccess, editingOS, prefilledData }: O
 
         // Se veio de Solicitação, atualiza a solicitação para verificado no Supabase
         if (prefilledData?.solicitacao_origem_id) {
-          const { error: updReqErr } = await (supabase as any)
+          const { error: updReqErr } = await supabase
             .from('solicitacoes_manutencao')
             .update({
-              status: 'verificado'
+              status: 'verificado',
+              os_gerada_id: insertedOS?.[0]?.id ?? null
             })
             .eq('id', prefilledData.solicitacao_origem_id)
 

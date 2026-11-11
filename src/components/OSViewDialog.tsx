@@ -28,6 +28,7 @@ import {
   Loader2,
   Tag,
   Crosshair,
+  History,
 } from 'lucide-react'
 
 interface OS {
@@ -62,6 +63,31 @@ interface Peca {
   nome_peca: string
   tag_peca: string | null
   quantidade: number
+  custo_unitario: number | null
+}
+
+interface HistoricoEvento {
+  id: number
+  evento: string
+  valor_anterior: string | null
+  valor_novo: string | null
+  usuario_nome: string | null
+  created_at: string
+}
+
+function descreverEvento(h: HistoricoEvento): string {
+  switch (h.evento) {
+    case 'criada':
+      return `OS aberta (${h.valor_novo ?? 'Aberta'})`
+    case 'status':
+      return `Status: ${h.valor_anterior ?? '-'} → ${h.valor_novo ?? '-'}`
+    case 'atribuicao':
+      return `Técnico: ${h.valor_anterior ?? 'sem técnico'} → ${h.valor_novo ?? 'sem técnico'}`
+    case 'prioridade':
+      return `Prioridade: ${h.valor_anterior ?? '-'} → ${h.valor_novo ?? '-'}`
+    default:
+      return h.evento
+  }
 }
 
 interface OSViewDialogProps {
@@ -78,6 +104,7 @@ export function OSViewDialog({
   tecnicos,
 }: OSViewDialogProps) {
   const [pecas, setPecas] = useState<Peca[]>([])
+  const [historico, setHistorico] = useState<HistoricoEvento[]>([])
   const [isExporting, setIsExporting] = useState(false)
   const {
     getCategoriaParadaNome,
@@ -90,7 +117,7 @@ export function OSViewDialog({
 
     const { data, error } = await supabase
       .from('pecas_utilizadas')
-      .select('id, nome_peca, tag_peca, quantidade')
+      .select('id, nome_peca, tag_peca, quantidade, custo_unitario')
       .eq('ordem_id', os.id)
 
     if (error) {
@@ -99,7 +126,17 @@ export function OSViewDialog({
     }
 
     setPecas(data || [])
+
+    // Trilha de auditoria (falha silenciosa se a migration ainda não foi aplicada)
+    const { data: hist } = await supabase
+      .from('os_historico')
+      .select('id, evento, valor_anterior, valor_novo, usuario_nome, created_at')
+      .eq('ordem_id', os.id)
+      .order('created_at', { ascending: true })
+    setHistorico(hist || [])
   }, [os])
+
+  const custoPecas = pecas.reduce((total, p) => total + p.quantidade * (p.custo_unitario ?? 0), 0)
 
   useEffect(() => {
     if (open && os) {
@@ -374,6 +411,11 @@ export function OSViewDialog({
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
                   <Package className="h-4 w-4" />
                   Peças Utilizadas
+                  {custoPecas > 0 && (
+                    <span className="ml-auto font-mono text-foreground">
+                      Custo de peças: {custoPecas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  )}
                 </div>
                 <div className="grid gap-2">
                   {pecas.map((peca) => (
@@ -393,6 +435,29 @@ export function OSViewDialog({
                     </div>
                   ))}
                 </div>
+              </div>
+            </>
+          )}
+
+          {/* Trilha de auditoria */}
+          {historico.length > 0 && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <History className="h-4 w-4" />
+                  Histórico da OS
+                </div>
+                <ol className="space-y-2 border-l border-white/10 pl-4">
+                  {historico.map((h) => (
+                    <li key={h.id} className="text-sm">
+                      <p>{descreverEvento(h)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(h.created_at).toLocaleString('pt-BR')} • {h.usuario_nome ?? 'Sistema'}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
               </div>
             </>
           )}

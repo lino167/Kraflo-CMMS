@@ -162,7 +162,7 @@ export default function OrdensServico() {
     setIsLoadingSolicitacoes(true)
     try {
       const { data, error } = await supabase
-        .from('solicitacoes_manutencao' as any)
+        .from('solicitacoes_manutencao')
         .select('*')
         .eq('empresa_id', profile.empresa_id)
         .eq('status', 'pendente')
