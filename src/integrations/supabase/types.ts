@@ -862,6 +862,7 @@ export type Database = {
           updated_at: string
           url_arquivo_fechamento: string | null
           url_foto: string | null
+          client_uuid: string | null
         }
         Insert: {
           categoria_parada_id?: string | null
@@ -893,6 +894,7 @@ export type Database = {
           updated_at?: string
           url_arquivo_fechamento?: string | null
           url_foto?: string | null
+          client_uuid?: string | null
         }
         Update: {
           categoria_parada_id?: string | null
@@ -924,6 +926,7 @@ export type Database = {
           updated_at?: string
           url_arquivo_fechamento?: string | null
           url_foto?: string | null
+          client_uuid?: string | null
         }
         Relationships: [
           {

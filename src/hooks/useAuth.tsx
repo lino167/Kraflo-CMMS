@@ -15,6 +15,27 @@ interface UserProfile {
   id_telegram: number | null;
 }
 
+const PROFILE_CACHE_KEY = 'kraflo:profile-cache';
+
+function readCachedProfile(userId: string): { profile: UserProfile; roles: AppRole[] } | null {
+  try {
+    const raw = localStorage.getItem(PROFILE_CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw) as { userId: string; profile: UserProfile; roles: AppRole[] };
+    return cached.userId === userId ? { profile: cached.profile, roles: cached.roles } : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedProfile(userId: string, profile: UserProfile, roles: AppRole[]): void {
+  try {
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({ userId, profile, roles }));
+  } catch {
+    // armazenamento cheio ou bloqueado: segue sem cache
+  }
+}
+
 interface SignUpData {
   nomeCompleto: string;
   funcao?: string;
@@ -78,6 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const fetchUserData = async (userId: string) => {
+    // Sem conexão, usa o último perfil conhecido deste usuário (modo campo offline)
+    const cached = readCachedProfile(userId);
+    if (cached) {
+      setProfile(cached.profile);
+      setRoles(cached.roles);
+    }
     try {
       // Fetch profile
       const { data: profileData } = await supabase
@@ -98,6 +125,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (rolesData) {
         setRoles(rolesData.map(r => r.role as AppRole));
+      }
+
+      if (profileData && rolesData) {
+        writeCachedProfile(userId, profileData as UserProfile, rolesData.map(r => r.role as AppRole));
       }
     } catch (error) {
       console.error('Error fetching user data:', error);

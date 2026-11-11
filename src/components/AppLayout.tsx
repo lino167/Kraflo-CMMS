@@ -19,6 +19,7 @@ import {
   Plus,
   Home,
   Boxes,
+  Smartphone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -93,6 +94,12 @@ export function AppLayout({ children }: AppLayoutProps) {
       icon: Settings2,
       path: "/configuracoes",
       isActive: location.pathname === "/configuracoes",
+    },
+    {
+      title: "Modo Campo",
+      icon: Smartphone,
+      path: "/campo",
+      isActive: location.pathname === "/campo",
     },
     {
       title: "Estoque de Peças",
@@ -252,7 +259,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                    location.pathname.includes("biblioteca") ? "Biblioteca de Manuais" :
                    location.pathname.includes("equipamento") ? "Raio-X de Equipamento" : 
                    location.pathname.includes("configuracoes") ? "Gestão de Ativos" :
-                   location.pathname.includes("estoque") ? "Estoque de Peças" : "Sistema Industrial"}
+                   location.pathname.includes("estoque") ? "Estoque de Peças" :
+                   location.pathname.includes("campo") ? "Modo Campo" : "Sistema Industrial"}
                 </h2>
                 <div className="hidden md:flex items-center gap-2 text-[10px] text-muted-foreground">
                   <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
