@@ -244,6 +244,9 @@ export function AppLayout({ children }: AppLayoutProps) {
               <DropdownMenuContent align="end" className="w-56 glass-panel border-white/10 shadow-surface">
                 <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/conta')}>
+                  <User className="mr-2 h-4 w-4" /> Conta e Equipe
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/meu-desempenho')}>
                   <Activity className="mr-2 h-4 w-4" /> Meu Desempenho
                 </DropdownMenuItem>
@@ -282,7 +285,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                    location.pathname.includes("equipamento") ? "Raio-X de Equipamento" : 
                    location.pathname.includes("configuracoes") ? "Gestão de Ativos" :
                    location.pathname.includes("estoque") ? "Estoque de Peças" :
-                   location.pathname.includes("campo") ? "Modo Campo" : "Sistema Industrial"}
+                   location.pathname.includes("campo") ? "Modo Campo" :
+                   location.pathname.includes("conta") ? "Conta e Equipe" : "Sistema Industrial"}
                 </h2>
                 <div className="hidden md:flex items-center gap-2 text-[10px] text-muted-foreground">
                   <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
@@ -311,6 +315,9 @@ export function AppLayout({ children }: AppLayoutProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 glass-panel border-white/10">
+                    <DropdownMenuItem onClick={() => navigate('/conta')}>
+                      <User className="mr-2 h-4 w-4" /> Conta e Equipe
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate('/meu-desempenho')}>
                       <Activity className="mr-2 h-4 w-4" /> Perfil
                     </DropdownMenuItem>

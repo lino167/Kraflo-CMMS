@@ -28,8 +28,8 @@ export async function handleOpenOSStart(
     await sendMessage(
       chatId,
       `❌ Você precisa estar cadastrado para usar esta função.\n\n` +
-      `📝 Cadastre-se pelo sistema web:\n${WEB_APP_URL}/auth\n\n` +
-      `🆔 Seu ID Telegram: \`${userId}\``,
+      `📝 Crie sua conta em ${WEB_APP_URL}/auth e, no app, abra *Conta e Equipe* → *Vincular Telegram*.\n` +
+      `Depois envie aqui: /vincular CODIGO`,
       undefined,
       'Markdown',
       true
@@ -137,7 +137,7 @@ async function handleOSPhotoStep(
     if (fileData) {
       // Create OS first to get the ID
       const newOS = await createOS(supabase, {
-        tecnicoId: userId,
+        tecnicoId: data.tecnico.id_telegram,
         empresaId: data.tecnico.empresa_id,
         equipamentoNome: data.equipamento_nome,
         equipamentoTag: data.equipamento_tag,
@@ -205,7 +205,7 @@ export async function createOSWithoutPhoto(
   supabase: SupabaseClient
 ): Promise<void> {
   const newOS = await createOS(supabase, {
-    tecnicoId: userId,
+    tecnicoId: data.tecnico.id_telegram,
     empresaId: data.tecnico.empresa_id,
     equipamentoNome: data.equipamento_nome,
     equipamentoTag: data.equipamento_tag,

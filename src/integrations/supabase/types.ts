@@ -1188,6 +1188,7 @@ export type Database = {
           nome_completo: string | null
           nome_empresa: string | null
           setor: string | null
+          tecnico_id: number | null
           updated_at: string
         }
         Insert: {
@@ -1201,6 +1202,7 @@ export type Database = {
           nome_completo?: string | null
           nome_empresa?: string | null
           setor?: string | null
+          tecnico_id?: number | null
           updated_at?: string
         }
         Update: {
@@ -1214,6 +1216,7 @@ export type Database = {
           nome_completo?: string | null
           nome_empresa?: string | null
           setor?: string | null
+          tecnico_id?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -1373,6 +1376,8 @@ export type Database = {
           id_telegram: number
           nome_completo: string
           setor: string | null
+          telegram_user_id: number | null
+          user_id: string | null
         }
         Insert: {
           codigo_empresa?: string | null
@@ -1382,6 +1387,8 @@ export type Database = {
           id_telegram: number
           nome_completo: string
           setor?: string | null
+          telegram_user_id?: number | null
+          user_id?: string | null
         }
         Update: {
           codigo_empresa?: string | null
@@ -1391,6 +1398,8 @@ export type Database = {
           id_telegram?: number
           nome_completo?: string
           setor?: string | null
+          telegram_user_id?: number | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1514,6 +1523,9 @@ export type Database = {
         }
         Returns: Json
       }
+      fn_codigo_convite: { Args: Record<PropertyKey, never>; Returns: string }
+      fn_desvincular_telegram: { Args: Record<PropertyKey, never>; Returns: undefined }
+      fn_gerar_codigo_telegram: { Args: Record<PropertyKey, never>; Returns: string }
       fn_get_tag_history: {
         Args: { p_empresa_id: string; p_limit?: number; p_tag: string }
         Returns: {
@@ -1549,6 +1561,8 @@ export type Database = {
         Returns: Json
       }
       fn_portal_info: { Args: { p_token: string }; Returns: Json }
+      fn_regenerar_codigo_convite: { Args: Record<PropertyKey, never>; Returns: string }
+      fn_validar_convite: { Args: { p_codigo: string }; Returns: Json }
       get_user_empresa_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {

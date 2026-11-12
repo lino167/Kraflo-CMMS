@@ -17,6 +17,7 @@ const PerfilTecnico = lazy(() => import("./pages/PerfilTecnico"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Campo = lazy(() => import("./pages/Campo"));
+const Conta = lazy(() => import("./pages/Conta"));
 // Pré-carrega a tela de campo para ela ficar no cache do service worker e abrir sem internet
 void import("./pages/Campo");
 const Estoque = lazy(() => import("./pages/Estoque"));
@@ -50,6 +51,7 @@ const App = () => (
               <Route path="/biblioteca" element={<AppLayout><Biblioteca /></AppLayout>} />
               <Route path="/configuracoes" element={<AppLayout><Configuracoes /></AppLayout>} />
               <Route path="/campo" element={<AppLayout><Campo /></AppLayout>} />
+              <Route path="/conta" element={<AppLayout><Conta /></AppLayout>} />
               <Route path="/estoque" element={<AppLayout><Estoque /></AppLayout>} />
               <Route path="/admin/indexacao" element={<AppLayout><IndexacaoAdmin /></AppLayout>} />
               <Route path="/equipamento" element={<AppLayout><EquipamentoRaioX /></AppLayout>} />

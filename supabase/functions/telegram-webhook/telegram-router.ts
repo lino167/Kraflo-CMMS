@@ -45,6 +45,40 @@ import { handlePartsStart, handlePartsFlow } from './handlers/handle-parts.ts';
 const ACTIVE_OS_STATUSES = ['Aberta', 'Em manutenção'];
 
 /**
+ * /vincular CODIGO — liga esta conta do Telegram ao técnico que gerou o código no app.
+ * O código é de uso único e expira em 10 minutos; é ele que prova de quem é o Telegram.
+ */
+async function handleVincular(
+  chatId: number,
+  userId: number,
+  code: string,
+  supabase: SupabaseClient
+): Promise<void> {
+  if (!code) {
+    await sendMessage(chatId, 'Envie o código gerado no app: /vincular CODIGO\n\nNo app: Conta e Equipe → Vincular Telegram.');
+    return;
+  }
+  const { data, error } = await supabase.rpc('fn_vincular_telegram', {
+    p_code: code,
+    p_telegram_user_id: userId,
+  });
+  if (error) {
+    logger.error('Erro ao vincular Telegram', error, { userId });
+    await sendMessage(chatId, '❌ Não foi possível vincular agora. Tente novamente em instantes.');
+    return;
+  }
+  const result = data as { ok: boolean; motivo?: string; nome?: string };
+  if (result.ok) {
+    await clearUserState(userId, supabase);
+    await sendMessage(chatId, `✅ Telegram vinculado a ${result.nome}. Use o menu abaixo.`, mainMenuKeyboard);
+  } else if (result.motivo === 'telegram_em_uso') {
+    await sendMessage(chatId, '❌ Este Telegram já está vinculado a outro usuário. Desvincule lá antes de vincular aqui.');
+  } else {
+    await sendMessage(chatId, '❌ Código inválido ou expirado. Gere um novo no app e envie em até 10 minutos.');
+  }
+}
+
+/**
  * Carrega a OS de um botão e confere se quem clicou pode agir sobre ela.
  * O número da OS vem do Telegram, então nunca é confiável por si só.
  * - precisa ser técnico cadastrado e da mesma empresa da OS;
@@ -72,7 +106,7 @@ async function loadAuthorizedOS(
   if (!os || os.empresa_id !== auth.empresaId) return deny();
 
   const isAdmin = auth.role === 'admin_empresa' || auth.role === 'admin_kraflo';
-  if (scope === 'owner' && os.tecnico_id !== userId && !isAdmin) return deny();
+  if (scope === 'owner' && os.tecnico_id !== auth.tecnico?.id_telegram && !isAdmin) return deny();
 
   return os;
 }
@@ -101,6 +135,8 @@ export async function routeMessage(
   // Route commands
   if (text === '/start') {
     await handleStart(chatId, userId, supabase);
+  } else if (text === '/vincular' || text.startsWith('/vincular ')) {
+    await handleVincular(chatId, userId, text.replace('/vincular', '').trim(), supabase);
   } else if (text === '/meuid') {
     await handleMeuId(chatId, userId);
   } else if (text === '/ia' || text.startsWith('/ia ')) {

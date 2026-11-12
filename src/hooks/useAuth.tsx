@@ -17,6 +17,8 @@ interface UserProfile {
   setor: string | null;
   codigo_empresa: string | null;
   id_telegram: number | null;
+  /** Chave do técnico deste usuário (número interno; não é o ID do Telegram) */
+  tecnico_id: number | null;
 }
 
 const PROFILE_CACHE_KEY = 'kraflo:profile-cache';
@@ -55,9 +57,8 @@ interface SignUpData {
   nomeCompleto: string;
   funcao?: string;
   setor?: string;
-  codigoEmpresa?: string;
-  idTelegram?: string;
   nomeEmpresa?: string;
+  codigoConvite?: string;
 }
 
 interface AuthContextType {
@@ -172,9 +173,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           nome_completo: data.nomeCompleto,
           funcao: data.funcao || null,
           setor: data.setor || null,
-          codigo_empresa: data.codigoEmpresa || null,
-          id_telegram: data.idTelegram || null,
           nome_empresa: data.nomeEmpresa || null,
+          codigo_convite: data.codigoConvite || null,
         },
       },
     });

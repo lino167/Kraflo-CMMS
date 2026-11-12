@@ -190,14 +190,16 @@ export default function Campo() {
     (s) => s.categoria_id === closeForm.categoria_problema_id && s.tipo_categoria === 'problema',
   )
 
-  const precisaEscolherTecnico = profile?.id_telegram == null
+  // tecnico_id é a chave nova; id_telegram cobre o banco ainda sem a migration do cadastro
+  const meuTecnicoId = profile?.tecnico_id ?? profile?.id_telegram ?? null
+  const precisaEscolherTecnico = meuTecnicoId == null
 
   async function submitOpen(e: React.FormEvent) {
     e.preventDefault()
     if (!empresaId || !ownerId) return
     const maq = snap?.maquinas.find((m) => m.id === form.maquina_id)
     const equipamento = maq ? maq.nome : form.equipamento_manual.trim()
-    const tecnicoId = profile?.id_telegram ?? Number(form.tecnico_id)
+    const tecnicoId = meuTecnicoId ?? Number(form.tecnico_id)
 
     if (!equipamento) return toast.error('Informe o equipamento.')
     if (!form.categoria_parada_id) return toast.error('Selecione o motivo da parada.')
