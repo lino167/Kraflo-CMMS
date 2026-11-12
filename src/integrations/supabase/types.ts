@@ -14,6 +14,338 @@ export type Database = {
   }
   public: {
     Tables: {
+      links_acesso_convidado: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          empresa_id: string
+          expires_at: string | null
+          id: string
+          token: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          empresa_id: string
+          expires_at?: string | null
+          id?: string
+          token?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          empresa_id?: string
+          expires_at?: string | null
+          id?: string
+          token?: string
+        }
+        Relationships: []
+      }
+      medicoes_ativos: {
+        Row: {
+          alerta_tratado: boolean
+          critico: boolean | null
+          data_medicao: string
+          empresa_id: string
+          equipamento_nome: string
+          equipamento_tag: string | null
+          id: string
+          max_esperado: number
+          min_esperado: number
+          os_gerada_id: number | null
+          registrado_por: string | null
+          valor: number
+          variavel: string
+        }
+        Insert: {
+          alerta_tratado?: boolean
+          data_medicao?: string
+          empresa_id: string
+          equipamento_nome: string
+          equipamento_tag?: string | null
+          id?: string
+          max_esperado: number
+          min_esperado: number
+          os_gerada_id?: number | null
+          registrado_por?: string | null
+          valor: number
+          variavel: string
+        }
+        Update: {
+          alerta_tratado?: boolean
+          data_medicao?: string
+          empresa_id?: string
+          equipamento_nome?: string
+          equipamento_tag?: string | null
+          id?: string
+          max_esperado?: number
+          min_esperado?: number
+          os_gerada_id?: number | null
+          registrado_por?: string | null
+          valor?: number
+          variavel?: string
+        }
+        Relationships: []
+      }
+      movimentacoes_estoque: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custo_unitario: number | null
+          empresa_id: string
+          id: string
+          observacao: string | null
+          ordem_id: number | null
+          peca_id: string
+          quantidade: number
+          saldo_apos: number | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custo_unitario?: number | null
+          empresa_id: string
+          id?: string
+          observacao?: string | null
+          ordem_id?: number | null
+          peca_id: string
+          quantidade: number
+          saldo_apos?: number | null
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custo_unitario?: number | null
+          empresa_id?: string
+          id?: string
+          observacao?: string | null
+          ordem_id?: number | null
+          peca_id?: string
+          quantidade?: number
+          saldo_apos?: number | null
+          tipo?: string
+        }
+        Relationships: []
+      }
+      orcamentos_manutencao: {
+        Row: {
+          created_at: string
+          decidido_em: string | null
+          decidido_por: string | null
+          empresa_id: string
+          equipamento_nome: string | null
+          equipamento_tag: string | null
+          fornecedor: string
+          id: string
+          os_id: number | null
+          servico: string
+          status: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
+          empresa_id: string
+          equipamento_nome?: string | null
+          equipamento_tag?: string | null
+          fornecedor: string
+          id?: string
+          os_id?: number | null
+          servico: string
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
+          empresa_id?: string
+          equipamento_nome?: string | null
+          equipamento_tag?: string | null
+          fornecedor?: string
+          id?: string
+          os_id?: number | null
+          servico?: string
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      os_historico: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          evento: string
+          id: number
+          ordem_id: number
+          usuario_id: string | null
+          usuario_nome: string | null
+          valor_anterior: string | null
+          valor_novo: string | null
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          evento: string
+          ordem_id: number
+          usuario_id?: string | null
+          usuario_nome?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          evento?: string
+          ordem_id?: number
+          usuario_id?: string | null
+          usuario_nome?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Relationships: []
+      }
+      pecas_estoque: {
+        Row: {
+          ativo: boolean
+          codigo: string | null
+          created_at: string
+          custo_unitario: number
+          descricao: string | null
+          empresa_id: string
+          estoque_minimo: number
+          fornecedor: string | null
+          id: string
+          localizacao: string | null
+          nome: string
+          quantidade: number
+          unidade: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo?: string | null
+          created_at?: string
+          custo_unitario?: number
+          descricao?: string | null
+          empresa_id: string
+          estoque_minimo?: number
+          fornecedor?: string | null
+          id?: string
+          localizacao?: string | null
+          nome: string
+          quantidade?: number
+          unidade?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string | null
+          created_at?: string
+          custo_unitario?: number
+          descricao?: string | null
+          empresa_id?: string
+          estoque_minimo?: number
+          fornecedor?: string | null
+          id?: string
+          localizacao?: string | null
+          nome?: string
+          quantidade?: number
+          unidade?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      solicitacoes_manutencao: {
+        Row: {
+          created_at: string
+          descricao: string
+          empresa_id: string
+          equipamento_nome: string
+          equipamento_tag: string | null
+          id: string
+          link_id: string | null
+          localizacao: string | null
+          os_gerada_id: number | null
+          prioridade: string
+          solicitante_contato: string | null
+          solicitante_nome: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          empresa_id: string
+          equipamento_nome: string
+          equipamento_tag?: string | null
+          id?: string
+          link_id?: string | null
+          localizacao?: string | null
+          os_gerada_id?: number | null
+          prioridade?: string
+          solicitante_contato?: string | null
+          solicitante_nome: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          empresa_id?: string
+          equipamento_nome?: string
+          equipamento_tag?: string | null
+          id?: string
+          link_id?: string | null
+          localizacao?: string | null
+          os_gerada_id?: number | null
+          prioridade?: string
+          solicitante_contato?: string | null
+          solicitante_nome?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      templates_checklist: {
+        Row: {
+          categoria: string
+          created_at: string
+          empresa_id: string
+          id: string
+          itens: Json
+          nome: string
+        }
+        Insert: {
+          categoria: string
+          created_at?: string
+          empresa_id: string
+          id?: string
+          itens?: Json
+          nome: string
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          itens?: Json
+          nome?: string
+        }
+        Relationships: []
+      }
       bot_user_states: {
         Row: {
           data: Json | null
@@ -439,6 +771,7 @@ export type Database = {
       maquinas: {
         Row: {
           created_at: string | null
+          criticidade: string
           data_aquisicao: string | null
           empresa_id: string
           fabricante: string | null
@@ -453,6 +786,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          criticidade?: string
           data_aquisicao?: string | null
           empresa_id: string
           fabricante?: string | null
@@ -467,6 +801,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          criticidade?: string
           data_aquisicao?: string | null
           empresa_id?: string
           fabricante?: string | null
@@ -527,6 +862,7 @@ export type Database = {
           updated_at: string
           url_arquivo_fechamento: string | null
           url_foto: string | null
+          client_uuid: string | null
         }
         Insert: {
           categoria_parada_id?: string | null
@@ -558,6 +894,7 @@ export type Database = {
           updated_at?: string
           url_arquivo_fechamento?: string | null
           url_foto?: string | null
+          client_uuid?: string | null
         }
         Update: {
           categoria_parada_id?: string | null
@@ -589,6 +926,7 @@ export type Database = {
           updated_at?: string
           url_arquivo_fechamento?: string | null
           url_foto?: string | null
+          client_uuid?: string | null
         }
         Relationships: [
           {
@@ -744,6 +1082,8 @@ export type Database = {
       pecas_utilizadas: {
         Row: {
           created_at: string
+          custo_unitario: number | null
+          peca_estoque_id: string | null
           id: number
           nome_peca: string
           ordem_id: number
@@ -752,6 +1092,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custo_unitario?: number | null
+          peca_estoque_id?: string | null
           id?: number
           nome_peca: string
           ordem_id: number
@@ -760,6 +1102,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custo_unitario?: number | null
+          peca_estoque_id?: string | null
           id?: number
           nome_peca?: string
           ordem_id?: number
@@ -844,6 +1188,7 @@ export type Database = {
           nome_completo: string | null
           nome_empresa: string | null
           setor: string | null
+          tecnico_id: number | null
           updated_at: string
         }
         Insert: {
@@ -857,6 +1202,7 @@ export type Database = {
           nome_completo?: string | null
           nome_empresa?: string | null
           setor?: string | null
+          tecnico_id?: number | null
           updated_at?: string
         }
         Update: {
@@ -870,6 +1216,7 @@ export type Database = {
           nome_completo?: string | null
           nome_empresa?: string | null
           setor?: string | null
+          tecnico_id?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -1029,6 +1376,8 @@ export type Database = {
           id_telegram: number
           nome_completo: string
           setor: string | null
+          telegram_user_id: number | null
+          user_id: string | null
         }
         Insert: {
           codigo_empresa?: string | null
@@ -1038,6 +1387,8 @@ export type Database = {
           id_telegram: number
           nome_completo: string
           setor?: string | null
+          telegram_user_id?: number | null
+          user_id?: string | null
         }
         Update: {
           codigo_empresa?: string | null
@@ -1047,6 +1398,8 @@ export type Database = {
           id_telegram?: number
           nome_completo?: string
           setor?: string | null
+          telegram_user_id?: number | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1081,9 +1434,135 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_os_custo_pecas: {
+        Row: {
+          custo_pecas: number | null
+          empresa_id: string | null
+          itens: number | null
+          ordem_id: number | null
+        }
+        Relationships: []
+      }
+      v_tag_timeline: {
+        Row: {
+          data_abertura: string | null
+          data_fechamento: string | null
+          descricao_problema: string | null
+          diagnostico_solucao: string | null
+          dias_desde_ultima_solucao: number | null
+          empresa_id: string | null
+          equipamento_nome: string | null
+          equipamento_tag: string | null
+          fechamento_anterior: string | null
+          id: number | null
+          localizacao: string | null
+          notas_finais: string | null
+          ordem_recente: number | null
+          prioridade: string | null
+          solucao_anterior: string | null
+          status_os: Database["public"]["Enums"]["os_status"] | null
+          status_reincidencia: string | null
+          tecnico_anterior_id: number | null
+          tecnico_anterior_nome: string | null
+          tecnico_id: number | null
+          tecnico_nome: string | null
+          tipo_manutencao: string | null
+        }
+        Relationships: []
+      }
+      v_technician_performance: {
+        Row: {
+          empresa_id: string | null
+          funcao: string | null
+          mttr_medio_horas: number | null
+          nome_completo: string | null
+          os_heroi: Json | null
+          os_por_tipo: Json | null
+          primeira_os: string | null
+          quality_score: number | null
+          setor: string | null
+          tecnico_id: number | null
+          total_os_fechadas: number | null
+          total_retrabalhos: number | null
+          ultima_os: string | null
+        }
+        Relationships: []
+      }
+      v_preventivas_cumprimento: {
+        Row: {
+          atrasadas: number | null
+          concluidas: number | null
+          empresa_id: string | null
+          previstas: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      fn_campo_fechar_os: {
+        Args: {
+          p_categoria_problema_id: string | null
+          p_client_uuid: string | null
+          p_closed_at: string
+          p_diagnostico: string
+          p_notas: string | null
+          p_os_id: number | null
+          p_pecas?: Json
+          p_status: string
+          p_subcategoria_problema_id: string | null
+          p_url_arquivo?: string | null
+        }
+        Returns: Json
+      }
+      fn_check_reincidencia: {
+        Args: {
+          p_descricao?: string
+          p_dias_limite?: number
+          p_empresa_id: string
+          p_tag: string
+        }
+        Returns: Json
+      }
+      fn_codigo_convite: { Args: Record<PropertyKey, never>; Returns: string }
+      fn_desvincular_telegram: { Args: Record<PropertyKey, never>; Returns: undefined }
+      fn_gerar_codigo_telegram: { Args: Record<PropertyKey, never>; Returns: string }
+      fn_get_tag_history: {
+        Args: { p_empresa_id: string; p_limit?: number; p_tag: string }
+        Returns: {
+          data_abertura: string
+          data_fechamento: string
+          descricao_problema: string
+          diagnostico_solucao: string
+          dias_desde_ultima_solucao: number
+          horas_reparo: number
+          notas_finais: string
+          os_id: number
+          status_os: string
+          status_reincidencia: string
+          tecnico_nome: string
+          tipo_manutencao: string
+        }[]
+      }
+      fn_get_tag_stats: {
+        Args: { p_empresa_id: string; p_tag: string }
+        Returns: Json
+      }
+      fn_portal_criar_solicitacao: {
+        Args: {
+          p_descricao: string
+          p_equipamento_nome: string
+          p_equipamento_tag?: string
+          p_localizacao?: string
+          p_prioridade?: string
+          p_solicitante_contato?: string
+          p_solicitante_nome: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      fn_portal_info: { Args: { p_token: string }; Returns: Json }
+      fn_regenerar_codigo_convite: { Args: Record<PropertyKey, never>; Returns: string }
+      fn_validar_convite: { Args: { p_codigo: string }; Returns: Json }
       get_user_empresa_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {

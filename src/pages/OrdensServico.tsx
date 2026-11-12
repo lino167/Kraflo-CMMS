@@ -162,7 +162,7 @@ export default function OrdensServico() {
     setIsLoadingSolicitacoes(true)
     try {
       const { data, error } = await supabase
-        .from('solicitacoes_manutencao' as any)
+        .from('solicitacoes_manutencao')
         .select('*')
         .eq('empresa_id', profile.empresa_id)
         .eq('status', 'pendente')
@@ -353,7 +353,7 @@ export default function OrdensServico() {
       </div>
 
       <Tabs defaultValue="lista-os" className="w-full space-y-6">
-        <TabsList className="bg-secondary/40 border border-white/5 p-1 rounded-xl flex w-full overflow-x-auto h-auto sm:inline-flex md:w-auto">
+        <TabsList className="bg-secondary/40 border border-white/5 p-1 rounded-xl flex w-full justify-start overflow-x-auto h-auto sm:inline-flex md:w-auto">
           <TabsTrigger value="lista-os" className="font-mono text-xs gap-2 py-2.5 px-4 rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-foreground data-[state=active]:shadow-neon transition-all">
             <ClipboardList className="h-4 w-4 text-primary" />
             Minhas OS ({totalCount})

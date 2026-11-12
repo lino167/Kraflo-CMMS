@@ -1,6 +1,10 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { idbStore } from '@/lib/offline/store';
+import { wipeLocalData } from '@/lib/offline/pin';
+import { secureStore } from '@/lib/offline/local';
+import { isOfflineAccessValid } from '@/lib/offline/access';
 
 type AppRole = 'admin_kraflo' | 'admin_empresa';
 
@@ -13,15 +17,48 @@ interface UserProfile {
   setor: string | null;
   codigo_empresa: string | null;
   id_telegram: number | null;
+  /** Chave do técnico deste usuário (número interno; não é o ID do Telegram) */
+  tecnico_id: number | null;
+}
+
+const PROFILE_CACHE_KEY = 'kraflo:profile-cache';
+
+function clearCachedProfile(): void {
+  try {
+    localStorage.removeItem(PROFILE_CACHE_KEY);
+  } catch {
+    // nada a fazer
+  }
+}
+
+function readCachedProfile(userId: string): { profile: UserProfile; roles: AppRole[] } | null {
+  try {
+    const raw = localStorage.getItem(PROFILE_CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw) as { userId: string; validatedAt: number; profile: UserProfile; roles: AppRole[] };
+    if (cached.userId !== userId) return null;
+    // Acesso offline expira se não houve validação com o servidor no prazo máximo
+    if (!isOfflineAccessValid(cached.validatedAt)) return null;
+    return { profile: cached.profile, roles: cached.roles };
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedProfile(userId: string, profile: UserProfile, roles: AppRole[]): void {
+  try {
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({ userId, validatedAt: Date.now(), profile, roles }));
+  } catch {
+    // armazenamento cheio ou bloqueado: segue sem cache
+  }
 }
 
 interface SignUpData {
   nomeCompleto: string;
   funcao?: string;
   setor?: string;
-  codigoEmpresa?: string;
-  idTelegram?: string;
   nomeEmpresa?: string;
+  codigoConvite?: string;
 }
 
 interface AuthContextType {
@@ -78,6 +115,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const fetchUserData = async (userId: string) => {
+    // Sem conexão, usa o último perfil conhecido deste usuário (modo campo offline)
+    const cached = readCachedProfile(userId);
+    if (cached) {
+      setProfile(cached.profile);
+      setRoles(cached.roles);
+    }
     try {
       // Fetch profile
       const { data: profileData } = await supabase
@@ -98,6 +141,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (rolesData) {
         setRoles(rolesData.map(r => r.role as AppRole));
+      }
+
+      if (profileData && rolesData) {
+        writeCachedProfile(userId, profileData as UserProfile, rolesData.map(r => r.role as AppRole));
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -126,9 +173,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           nome_completo: data.nomeCompleto,
           funcao: data.funcao || null,
           setor: data.setor || null,
-          codigo_empresa: data.codigoEmpresa || null,
-          id_telegram: data.idTelegram || null,
           nome_empresa: data.nomeEmpresa || null,
+          codigo_convite: data.codigoConvite || null,
         },
       },
     });
@@ -136,6 +182,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Logout apaga PIN, dados de apoio e fila deste aparelho (a tela avisa antes sobre envios pendentes)
+    await wipeLocalData(idbStore);
+    secureStore.lock();
+    clearCachedProfile();
     await supabase.auth.signOut();
   };
 
