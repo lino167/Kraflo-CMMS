@@ -219,7 +219,7 @@ export function ParetoCrossAnalysisCard({ dateRange }: ParetoCrossAnalysisCardPr
     return (
       <Card className="bg-card border-border">
         <CardHeader className="pb-3">
-          <CardTitle className="font-mono text-lg flex items-center gap-2">
+          <CardTitle className="text-lg flex items-center gap-2">
             <GitMerge className="h-5 w-5 text-primary" />
             Pareto: Parada × Causa Raiz
           </CardTitle>
@@ -238,7 +238,7 @@ export function ParetoCrossAnalysisCard({ dateRange }: ParetoCrossAnalysisCardPr
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="font-mono text-lg flex items-center gap-2">
+            <CardTitle className="text-lg flex items-center gap-2">
               <GitMerge className="h-5 w-5 text-primary" />
               Pareto: Parada × Causa Raiz
             </CardTitle>

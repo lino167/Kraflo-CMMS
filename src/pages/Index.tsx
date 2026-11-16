@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { AIChat } from "@/components/AIChat";
 import { AIReport } from "@/components/AIReport";
 import { Dashboard } from "@/components/Dashboard";
+import { usePermissoes } from "@/hooks/usePermissoes";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -22,14 +23,13 @@ interface IndexProps {
 
 const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
   const { user, profile, isLoading: authLoading } = useAuth();
+  const permissoes = usePermissoes();
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [aiQuestion, setAiQuestion] = useState<string | null>(null);
   const [isIndexing, setIsIndexing] = useState(false);
   const [stats, setStats] = useState({
     totalOS: 0,
     osIndexadas: 0,
-    manuais: 0,
-    chunks: 0,
   });
 
   useEffect(() => {
@@ -53,19 +53,9 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
         .from("os_embeddings")
         .select("*", { count: "exact", head: true });
 
-      const { count: manuaisCount } = await supabase
-        .from("manuais")
-        .select("*", { count: "exact", head: true });
-
-      const { count: chunksCount } = await supabase
-        .from("manual_chunks")
-        .select("*", { count: "exact", head: true });
-
       setStats({
         totalOS: osCount || 0,
         osIndexadas: indexedCount || 0,
-        manuais: manuaisCount || 0,
-        chunks: chunksCount || 0,
       });
     } catch (error) {
       console.error("Error loading stats:", error);
@@ -128,7 +118,7 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
             <MessageSquare className="h-4 w-4" />
             <span className="hidden sm:inline">Assistente</span>
           </TabsTrigger>
-          <TabsTrigger value="relatorios" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary transition-all">
+          <TabsTrigger value="relatorios" className="data-[state=active]:bg-secondary data-[state=active]:text-foreground transition-all">
             <BarChart3 className="h-4 w-4 mr-2" />
             Relatórios IA
           </TabsTrigger>
@@ -157,7 +147,7 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
                     <p className="text-xs text-muted-foreground">OS Indexadas</p>
                   </div>
                 </div>
-                {stats.osIndexadas < stats.totalOS && (
+                {stats.osIndexadas < stats.totalOS && permissoes.pode('indexacao.gerenciar') && (
                   <Button
                     onClick={indexAllOS}
                     disabled={isIndexing}

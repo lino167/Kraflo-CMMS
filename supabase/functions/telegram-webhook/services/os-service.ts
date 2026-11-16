@@ -52,6 +52,7 @@ export async function createOS(
     descricao_problema: data.descricaoProblema,
     url_foto: data.urlFoto,
     status_os: 'Aberta',
+    origem: 'telegram',
   };
 
   // Persistir categoria de parada se fornecida
@@ -103,25 +104,34 @@ export async function closeOS(
     updateData.subcategoria_problema_id = data.subcategoriaProblemaId;
   }
 
-  const { error: osError } = await supabase
+  // Só fecha OS que ainda está ativa (evita sobrescrever um fechamento já feito)
+  const { data: closed, error: osError } = await supabase
     .from('ordens_de_servico')
     .update(updateData)
-    .eq('id', data.osId);
+    .eq('id', data.osId)
+    .in('status_os', ['Aberta', 'Em manutenção'])
+    .select('id');
 
   if (osError) {
     logger.error('Close OS error', osError, { osId: data.osId });
     return false;
   }
+  if (!closed || closed.length === 0) {
+    logger.warn('Close OS ignorado: OS não está mais ativa', { osId: data.osId });
+    return false;
+  }
 
-  // Insert parts if any
   if (data.parts && data.parts.length > 0) {
-    for (const part of data.parts) {
-      await supabase.from('pecas_utilizadas').insert({
+    const { error: partsError } = await supabase.from('pecas_utilizadas').insert(
+      data.parts.map((part) => ({
         ordem_id: data.osId,
         nome_peca: part.nome_peca,
         tag_peca: part.tag_peca,
         quantidade: part.quantidade,
-      });
+      }))
+    );
+    if (partsError) {
+      logger.error('Erro ao gravar peças do fechamento', partsError, { osId: data.osId });
     }
   }
 
@@ -157,8 +167,9 @@ export async function deleteOS(
   supabase: SupabaseClient<Database>,
   osId: number
 ): Promise<boolean> {
-  // Delete related parts first
+  // Delete related parts and pending index jobs first
   await supabase.from('pecas_utilizadas').delete().eq('ordem_id', osId);
+  await supabase.from('os_index_jobs').delete().eq('os_id', osId);
 
   // Delete OS
   const { error } = await supabase

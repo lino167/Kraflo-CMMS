@@ -211,7 +211,7 @@ export function CategoryDistributionCard({ dateRange }: CategoryDistributionCard
   return (
     <Card className="bg-card border-border">
       <CardHeader className="pb-3">
-        <CardTitle className="font-mono text-lg flex items-center gap-2">
+        <CardTitle className="text-lg flex items-center gap-2">
           <Tag className="h-5 w-5 text-primary" />
           Distribuição por Categorias
         </CardTitle>

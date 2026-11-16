@@ -39,7 +39,7 @@ export async function handleCloseOSStart(
     return
   }
 
-  const openOS = await getOpenOSByTechnician(supabase, userId)
+  const openOS = await getOpenOSByTechnician(supabase, tecnico.id_telegram)
 
   if (openOS.length === 0) {
     await sendMessage(

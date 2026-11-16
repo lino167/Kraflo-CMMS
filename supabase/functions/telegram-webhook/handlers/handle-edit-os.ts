@@ -26,7 +26,7 @@ export async function handleEditOSStart(
     return;
   }
 
-  const osList = await getOSByTechnician(supabase, userId);
+  const osList = await getOSByTechnician(supabase, tecnico.id_telegram);
 
   if (osList.length === 0) {
     await sendMessage(chatId, '📭 Você não tem nenhuma OS para editar.', mainMenuKeyboard);

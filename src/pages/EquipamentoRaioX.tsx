@@ -18,7 +18,7 @@ function StatsCards({ totalClosed, successCases, problematicCases, successRate }
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
       <Card className="industrial-card">
         <CardContent className="pt-6 pb-6 text-center">
-          <div className="inline-flex items-center justify-center p-3 rounded-xl bg-primary/10 mb-3 shadow-neon-sm border border-primary/20">
+          <div className="inline-flex items-center justify-center p-3 rounded-xl bg-primary/10 mb-3 border border-primary/20">
             <ClipboardCheck className="h-5 w-5 text-primary" />
           </div>
           <p className="text-3xl font-mono font-bold tracking-tighter">{totalClosed}</p>
@@ -28,7 +28,7 @@ function StatsCards({ totalClosed, successCases, problematicCases, successRate }
       
       <Card className="industrial-card">
         <CardContent className="pt-6 pb-6 text-center">
-          <div className="inline-flex items-center justify-center p-3 rounded-xl bg-success/10 mb-3 shadow-neon-sm border border-success/20">
+          <div className="inline-flex items-center justify-center p-3 rounded-xl bg-success/10 mb-3 border border-success/20">
             <Award className="h-5 w-5 text-success" />
           </div>
           <p className="text-3xl font-mono font-bold text-success tracking-tighter">{successCases}</p>
@@ -38,7 +38,7 @@ function StatsCards({ totalClosed, successCases, problematicCases, successRate }
 
       <Card className="industrial-card">
         <CardContent className="pt-6 pb-6 text-center">
-          <div className="inline-flex items-center justify-center p-3 rounded-xl bg-destructive/10 mb-3 shadow-neon-sm border border-destructive/20">
+          <div className="inline-flex items-center justify-center p-3 rounded-xl bg-destructive/10 mb-3 border border-destructive/20">
             <AlertTriangle className="h-5 w-5 text-destructive" />
           </div>
           <p className="text-3xl font-mono font-bold text-destructive tracking-tighter">{problematicCases}</p>
@@ -48,7 +48,7 @@ function StatsCards({ totalClosed, successCases, problematicCases, successRate }
       
       <Card className="industrial-card">
         <CardContent className="pt-6 pb-6 text-center">
-          <div className="inline-flex items-center justify-center p-3 rounded-xl bg-primary/20 mb-3 shadow-neon-sm border border-primary/30">
+          <div className="inline-flex items-center justify-center p-3 rounded-xl bg-primary/20 mb-3 border border-primary/30">
             <TrendingUp className="h-5 w-5 text-primary" />
           </div>
           <p className="text-3xl font-mono font-bold text-primary tracking-tighter">{Math.round(successRate)}%</p>
@@ -75,7 +75,7 @@ function CaseCard({ caseData, isExpanded, onToggle, isProblematic }: {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-xl shadow-surface-sm border ${isProblematic 
+            <div className={`p-3 rounded-xl border ${isProblematic 
               ? (isCritical ? 'bg-destructive/10 border-destructive/20' : 'bg-orange-500/10 border-orange-500/20')
               : 'bg-success/10 border-success/20'
             }`}>
@@ -127,24 +127,24 @@ function CaseCard({ caseData, isExpanded, onToggle, isProblematic }: {
         </p>
         
         <div className="flex items-center gap-4 mt-4 px-1">
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium border border-white/5 bg-white/5 px-2 py-1 rounded-md">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium border border-border bg-white/5 px-2 py-1 rounded-md">
             <User className="h-3 w-3 text-primary" />
             {caseData.tecnico_nome}
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium border border-white/5 bg-white/5 px-2 py-1 rounded-md">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium border border-border bg-white/5 px-2 py-1 rounded-md">
             <Calendar className="h-3 w-3 text-primary" />
             {format(new Date(caseData.data_fechamento), "dd MMM yyyy", { locale: ptBR })}
           </div>
         </div>
 
         {isExpanded && (
-          <div className="mt-6 pt-6 border-t border-white/10 space-y-6 animate-in fade-in-0 slide-in-from-top-2 duration-300">
+          <div className="mt-6 pt-6 border-t border-border space-y-6 animate-in fade-in-0 slide-in-from-top-2 duration-300">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2 px-1">
                   Problema Relatado
                 </h4>
-                <div className="text-sm text-foreground/80 leading-relaxed bg-black/20 p-4 rounded-xl border border-white/5 shadow-inner">
+                <div className="text-sm text-foreground/80 leading-relaxed bg-black/20 p-4 rounded-xl border border-border shadow-inner">
                   {caseData.descricao_problema}
                 </div>
               </div>
@@ -166,14 +166,14 @@ function CaseCard({ caseData, isExpanded, onToggle, isProblematic }: {
             {caseData.notas_finais && (
               <div className="space-y-3">
                 <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Observações Adicionais</h4>
-                <div className="text-sm text-muted-foreground/90 bg-white/5 p-4 rounded-xl border border-white/5">
+                <div className="text-sm text-muted-foreground/90 bg-white/5 p-4 rounded-xl border border-border">
                   {caseData.notas_finais}
                 </div>
               </div>
             )}
 
             {isProblematic && caseData.dias_desde_ultima_solucao && (
-              <div className="p-4 bg-destructive/10 rounded-xl border border-destructive/20 shadow-neon-sm">
+              <div className="p-4 bg-destructive/10 rounded-xl border border-destructive/20">
                 <p className="text-xs text-destructive font-semibold flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
                   REINCIDÊNCIA CRÍTICA: Detectada apenas {Math.round(caseData.dias_desde_ultima_solucao)} dias após a última intervenção.
@@ -267,7 +267,7 @@ export default function EquipamentoRaioX() {
       />
 
       <Tabs defaultValue="success" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 p-1.5 bg-muted/30 rounded-2xl border border-white/5 mb-8 h-14">
+        <TabsList className="grid w-full grid-cols-2 p-1.5 bg-muted/30 rounded-2xl border border-border mb-8 h-14">
           <TabsTrigger value="success" className="rounded-xl flex items-center gap-3 data-[state=active]:bg-background data-[state=active]:shadow-surface transition-all duration-300">
             <Award className="h-4 w-4" />
             <span className="font-semibold">Casos de Sucesso</span>

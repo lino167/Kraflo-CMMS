@@ -12,7 +12,7 @@ export async function handleMeuId(chatId: number, userId: number): Promise<void>
     chatId,
     `🆔 *Seu ID Telegram*\n\n` +
     `\`${userId}\`\n\n` +
-    `📋 Copie este número e cole no campo "ID Telegram" ao fazer seu cadastro no sistema web.`,
+    `ℹ️ Este número não é mais usado no cadastro. Para usar o bot, gere um código no app (Conta e Equipe → Vincular Telegram) e envie /vincular CODIGO.`,
     undefined,
     'Markdown'
   );

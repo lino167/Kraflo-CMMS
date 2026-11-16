@@ -21,6 +21,13 @@ import { logger } from './infra/logger.ts';
 import { routeMessage, routeCallback } from './telegram-router.ts';
 import { TelegramUpdate } from './telegram-types.ts';
 
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 serve(async (req: Request) => {
   const corsHeaders = buildCorsHeaders(req);
   
@@ -31,8 +38,21 @@ serve(async (req: Request) => {
 
   const correlationId = req.headers.get('x-correlation-id') || crypto.randomUUID();
 
-  // Temporarily removed the secret token validation 
-  // because the webhook was registered in Telegram without it.
+  // O Telegram envia o token secreto cadastrado no setWebhook neste cabeçalho.
+  // Sem ele, qualquer pessoa que conheça a URL poderia forjar mensagens de um técnico.
+  const expectedSecret = Deno.env.get('TELEGRAM_WEBHOOK_SECRET');
+  if (expectedSecret) {
+    const received = req.headers.get('x-telegram-bot-api-secret-token') ?? '';
+    if (!timingSafeEqual(received, expectedSecret)) {
+      logger.warn('Webhook rejeitado: token secreto ausente ou inválido', { correlationId });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  } else {
+    logger.warn('TELEGRAM_WEBHOOK_SECRET não configurado: webhook aceitando chamadas sem verificação', { correlationId });
+  }
 
   try {
     const body: TelegramUpdate = await req.json();
@@ -58,9 +78,11 @@ serve(async (req: Request) => {
   } catch (error) {
     logger.error('Webhook error', error, { correlationId });
     
+    // Responde 200 mesmo em erro: com 5xx o Telegram reenvia a mesma mensagem,
+    // o que pode repetir a ação (ex.: criar a OS duas vezes).
     return new Response(
-      JSON.stringify({ error: 'Internal error', correlation_id: correlationId }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ ok: false, correlation_id: correlationId }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

@@ -209,3 +209,30 @@ export function requiresUserAction(error: AppError): boolean {
   ]
   return codesRequiringUserAction.includes(error.code)
 }
+
+/** Códigos do Postgres para erros de regra de negócio levantados por funções/triggers. */
+const DB_BUSINESS_ERROR_CODES = new Set(['P0001', '23514', '22023', '28000', '54000'])
+
+/**
+ * Mensagem para exibir ao usuário. Erros de regra de negócio vindos do banco
+ * (ex.: "Estoque insuficiente") e de validação local são mostrados como estão;
+ * violações de RLS viram "sem permissão"; o resto passa pelo parseError.
+ */
+export function getErrorMessage(error: unknown): string {
+  if (error && typeof error === 'object') {
+    const { code, message } = error as { code?: unknown; message?: unknown }
+    if (typeof message === 'string' && message) {
+      if (typeof code === 'string') {
+        if (DB_BUSINESS_ERROR_CODES.has(code)) return message
+        if (code === '42501' || message.includes('row-level security')) {
+          return 'Você não tem permissão para esta ação.'
+        }
+        if (code === '23505') return 'Já existe um registro com esses dados.'
+      } else if (error instanceof Error && !(error instanceof TypeError)) {
+        const parsed = parseError(error)
+        return parsed.code === ERROR_CODES.UNKNOWN ? message : parsed.message
+      }
+    }
+  }
+  return parseError(error).message
+}

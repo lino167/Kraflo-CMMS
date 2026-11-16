@@ -12,7 +12,7 @@ import { logger } from './infra/logger.ts';
 import { getStopCategoryLabel, getRootCauseLabel } from './infra/categories.ts';
 import { getSubcategorias, getSubcategoriaNome } from './services/categoria-service.ts';
 import { resolveStopCategoryId, resolveRootCauseId } from './services/category-id-resolver.ts';
-import { isRegistered } from './security/auth-context.ts';
+import { isRegistered, resolveAuthContext } from './security/auth-context.ts';
 
 async function resolveEmpresaIdForCallback(
   userId: number,
@@ -42,6 +42,75 @@ import { handleIAStart, handleIA, handleIAFlow } from './handlers/handle-ia.ts';
 import { handleReportsStart, generateGeneralReport, generateMyOSReport, generateEquipmentReport, generate30DaysReport, generateDetailedPdfReport, handleReportFlow } from './handlers/handle-reports.ts';
 import { handlePartsStart, handlePartsFlow } from './handlers/handle-parts.ts';
 
+const ACTIVE_OS_STATUSES = ['Aberta', 'Em manutenção'];
+
+/**
+ * /vincular CODIGO — liga esta conta do Telegram ao técnico que gerou o código no app.
+ * O código é de uso único e expira em 10 minutos; é ele que prova de quem é o Telegram.
+ */
+async function handleVincular(
+  chatId: number,
+  userId: number,
+  code: string,
+  supabase: SupabaseClient
+): Promise<void> {
+  if (!code) {
+    await sendMessage(chatId, 'Envie o código gerado no app: /vincular CODIGO\n\nNo app: Conta e Equipe → Vincular Telegram.');
+    return;
+  }
+  const { data, error } = await supabase.rpc('fn_vincular_telegram', {
+    p_code: code,
+    p_telegram_user_id: userId,
+  });
+  if (error) {
+    logger.error('Erro ao vincular Telegram', error, { userId });
+    await sendMessage(chatId, '❌ Não foi possível vincular agora. Tente novamente em instantes.');
+    return;
+  }
+  const result = data as { ok: boolean; motivo?: string; nome?: string };
+  if (result.ok) {
+    await clearUserState(userId, supabase);
+    await sendMessage(chatId, `✅ Telegram vinculado a ${result.nome}. Use o menu abaixo.`, mainMenuKeyboard);
+  } else if (result.motivo === 'telegram_em_uso') {
+    await sendMessage(chatId, '❌ Este Telegram já está vinculado a outro usuário. Desvincule lá antes de vincular aqui.');
+  } else {
+    await sendMessage(chatId, '❌ Código inválido ou expirado. Gere um novo no app e envie em até 10 minutos.');
+  }
+}
+
+/**
+ * Carrega a OS de um botão e confere se quem clicou pode agir sobre ela.
+ * O número da OS vem do Telegram, então nunca é confiável por si só.
+ * - precisa ser técnico cadastrado e da mesma empresa da OS;
+ * - 'owner': além disso, a OS precisa ser do próprio técnico (ou ele ser admin).
+ */
+async function loadAuthorizedOS(
+  chatId: number,
+  userId: number,
+  osId: number,
+  scope: 'company' | 'owner',
+  supabase: SupabaseClient
+) {
+  const deny = async () => {
+    logger.warn('Ação em OS negada', { userId, osId, scope });
+    await clearUserState(userId, supabase);
+    await sendMessage(chatId, '❌ Você não tem permissão para esta OS.', mainMenuKeyboard);
+    return null;
+  };
+  if (!Number.isInteger(osId) || osId <= 0) return deny();
+
+  const auth = await resolveAuthContext(userId, supabase);
+  if (!auth.isRegistered || !auth.empresaId) return deny();
+
+  const os = await getOSById(supabase, osId);
+  if (!os || os.empresa_id !== auth.empresaId) return deny();
+
+  const isAdmin = auth.role === 'admin_empresa' || auth.role === 'admin_kraflo';
+  if (scope === 'owner' && os.tecnico_id !== auth.tecnico?.id_telegram && !isAdmin) return deny();
+
+  return os;
+}
+
 /**
  * Route incoming message to appropriate handler
  */
@@ -66,6 +135,8 @@ export async function routeMessage(
   // Route commands
   if (text === '/start') {
     await handleStart(chatId, userId, supabase);
+  } else if (text === '/vincular' || text.startsWith('/vincular ')) {
+    await handleVincular(chatId, userId, text.replace('/vincular', '').trim(), supabase);
   } else if (text === '/meuid') {
     await handleMeuId(chatId, userId);
   } else if (text === '/ia' || text.startsWith('/ia ')) {
@@ -347,8 +418,12 @@ export async function routeCallback(
   // Close OS selection - now prompts for root cause category first
   if (callbackData.startsWith('close_os_')) {
     const osId = parseInt(callbackData.replace('close_os_', ''));
-    const os = await getOSById(supabase, osId);
+    const os = await loadAuthorizedOS(chatId, userId, osId, 'company', supabase);
     if (os) {
+      if (!ACTIVE_OS_STATUSES.includes(os.status_os)) {
+        await sendMessage(chatId, `ℹ️ A OS #${os.id} já está "${os.status_os}".`, mainMenuKeyboard);
+        return;
+      }
       await promptRootCauseCategory(chatId, userId, os, supabase);
     }
     return;
@@ -430,7 +505,7 @@ export async function routeCallback(
   // Edit OS
   if (callbackData.startsWith('edit_os_')) {
     const osId = parseInt(callbackData.replace('edit_os_', ''));
-    const os = await getOSById(supabase, osId);
+    const os = await loadAuthorizedOS(chatId, userId, osId, 'owner', supabase);
     if (os) {
       await setUserState(userId, States.EDIT_SELECT_FIELD, { os }, supabase);
       await sendMessage(chatId, `✏️ *Editando OS #${os.id}*\n\n🔧 Equipamento: ${os.equipamento_nome}\n🏷️ TAG: ${os.equipamento_tag || 'N/A'}\n📍 Local: ${os.localizacao || 'N/A'}\n\nSelecione o campo que deseja editar:`, {
@@ -496,7 +571,11 @@ export async function routeCallback(
   // Delete OS
   if (callbackData.startsWith('delete_os_')) {
     const osId = parseInt(callbackData.replace('delete_os_', ''));
-    const os = await getOSById(supabase, osId);
+    const os = await loadAuthorizedOS(chatId, userId, osId, 'owner', supabase);
+    if (os && !ACTIVE_OS_STATUSES.includes(os.status_os)) {
+      await sendMessage(chatId, '⚠️ Apenas OS abertas podem ser deletadas.', mainMenuKeyboard);
+      return;
+    }
     if (os) {
       await setUserState(userId, States.DELETE_CONFIRM, { os }, supabase);
       await sendMessage(chatId, `⚠️ *Confirmar Exclusão*\n\nDeseja realmente deletar a OS #${os.id}?\n\n🔧 ${os.equipamento_nome}\n📝 ${os.descricao_problema || 'Sem descrição'}\n\n*Esta ação não pode ser desfeita!*`, {
@@ -511,6 +590,19 @@ export async function routeCallback(
 
   if (callbackData.startsWith('confirm_delete_') && userState) {
     const osId = parseInt(callbackData.replace('confirm_delete_', ''));
+    // Só confirma a exclusão da OS que este usuário acabou de selecionar, e revalida a permissão
+    if (userState.state !== States.DELETE_CONFIRM || userState.data?.os?.id !== osId) {
+      await clearUserState(userId, supabase);
+      await sendMessage(chatId, '❌ Confirmação inválida. Selecione a OS novamente.', mainMenuKeyboard);
+      return;
+    }
+    const osToDelete = await loadAuthorizedOS(chatId, userId, osId, 'owner', supabase);
+    if (!osToDelete) return;
+    if (!ACTIVE_OS_STATUSES.includes(osToDelete.status_os)) {
+      await clearUserState(userId, supabase);
+      await sendMessage(chatId, '⚠️ Apenas OS abertas podem ser deletadas.', mainMenuKeyboard);
+      return;
+    }
     const success = await deleteOS(supabase, osId);
     await clearUserState(userId, supabase);
     if (!success) {

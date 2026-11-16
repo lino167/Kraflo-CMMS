@@ -56,6 +56,8 @@ export const States = {
   REPORT_CAL_END: 'REPORT_CAL_END',
 } as const;
 
+const STATE_TTL_MS = 2 * 60 * 60 * 1000;
+
 export type StateType = typeof States[keyof typeof States];
 
 /**
@@ -67,11 +69,16 @@ export async function getUserState(
 ): Promise<UserState | null> {
   const { data, error } = await supabase
     .from('bot_user_states')
-    .select('state, data')
+    .select('state, data, updated_at')
     .eq('id_telegram', userId)
     .maybeSingle();
 
   if (error || !data) return null;
+  // Conversa abandonada há mais de 2 h não é retomada
+  if (data.updated_at && Date.now() - new Date(data.updated_at).getTime() > STATE_TTL_MS) {
+    await supabase.from('bot_user_states').delete().eq('id_telegram', userId);
+    return null;
+  }
   return { state: data.state, data: data.data || {} };
 }
 

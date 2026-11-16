@@ -25,7 +25,8 @@ export default function PerfilTecnico() {
   const { profile, user, isLoading: authLoading } = useAuth();
 
   const empresaId = profile?.empresa_id;
-  const tecnicoId = profile?.id_telegram;
+  // tecnico_id é a chave nova (cadastro por convite); id_telegram cobre contas antigas
+  const tecnicoId = profile?.tecnico_id ?? profile?.id_telegram;
 
   const { data: myPerformance, isLoading: perfLoading } = useTechnicianPerformance(
     empresaId ?? undefined,
@@ -92,7 +93,7 @@ export default function PerfilTecnico() {
             overrideQualityScore={qualityScoreData?.qualityScore}
           />
           
-          <Card className="bg-secondary/10 border-white/5 industrial-card">
+          <Card className="bg-secondary/10 border-border industrial-card">
             <CardContent className="pt-6">
               <h3 className="font-mono text-[10px] font-bold text-primary uppercase tracking-[0.2em] mb-6">
                 Guia de Excelência Técnica
@@ -132,7 +133,7 @@ export default function PerfilTecnico() {
 
         <div className="space-y-6">
           {myRank > 0 && (
-            <Card className="bg-gradient-to-br from-primary/20 via-primary/5 to-transparent border-primary/20 shadow-neon-sm industrial-card relative overflow-hidden group">
+            <Card className="bg-card border-primary/30 industrial-card relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                 <Trophy className="h-24 w-24 text-primary" />
               </div>
@@ -150,11 +151,11 @@ export default function PerfilTecnico() {
                     </p>
                   </div>
                   {myRank <= 3 && (
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-md">
+                    <div className="bg-white/5 p-4 rounded-2xl border border-border">
                       <Crown
                         className={`h-12 w-12 ${
                           myRank === 1
-                            ? "text-yellow-500 drop-shadow-neon-yellow"
+                            ? "text-yellow-500"
                             : myRank === 2
                             ? "text-slate-300"
                             : "text-amber-600"
@@ -167,8 +168,8 @@ export default function PerfilTecnico() {
             </Card>
           )}
 
-          <Card className="industrial-card border-white/5 bg-black/20">
-            <CardHeader className="pb-4 border-b border-white/5">
+          <Card className="industrial-card border-border bg-black/20">
+            <CardHeader className="pb-4 border-b border-border">
               <CardTitle className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest">
                 <Users className="h-4 w-4 text-primary" />
                 Elite da Equipe
@@ -200,7 +201,7 @@ export default function PerfilTecnico() {
                                 ? "bg-slate-300/20 text-slate-300 border-slate-300/30"
                                 : index === 2
                                 ? "bg-amber-600/20 text-amber-600 border-amber-600/30"
-                                : "bg-white/5 text-muted-foreground border-white/10"
+                                : "bg-white/5 text-muted-foreground border-border"
                             }`}
                           >
                             {index + 1}

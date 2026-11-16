@@ -51,7 +51,7 @@ export async function handleIA(
 
   await sendChatAction(chatId, 'typing');
 
-  const result = await queryAssistant(question, userId, tecnico.empresa_id);
+  const result = await queryAssistant(question, tecnico.id_telegram, tecnico.empresa_id);
 
   if (result.error) {
     await sendMessage(chatId, `❌ Erro: ${result.error}`, mainMenuKeyboard);

@@ -23,7 +23,7 @@ export function AccessDenied({
           <div className="mx-auto w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
             <ShieldX className="h-8 w-8 text-destructive" />
           </div>
-          <CardTitle className="font-mono text-xl text-foreground">
+          <CardTitle className="text-xl text-foreground">
             Acesso Não Autorizado
           </CardTitle>
           <CardDescription className="text-muted-foreground">

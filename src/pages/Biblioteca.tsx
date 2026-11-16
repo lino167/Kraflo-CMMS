@@ -62,6 +62,7 @@ import {
   Pencil,
 } from 'lucide-react'
 import { ManualUpload } from '@/components/ManualUpload'
+import { usePermissoes } from '@/hooks/usePermissoes'
 import { useAuth } from '@/hooks/useAuth'
 import { subDays, startOfMonth, endOfMonth, format } from 'date-fns'
 import { Calendar as CalendarIcon } from 'lucide-react'
@@ -127,6 +128,7 @@ export default function Biblioteca() {
   const [manualToDelete, setManualToDelete] = useState<Manual | null>(null)
   const [manualToEdit, setManualToEdit] = useState<Manual | null>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
+  const permissoes = usePermissoes()
   const { profile } = useAuth()
 
   const [wikiResults, setWikiResults] = useState<OS[]>([])
@@ -401,10 +403,10 @@ export default function Biblioteca() {
           </button>
         </div>
 
-        {activeTab === 'manuals' && (
+        {activeTab === 'manuals' && permissoes.pode('manual.gerenciar') && (
           <Button 
             onClick={() => setIsUploadOpen(true)}
-            className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-neon transition-all duration-300"
+            className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300"
           >
             <UploadIcon className="h-4 w-4 mr-2" />
             Novo Manual
@@ -613,7 +615,7 @@ export default function Biblioteca() {
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="glass-panel border-white/10">
+                              <DropdownMenuContent align="end" className="glass-panel border-border">
                                 {manual.url_arquivo && manual.url_arquivo.startsWith('http') && (
                                   <DropdownMenuItem
                                     onClick={() => window.open(manual.url_arquivo, '_blank')}
@@ -623,7 +625,7 @@ export default function Biblioteca() {
                                   </DropdownMenuItem>
                                 )}
                                 
-                                {profile?.empresa_id === manual.empresa_id && (
+                                {profile?.empresa_id === manual.empresa_id && permissoes.pode('manual.gerenciar') && (
                                   <>
                                     <DropdownMenuItem
                                       onClick={() => {
@@ -718,7 +720,7 @@ export default function Biblioteca() {
 
       {/* Dialog de confirmação de exclusão */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="glass-panel border-white/10 shadow-surface">
+        <DialogContent className="glass-panel border-border">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="h-5 w-5" />
@@ -733,7 +735,7 @@ export default function Biblioteca() {
             <Button
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
-              className="border-white/10"
+              className="border-border"
             >
               Cancelar
             </Button>
@@ -746,10 +748,10 @@ export default function Biblioteca() {
 
       {/* Dialog de Upload */}
       <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-        <DialogContent className="max-w-3xl glass-panel border-white/10 shadow-2xl p-0 overflow-hidden">
-          <div className="p-6 bg-primary/5 border-b border-white/5">
+        <DialogContent className="max-w-3xl glass-panel border-border shadow-2xl p-0 overflow-hidden">
+          <div className="p-6 bg-primary/5 border-b border-border">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-mono flex items-center gap-2">
+              <DialogTitle className="text-2xl flex items-center gap-2">
                 <UploadIcon className="h-6 w-6 text-primary" />
                 Indexação de Novo Manual
               </DialogTitle>
@@ -766,7 +768,7 @@ export default function Biblioteca() {
 
       {/* Dialog de Edição */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-lg glass-panel border-white/10 shadow-surface">
+        <DialogContent className="max-w-lg glass-panel border-border">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-5 w-5 text-primary" />
@@ -782,7 +784,7 @@ export default function Biblioteca() {
               <Input 
                 value={manualToEdit?.nome_arquivo || ''} 
                 onChange={(e) => setManualToEdit(prev => prev ? {...prev, nome_arquivo: e.target.value} : null)}
-                className="bg-black/20 border-white/10"
+                className="bg-black/20 border-border"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -792,7 +794,7 @@ export default function Biblioteca() {
                   value={manualToEdit?.fabricante || ''} 
                   onChange={(e) => setManualToEdit(prev => prev ? {...prev, fabricante: e.target.value} : null)}
                   placeholder="Ex: Siemens, Weg..."
-                  className="bg-black/20 border-white/10"
+                  className="bg-black/20 border-border"
                 />
               </div>
               <div className="grid gap-2">
@@ -801,7 +803,7 @@ export default function Biblioteca() {
                   value={manualToEdit?.modelo || ''} 
                   onChange={(e) => setManualToEdit(prev => prev ? {...prev, modelo: e.target.value} : null)}
                   placeholder="Ex: S7-1200, WEG CFW..."
-                  className="bg-black/20 border-white/10"
+                  className="bg-black/20 border-border"
                 />
               </div>
             </div>
@@ -812,10 +814,10 @@ export default function Biblioteca() {
                   value={manualToEdit?.category || ''} 
                   onValueChange={(val) => setManualToEdit(prev => prev ? {...prev, category: val as any} : null)}
                 >
-                  <SelectTrigger className="bg-black/20 border-white/10">
+                  <SelectTrigger className="bg-black/20 border-border">
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
-                  <SelectContent className="glass-panel border-white/10">
+                  <SelectContent className="glass-panel border-border">
                     <SelectItem value="eletrica">Elétrica</SelectItem>
                     <SelectItem value="mecanica">Mecânica</SelectItem>
                     <SelectItem value="pneumatica">Pneumática</SelectItem>
@@ -832,10 +834,10 @@ export default function Biblioteca() {
                   value={manualToEdit?.manual_type || ''} 
                   onValueChange={(val) => setManualToEdit(prev => prev ? {...prev, manual_type: val as any} : null)}
                 >
-                  <SelectTrigger className="bg-black/20 border-white/10">
+                  <SelectTrigger className="bg-black/20 border-border">
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
-                  <SelectContent className="glass-panel border-white/10">
+                  <SelectContent className="glass-panel border-border">
                     <SelectItem value="general">Geral / Catálogo</SelectItem>
                     <SelectItem value="equipment">Específico de Equipamento</SelectItem>
                   </SelectContent>
@@ -844,7 +846,7 @@ export default function Biblioteca() {
             </div>
           </div>
           <DialogFooter className="mt-4 gap-2">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="border-white/10">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="border-border">
               Cancelar
             </Button>
             <Button 
@@ -909,12 +911,12 @@ function WikiTab({
                   setSearch(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="pl-10 h-11 bg-background/50 border-white/10"
+                className="pl-10 h-11 bg-background/50 border-border"
               />
             </div>
             <div className="flex flex-1 gap-2">
               <Select value={dateFilter} onValueChange={setDateFilter}>
-                <SelectTrigger className="h-11 bg-background/50 border-white/10 min-w-[150px]">
+                <SelectTrigger className="h-11 bg-background/50 border-border min-w-[150px]">
                   <CalendarIcon className="h-4 w-4 mr-2 text-primary" />
                   <SelectValue placeholder="Período" />
                 </SelectTrigger>
@@ -930,7 +932,7 @@ function WikiTab({
               {dateFilter === 'custom' && (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="h-11 bg-background/50 border-white/10 px-3 hover:bg-accent">
+                    <Button variant="outline" className="h-11 bg-background/50 border-border px-3 hover:bg-accent">
                       <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                     </Button>
                   </PopoverTrigger>
@@ -1000,7 +1002,7 @@ function WikiTab({
                         Problema / Sintoma
                       </p>
                     </div>
-                    <div className="p-3 rounded-lg bg-black/20 border border-white/5 min-h-[80px]">
+                    <div className="p-3 rounded-lg bg-black/20 border border-border min-h-[80px]">
                       <p className="text-sm text-foreground/70 leading-relaxed italic">
                         "{os.descricao_problema}"
                       </p>
@@ -1022,10 +1024,10 @@ function WikiTab({
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+                <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
                   <div className="flex items-center gap-4">
                      <div className="flex items-center gap-2">
-                       <div className="h-6 w-6 rounded-full bg-secondary/50 flex items-center justify-center border border-white/10">
+                       <div className="h-6 w-6 rounded-full bg-secondary/50 flex items-center justify-center border border-border">
                          <User className="h-3 w-3 text-muted-foreground" />
                        </div>
                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Técnico Nível 3</span>

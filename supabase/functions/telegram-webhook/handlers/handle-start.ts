@@ -31,11 +31,9 @@ export async function handleStart(
       `❌ *Você ainda não está cadastrado.*\n\n` +
       `Para usar o bot, você precisa vincular sua conta do Telegram ao nosso sistema.\n\n` +
       `📝 *Siga estes passos:*\n` +
-      `1️⃣ Acesse o sistema web:\n${WEB_APP_URL}/auth\n` +
-      `2️⃣ Faça login ou crie sua conta.\n` +
-      `3️⃣ Edite seu perfil e cole o número abaixo no campo "ID Telegram":\n\n` +
-      `🆔 *Seu ID Telegram:* \`${userId}\`\n\n` +
-      `_(Toque no número acima para copiar)_`,
+      `1️⃣ Crie sua conta ou faça login:\n${WEB_APP_URL}/auth\n` +
+      `2️⃣ No app, abra *Conta e Equipe* e toque em *Vincular Telegram*.\n` +
+      `3️⃣ Envie aqui o código que aparecer:\n\`/vincular CODIGO\``,
       undefined,
       'Markdown',
       true

@@ -1,21 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { calcularSla, formatarHoras, formatarPercentual } from '@/lib/sla';
 import {
   Calendar as CalendarIcon,
   Clock,
   CheckCircle2,
-  FileText,
   Users,
   CheckSquare,
   Plus,
   Trash2,
-  Send,
   DollarSign,
   Check,
   X,
-  Sparkles,
   Share2,
   ExternalLink,
   Lock,
@@ -23,7 +21,7 @@ import {
   Activity,
   AlertTriangle,
   UserCheck,
-  Eye,
+  QrCode,
 } from 'lucide-react';
 import {
   Card,
@@ -44,6 +42,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { QRCodeDialog } from '@/components/QRCodeDialog';
+import { getErrorMessage } from '@/lib/error-handler';
+import { portalUrl } from '@/lib/estoque';
 
 // Interfaces
 interface Budget {
@@ -60,7 +61,8 @@ interface Budget {
 interface MaintenanceRequest {
   id: string;
   equipamento_nome: string;
-  localizacao: string;
+  equipamento_tag?: string | null;
+  localizacao: string | null;
   descricao: string;
   prioridade: 'Baixa' | 'Média' | 'Alta' | 'Urgente';
   created_at: string;
@@ -71,7 +73,7 @@ interface MaintenanceRequest {
 interface GuestLink {
   id: string;
   token: string;
-  descricao: string;
+  descricao: string | null;
   created_at: string;
   expires_at: string | null;
 }
@@ -109,7 +111,7 @@ interface MeasurementAlert {
 
 export function PlanejamentoFacilities() {
   const { profile } = useAuth();
-  const [activeSubTab, setActiveSubTab] = useState<'sla' | 'calendario' | 'orcamentos' | 'checklists' | 'relatorios' | 'guest' | 'solicitacoes' | 'medicoes'>('sla');
+  const [activeSubTab, setActiveSubTab] = useState<'sla' | 'calendario' | 'orcamentos' | 'checklists' | 'guest' | 'solicitacoes' | 'medicoes'>('sla');
   const [isLoading, setIsLoading] = useState(true);
 
   // --- ESTADOS DO BANCO ---
@@ -120,40 +122,13 @@ export function PlanejamentoFacilities() {
   const [links, setLinks] = useState<GuestLink[]>([]);
   const [realOSList, setRealOSList] = useState<RealOS[]>([]);
   const [selectedDay, setSelectedDay] = useState<number>(new Date().getDate());
+  const sla = useMemo(() => calcularSla(realOSList), [realOSList]);
 
-  // --- ESTADOS DE CONDITION MONITORING ---
-  const [measurements, setMeasurements] = useState<Measurement[]>([
-    {
-      id: 'm1',
-      equipamento_nome: 'Compressor de Ar HVAC #1',
-      variavel: 'Temperatura (ºC)',
-      valor: 74,
-      min_esperado: 20,
-      max_esperado: 80,
-      data_medicao: new Date(Date.now() - 3600000).toISOString(),
-      status: 'Normal',
-    },
-    {
-      id: 'm2',
-      equipamento_nome: 'Gerador Auxiliar de Emergência',
-      variavel: 'Pressão de Óleo (bar)',
-      valor: 1.8,
-      min_esperado: 2.5,
-      max_esperado: 5.0,
-      data_medicao: new Date(Date.now() - 7200000).toISOString(),
-      status: 'Crítico',
-    }
-  ]);
-
-  const [alerts, setAlerts] = useState<MeasurementAlert[]>([
-    {
-      id: 'a1',
-      equipamento_nome: 'Gerador Auxiliar de Emergência',
-      descricao: 'Pressão de Óleo abaixo da faixa operacional crítica (1.8 bar - Mínimo esperado: 2.5 bar).',
-      data_alerta: new Date(Date.now() - 7200000).toISOString(),
-      status: 'Ativo',
-    }
-  ]);
+  // --- CONDITION MONITORING (persistido em medicoes_ativos) ---
+  const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [alerts, setAlerts] = useState<MeasurementAlert[]>([]);
+  const [qrLink, setQrLink] = useState<GuestLink | null>(null);
+  const [budgetForm, setBudgetForm] = useState({ fornecedor: '', servico: '', valor: '', equipamento_nome: '' });
 
   const [formEquipamento, setFormEquipamento] = useState('');
   const [formVariavel, setFormVariavel] = useState('Temperatura (ºC)');
@@ -169,68 +144,58 @@ export function PlanejamentoFacilities() {
       return;
     }
     setIsLoading(true);
-
-    const supabaseAny = supabase as any;
+    const empresaId = profile.empresa_id;
 
     try {
-      // 1. CARREGAR ORÇAMENTOS REAIS
-      const { data: bData, error: bErr } = await supabaseAny
-        .from('orcamentos_manutencao')
-        .select('*')
-        .eq('empresa_id', profile.empresa_id);
+      const [orc, sol, lnk, os, chk, med] = await Promise.all([
+        supabase.from('orcamentos_manutencao').select('*').eq('empresa_id', empresaId).order('created_at', { ascending: false }),
+        supabase.from('solicitacoes_manutencao').select('*').eq('empresa_id', empresaId).order('created_at', { ascending: false }),
+        supabase.from('links_acesso_convidado').select('*').eq('empresa_id', empresaId).eq('ativo', true).order('created_at'),
+        supabase
+          .from('ordens_de_servico')
+          .select('id, equipamento_nome, equipamento_tag, status_os, prioridade, tipo_manutencao, data_abertura, data_fechamento')
+          .eq('empresa_id', empresaId)
+          .order('data_abertura', { ascending: false })
+          .limit(200),
+        supabase.from('templates_checklist').select('itens').eq('empresa_id', empresaId).eq('categoria', checklistPreset).limit(1),
+        supabase.from('medicoes_ativos').select('*').eq('empresa_id', empresaId).order('data_medicao', { ascending: false }).limit(50),
+      ]);
 
-      if (!bErr && bData) {
-        setBudgets(bData as any as Budget[]);
+      if (orc.data) setBudgets(orc.data as unknown as Budget[]);
+      if (sol.data) setRequests(sol.data as unknown as MaintenanceRequest[]);
+      if (lnk.data) setLinks(lnk.data);
+      if (os.data) setRealOSList(os.data);
+      setCustomItems(chk.data?.[0] ? (chk.data[0].itens as string[]) : []);
+
+      if (med.data) {
+        setMeasurements(
+          med.data.map((m) => ({
+            id: m.id,
+            equipamento_nome: m.equipamento_nome,
+            variavel: m.variavel,
+            valor: m.valor,
+            min_esperado: m.min_esperado,
+            max_esperado: m.max_esperado,
+            data_medicao: m.data_medicao,
+            status: m.critico ? 'Crítico' : 'Normal',
+          })),
+        );
+        setAlerts(
+          med.data
+            .filter((m) => m.critico && !m.alerta_tratado)
+            .map((m) => ({
+              id: m.id,
+              equipamento_nome: m.equipamento_nome,
+              descricao: `${m.variavel} (${m.valor}) fora do intervalo esperado de [${m.min_esperado} - ${m.max_esperado}].`,
+              data_alerta: m.data_medicao,
+              status: 'Ativo' as const,
+              os_gerada_id: m.os_gerada_id ?? undefined,
+            })),
+        );
       }
-
-      // 2. CARREGAR SOLICITAÇÕES REAIS
-      const { data: rData, error: rErr } = await supabaseAny
-        .from('solicitacoes_manutencao')
-        .select('*')
-        .eq('empresa_id', profile.empresa_id)
-        .order('created_at', { ascending: false });
-
-      if (!rErr && rData) {
-        setRequests(rData as any as MaintenanceRequest[]);
-      }
-
-      // 3. CARREGAR GUEST LINKS REAIS
-      const { data: gData, error: gErr } = await supabaseAny
-        .from('links_acesso_convidado')
-        .select('*')
-        .eq('empresa_id', profile.empresa_id);
-
-      if (!gErr && gData) {
-        setLinks(gData as any as GuestLink[]);
-      }
-
-      // 4. CARREGAR ORDENS DE SERVIÇO REAIS
-      const { data: osData, error: osErr } = await supabase
-        .from('ordens_de_servico')
-        .select('id, equipamento_nome, equipamento_tag, status_os, prioridade, tipo_manutencao, data_abertura, data_fechamento')
-        .eq('empresa_id', profile.empresa_id)
-        .limit(200);
-
-      if (!osErr && osData) {
-        setRealOSList(osData as any as RealOS[]);
-      }
-
-      // 5. CARREGAR CHECKLIST TEMPLATE CORRENTE
-      const { data: checkData } = await supabaseAny
-        .from('templates_checklist')
-        .select('*')
-        .eq('empresa_id', profile.empresa_id)
-        .eq('categoria', checklistPreset)
-        .limit(1);
-
-      if (checkData && checkData.length > 0) {
-        setCustomItems((checkData[0] as any).itens as string[]);
-      } else {
-        setCustomItems([]);
-      }
-
     } catch (err) {
-      console.error('Erro ao conectar ao Supabase:', err);
+      console.error('Erro ao carregar planejamento:', err);
+      toast.error('Não foi possível carregar os dados de planejamento.');
     } finally {
       setIsLoading(false);
     }
@@ -238,109 +203,159 @@ export function PlanejamentoFacilities() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.empresa_id, checklistPreset]);
 
-  // --- MUTATION HANDLERS COM SUPABASE ---
+  // --- MUTATION HANDLERS ---
 
-  const handleApproveBudget = async (id: string) => {
-    const supabaseAny = supabase as any;
-    const { error } = await supabaseAny
+  const handleDecideBudget = async (id: string, status: 'aprovado' | 'rejeitado') => {
+    const { error } = await supabase
       .from('orcamentos_manutencao')
-      .update({ status: 'aprovado' })
+      .update({ status, decidido_em: new Date().toISOString() })
       .eq('id', id);
 
     if (error) {
-      toast.error('Erro ao aprovar orçamento no banco.');
+      toast.error(getErrorMessage(error));
       return;
     }
 
-    setBudgets(prev =>
-      prev.map(b => (b.id === id ? { ...b, status: 'aprovado' as const } : b))
-    );
-    toast.success(`Orçamento aprovado com sucesso!`, {
-      description: 'Aprovado em tempo real no Supabase.',
-      icon: <Check className="h-4 w-4 text-green-500" />,
-    });
+    setBudgets(prev => prev.map(b => (b.id === id ? { ...b, status } : b)));
+    if (status === 'aprovado') toast.success('Orçamento aprovado.');
+    else toast.info('Orçamento recusado.');
   };
 
-  const handleRejectBudget = async (id: string) => {
-    const supabaseAny = supabase as any;
-    const { error } = await supabaseAny
-      .from('orcamentos_manutencao')
-      .update({ status: 'rejeitado' })
-      .eq('id', id);
+  const handleApproveBudget = (id: string) => handleDecideBudget(id, 'aprovado');
+  const handleRejectBudget = (id: string) => handleDecideBudget(id, 'rejeitado');
 
-    if (error) {
-      toast.error('Erro ao atualizar orçamento.');
+  const handleCreateBudget = async () => {
+    if (!profile?.empresa_id) return;
+    const valor = parseFloat(budgetForm.valor.replace(',', '.'));
+    if (!budgetForm.fornecedor.trim() || !budgetForm.servico.trim() || isNaN(valor) || valor <= 0) {
+      toast.error('Informe fornecedor, serviço e um valor maior que zero.');
       return;
     }
 
-    setBudgets(prev =>
-      prev.map(b => (b.id === id ? { ...b, status: 'rejeitado' as const } : b))
-    );
-    toast.error(`Orçamento recusado.`, {
-      description: 'Status atualizado no Supabase.',
+    const { error } = await supabase.from('orcamentos_manutencao').insert({
+      empresa_id: profile.empresa_id,
+      fornecedor: budgetForm.fornecedor.trim(),
+      servico: budgetForm.servico.trim(),
+      valor,
+      equipamento_nome: budgetForm.equipamento_nome.trim() || null,
     });
+
+    if (error) {
+      toast.error(getErrorMessage(error));
+      return;
+    }
+    setBudgetForm({ fornecedor: '', servico: '', valor: '', equipamento_nome: '' });
+    toast.success('Orçamento enviado para aprovação.');
+    loadData();
+  };
+
+  // Uma OS sempre precisa de técnico: escolhe por especialidade quando possível
+  const pickTecnico = async (contexto: string) => {
+    if (!profile?.empresa_id) return null;
+    const { data: techs } = await supabase
+      .from('tecnicos')
+      .select('id_telegram, nome_completo, funcao')
+      .eq('empresa_id', profile.empresa_id);
+    if (!techs || techs.length === 0) return null;
+
+    const ctx = contexto.toLowerCase();
+    const temFuncao = (...termos: string[]) =>
+      techs.find((t) => termos.some((termo) => t.funcao?.toLowerCase().includes(termo)));
+
+    let match = undefined;
+    if (autoAssignActive) {
+      if (['temp', 'press', 'vibr', 'óle', 'mecan'].some((k) => ctx.includes(k))) {
+        match = temFuncao('mecan', 'lubrif', 'hvac', 'manutenc');
+      } else if (['tens', 'corr', 'elét', 'elet', 'pain'].some((k) => ctx.includes(k))) {
+        match = temFuncao('eletri', 'instrum', 'autom');
+      }
+    }
+    return match || techs[0];
   };
 
   const handleVerifyRequest = async (id: string, req: MaintenanceRequest) => {
-    const supabaseAny = supabase as any;
-    // 1. Atualiza status da solicitação
-    const { error: updErr } = await supabaseAny
-      .from('solicitacoes_manutencao')
-      .update({ status: 'verificado' })
-      .eq('id', id);
+    if (!profile?.empresa_id) return;
 
-    if (updErr) {
-      toast.error('Erro ao aprovar solicitação.');
+    const tecnico = await pickTecnico(req.descricao);
+    if (!tecnico) {
+      toast.error('Cadastre ao menos um técnico antes de abrir a OS.');
       return;
     }
 
-    // 2. Abre Ordem de Serviço real no Supabase
-    if (profile?.empresa_id) {
-      const { error: osErr } = await supabaseAny
-        .from('ordens_de_servico')
-        .insert({
-          equipamento_nome: req.equipamento_nome,
-          localizacao: req.localizacao,
-          descricao_problema: req.descricao,
-          prioridade: req.prioridade,
-          status_os: 'Aberta',
-          origem: 'solicitacao',
-          empresa_id: profile.empresa_id,
-        });
+    // 1. Abre a OS; só então marca a solicitação como verificada.
+    // O id da solicitação vira o client_uuid da OS: se a atualização da solicitação
+    // falhar e o gestor tentar de novo, o servidor recusa a duplicata (índice único)
+    // e reaproveitamos a OS que já existe em vez de abrir outra.
+    let { data: osData, error: osErr } = await supabase
+      .from('ordens_de_servico')
+      .insert({
+        equipamento_nome: req.equipamento_nome,
+        equipamento_tag: req.equipamento_tag ?? null,
+        localizacao: req.localizacao,
+        descricao_problema: `Solicitação de ${req.solicitante_nome}: ${req.descricao}`,
+        prioridade: req.prioridade,
+        status_os: 'Aberta',
+        origem: 'solicitacao',
+        tipo_manutencao: 'Corretiva',
+        empresa_id: profile.empresa_id,
+        tecnico_id: tecnico.id_telegram,
+        client_uuid: id,
+      })
+      .select('id')
+      .single();
 
-      if (osErr) {
-        toast.warning('Solicitação verificada, mas falhou ao gerar Ordem de Serviço.');
-      } else {
-        toast.success(`Solicitação verificada com sucesso!`, {
-          description: 'Ordem de serviço gerada e inserida na fila de atendimento técnico no Supabase.',
-          icon: <ClipboardCheck className="h-4 w-4 text-primary" />,
-        });
+    if (osErr?.code === '23505') {
+      const { data: existente, error: findErr } = await supabase
+        .from('ordens_de_servico')
+        .select('id')
+        .eq('client_uuid', id)
+        .limit(1);
+      if (!findErr && existente && existente.length > 0) {
+        osData = existente[0];
+        osErr = null;
       }
+    }
+
+    if (osErr || !osData) {
+      toast.error(osErr ? getErrorMessage(osErr) : 'Não foi possível abrir a OS.');
+      return;
+    }
+
+    const { error: updErr } = await supabase
+      .from('solicitacoes_manutencao')
+      .update({ status: 'verificado', os_gerada_id: osData.id })
+      .eq('id', id);
+
+    if (updErr) {
+      toast.warning(`OS #${osData.id} aberta, mas a solicitação não pôde ser atualizada.`);
+    } else {
+      toast.success(`OS #${osData.id} aberta`, {
+        description: `Atribuída a ${tecnico.nome_completo}.`,
+        icon: <ClipboardCheck className="h-4 w-4 text-primary" />,
+      });
     }
 
     loadData();
   };
 
   const handleDeclineRequest = async (id: string) => {
-    const supabaseAny = supabase as any;
-    const { error } = await supabaseAny
+    const { error } = await supabase
       .from('solicitacoes_manutencao')
       .update({ status: 'rejeitado' })
       .eq('id', id);
 
     if (error) {
-      toast.error('Erro ao recusar solicitação.');
+      toast.error(getErrorMessage(error));
       return;
     }
 
     setRequests(prev =>
       prev.map(r => (r.id === id ? { ...r, status: 'rejeitado' as const } : r))
     );
-    toast.warning(`Solicitação recusada.`, {
-      description: 'Solicitação arquivada no Supabase.',
-    });
+    toast.info('Solicitação recusada.');
   };
 
   const [newItemText, setNewItemText] = useState('');
@@ -349,12 +364,10 @@ export function PlanejamentoFacilities() {
     if (!newItemText.trim()) return;
     setCustomItems(prev => [...prev, newItemText.trim()]);
     setNewItemText('');
-    toast.success('Item adicionado à lista local.');
   };
 
   const handleRemoveCustomItem = (index: number) => {
     setCustomItems(prev => prev.filter((_, i) => i !== index));
-    toast.info('Item removed da lista.');
   };
 
   const handleLoadPreset = (value: string) => {
@@ -389,31 +402,27 @@ export function PlanejamentoFacilities() {
   const handleSaveChecklist = async () => {
     if (!profile?.empresa_id) return;
 
-    const supabaseAny = supabase as any;
-
-    // Remove registro existente da mesma categoria
-    await supabaseAny
+    const { error: delError } = await supabase
       .from('templates_checklist')
       .delete()
       .eq('empresa_id', profile.empresa_id)
       .eq('categoria', checklistPreset);
 
-    // Salva novo
-    const { error } = await supabaseAny
-      .from('templates_checklist')
-      .insert({
-        nome: `Preset ${checklistPreset.toUpperCase()}`,
-        categoria: checklistPreset,
-        itens: customItems,
-        empresa_id: profile.empresa_id,
-      });
+    const { error } = delError
+      ? { error: delError }
+      : await supabase.from('templates_checklist').insert({
+          nome: `Preset ${checklistPreset.toUpperCase()}`,
+          categoria: checklistPreset,
+          itens: customItems,
+          empresa_id: profile.empresa_id,
+        });
 
     if (error) {
-      toast.error('Erro ao salvar template no Supabase.');
+      toast.error(getErrorMessage(error));
     } else {
-      toast.success('Template de Checklist persistido!', {
-        description: `${customItems.length} etapas registradas e disponíveis no Supabase para futuras preventivas.`,
-        icon: <CheckSquare className="h-4 w-4 text-primary animate-bounce" />,
+      toast.success('Template de checklist salvo', {
+        description: `${customItems.length} etapas disponíveis para futuras preventivas.`,
+        icon: <CheckSquare className="h-4 w-4 text-primary" />,
       });
     }
   };
@@ -421,35 +430,47 @@ export function PlanejamentoFacilities() {
   const handleGenerateGuestLink = async () => {
     if (!profile?.empresa_id) return;
 
-    const supabaseAny = supabase as any;
-
-    const { data, error } = await supabaseAny
+    const { data, error } = await supabase
       .from('links_acesso_convidado')
       .insert({
-        descricao: `Acesso Técnico Externo #${links.length + 1}`,
+        descricao: `Portal de solicitações #${links.length + 1}`,
         empresa_id: profile.empresa_id,
-        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 dias
+        expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       })
-      .select();
+      .select()
+      .single();
 
+    if (error || !data) {
+      toast.error(error ? getErrorMessage(error) : 'Erro ao gerar link.');
+      return;
+    }
+    setLinks(prev => [...prev, data]);
+    setQrLink(data);
+    toast.success('Link do portal criado', { description: 'Válido por 12 meses.' });
+  };
+
+  const handleRevokeLink = async (id: string) => {
+    if (!window.confirm('Desativar este link? Os QR codes impressos com ele deixam de funcionar.')) return;
+    const { error } = await supabase.from('links_acesso_convidado').update({ ativo: false }).eq('id', id);
     if (error) {
-      toast.error('Erro ao gerar link de acesso no banco.');
-    } else if (data) {
-      setLinks(prev => [...prev, data[0] as any as GuestLink]);
-      toast.success('Acesso de leitura persistido no Supabase!', {
-        description: 'Fornecedor cadastrado com sucesso para acompanhamento em tempo real.',
-        icon: <Users className="h-4 w-4 text-primary animate-pulse" />,
-      });
+      toast.error(getErrorMessage(error));
+      return;
+    }
+    setLinks(prev => prev.filter(l => l.id !== id));
+    toast.info('Link desativado.');
+  };
+
+  const handleCopyLink = async (token: string) => {
+    try {
+      await navigator.clipboard.writeText(portalUrl(window.location.origin, token));
+      toast.success('Link copiado');
+    } catch {
+      toast.error('Não foi possível copiar o link');
     }
   };
 
-  const handleCopyLink = (token: string) => {
-    const fullUrl = `${window.location.origin}/share/guest-access-${token}`;
-    navigator.clipboard.writeText(fullUrl);
-    toast.success('Link copiado com token criptográfico do Supabase!');
-  };
-
   const handleAddMeasurement = async () => {
+    if (!profile?.empresa_id) return;
     if (!formEquipamento.trim() || !formValor || !formMin || !formMax) {
       toast.error('Por favor, preencha todos os campos da medição.');
       return;
@@ -463,117 +484,83 @@ export function PlanejamentoFacilities() {
       toast.error('Os valores inseridos devem ser numéricos.');
       return;
     }
+    if (minNum > maxNum) {
+      toast.error('O mínimo esperado não pode ser maior que o máximo.');
+      return;
+    }
 
+    const equipamento = formEquipamento.trim();
     const isCritico = valorNum < minNum || valorNum > maxNum;
-    const status: 'Normal' | 'Crítico' = isCritico ? 'Crítico' : 'Normal';
+    let osGeradaId: number | null = null;
+    let tecnicoNome: string | null = null;
 
-    const newMeasurement: Measurement = {
-      id: 'med_' + Date.now(),
-      equipamento_nome: formEquipamento.trim(),
+    // Fora da faixa: abre OS corretiva automaticamente
+    if (isCritico) {
+      const tecnico = await pickTecnico(formVariavel);
+      if (tecnico) {
+        const { data: osData, error: osErr } = await supabase
+          .from('ordens_de_servico')
+          .insert({
+            equipamento_nome: equipamento,
+            descricao_problema: `[MEDIÇÃO FORA DA FAIXA] ${formVariavel} = ${valorNum} (esperado entre ${minNum} e ${maxNum}).`,
+            prioridade: 'Alta',
+            status_os: 'Aberta',
+            origem: 'medicao',
+            tipo_manutencao: 'Corretiva',
+            empresa_id: profile.empresa_id,
+            tecnico_id: tecnico.id_telegram,
+          })
+          .select('id')
+          .single();
+        if (!osErr && osData) {
+          osGeradaId = osData.id;
+          tecnicoNome = tecnico.nome_completo;
+        }
+      }
+    }
+
+    const { error } = await supabase.from('medicoes_ativos').insert({
+      empresa_id: profile.empresa_id,
+      equipamento_nome: equipamento,
       variavel: formVariavel,
       valor: valorNum,
       min_esperado: minNum,
       max_esperado: maxNum,
-      data_medicao: new Date().toISOString(),
-      status,
-    };
+      os_gerada_id: osGeradaId,
+    });
 
-    setMeasurements(prev => [newMeasurement, ...prev]);
+    if (error) {
+      toast.error(getErrorMessage(error));
+      return;
+    }
 
-    if (isCritico) {
-      const alertDesc = `${formVariavel} (${valorNum}) fora do intervalo saudável estabelecido de [${minNum} - ${maxNum}].`;
-      const newAlert: MeasurementAlert = {
-        id: 'alrt_' + Date.now(),
-        equipamento_nome: formEquipamento.trim(),
-        descricao: alertDesc,
-        data_alerta: new Date().toISOString(),
-        status: 'Ativo',
-      };
-
-      // Tenta criar OS automática no Supabase para dados reais com Autoatribuição Inteligente!
-      if (profile?.empresa_id) {
-        const supabaseAny = supabase as any;
-        
-        let targetTechId: number | null = null;
-        let targetTechName: string | null = null;
-        let targetTechFuncao: string | null = null;
-
-        if (autoAssignActive) {
-          const { data: techs, error: techsErr } = await supabaseAny
-            .from('tecnicos')
-            .select('*')
-            .eq('empresa_id', profile.empresa_id);
-
-          if (!techsErr && techs && techs.length > 0) {
-            const varLower = formVariavel.toLowerCase();
-            let matchedTech = null;
-
-            if (varLower.includes('temp') || varLower.includes('press') || varLower.includes('vibr') || varLower.includes('óle') || varLower.includes('mecan')) {
-              matchedTech = techs.find((t: any) => 
-                t.funcao?.toLowerCase().includes('mecan') || 
-                t.funcao?.toLowerCase().includes('lubrif') || 
-                t.funcao?.toLowerCase().includes('hvac') ||
-                t.funcao?.toLowerCase().includes('manutenc')
-              );
-            } else if (varLower.includes('tens') || varLower.includes('corr') || varLower.includes('elét') || varLower.includes('elet') || varLower.includes('pain')) {
-              matchedTech = techs.find((t: any) => 
-                t.funcao?.toLowerCase().includes('eletri') || 
-                t.funcao?.toLowerCase().includes('instrum') || 
-                t.funcao?.toLowerCase().includes('autom')
-              );
-            }
-
-            const finalTech = matchedTech || techs[0];
-            targetTechId = finalTech.id_telegram;
-            targetTechName = finalTech.nome_completo;
-            targetTechFuncao = finalTech.funcao || 'Técnico';
-          }
-        }
-
-        const { data: osData, error: osErr } = await supabaseAny
-          .from('ordens_de_servico')
-          .insert({
-            equipamento_nome: formEquipamento.trim(),
-            localizacao: 'Setor de Facilities',
-            descricao_problema: `[FALHA DE PARÂMETRO PREDITIVO] ${alertDesc} Necessário realizar intervenção corretiva urgente para evitar colapso do ativo.`,
-            prioridade: 'Alta',
-            status_os: 'Aberta',
-            origem: 'facilities',
-            tipo_manutencao: 'Corretiva',
-            empresa_id: profile.empresa_id,
-            tecnico_id: targetTechId,
-          })
-          .select();
-
-        if (!osErr && osData && osData.length > 0) {
-          newAlert.os_gerada_id = osData[0].id;
-          const assignedMsg = targetTechName 
-            ? `Atribuída automaticamente ao técnico: ${targetTechName} (${targetTechFuncao})`
-            : 'Ordem de serviço registrada automaticamente na fila do Supabase.';
-          
-          toast.success(`Alerta Preditivo e Ordem de Serviço #${osData[0].id} gerados com sucesso!`, {
-            description: assignedMsg,
-            icon: <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />,
-          });
-        } else {
-          toast.warning('Medição fora dos limites registrada localmente, mas falhou ao inserir OS no Supabase.');
-        }
-      }
-
-      setAlerts(prev => [newAlert, ...prev]);
+    if (!isCritico) {
+      toast.success('Medição registrada', { description: 'Dentro da faixa esperada.' });
+    } else if (osGeradaId) {
+      toast.success(`Alerta registrado e OS #${osGeradaId} aberta`, {
+        description: `Atribuída a ${tecnicoNome}.`,
+        icon: <AlertTriangle className="h-4 w-4 text-red-500" />,
+      });
     } else {
-      toast.success('Medição registrada com sucesso!', {
-        description: 'Os parâmetros estão operacionais e dentro do intervalo saudável.',
-        icon: <Check className="h-4 w-4 text-green-500" />,
+      toast.warning('Alerta registrado, mas a OS não foi aberta.', {
+        description: 'Cadastre um técnico ou abra a OS manualmente.',
       });
     }
 
-    // Reset form
     setFormEquipamento('');
     setFormValor('');
     setFormMin('');
     setFormMax('');
     loadData();
+  };
+
+  const handleResolveAlert = async (id: string) => {
+    const { error } = await supabase.from('medicoes_ativos').update({ alerta_tratado: true }).eq('id', id);
+    if (error) {
+      toast.error(getErrorMessage(error));
+      return;
+    }
+    setAlerts(prev => prev.filter(a => a.id !== id));
   };
 
   // Alertas dinâmicos baseados no volume de Ordens de Serviço reais do Supabase agrupados por TAG no mês atual!
@@ -604,7 +591,7 @@ export function PlanejamentoFacilities() {
         calculatedAlerts.push({
           id: 'dyn_alrt_' + tag,
           equipamento_nome: `${data.nome} (TAG: ${tag})`,
-          descricao: `[PREDITIVO - RECORRÊNCIA CRÍTICA] O ativo com TAG ${tag} acumulou ${data.count} Ordens de Serviço neste mês no Supabase. Alto risco de desgaste acelerado e parada mecânica não planejada.`,
+          descricao: `[PREDITIVO - RECORRÊNCIA CRÍTICA] O ativo com TAG ${tag} acumulou ${data.count} Ordens de Serviço neste mês. Alto risco de desgaste acelerado e parada mecânica não planejada.`,
           data_alerta: new Date().toISOString(),
           status: 'Ativo',
         });
@@ -647,39 +634,39 @@ export function PlanejamentoFacilities() {
   return (
     <div className="space-y-6">
       {/* Sub tabs selectors */}
-      <div className="flex flex-wrap gap-2 p-1.5 bg-card/40 border border-white/5 rounded-xl backdrop-blur-xl">
+      <div className="flex flex-wrap gap-2 p-1.5 bg-card/40 border border-border rounded-xl">
         <Button
           variant={activeSubTab === 'sla' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('sla')}
-          className={`rounded-lg ${activeSubTab === 'sla' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg ${activeSubTab === 'sla' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
           <Clock className="h-4 w-4 mr-2" /> SLAs & Operações
         </Button>
         <Button
           variant={activeSubTab === 'calendario' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('calendario')}
-          className={`rounded-lg ${activeSubTab === 'calendario' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg ${activeSubTab === 'calendario' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
           <CalendarIcon className="h-4 w-4 mr-2" /> Calendário de OS
         </Button>
         <Button
           variant={activeSubTab === 'orcamentos' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('orcamentos')}
-          className={`rounded-lg ${activeSubTab === 'orcamentos' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg ${activeSubTab === 'orcamentos' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
           <DollarSign className="h-4 w-4 mr-2" /> Aprovar Orçamentos
         </Button>
         <Button
           variant={activeSubTab === 'checklists' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('checklists')}
-          className={`rounded-lg ${activeSubTab === 'checklists' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg ${activeSubTab === 'checklists' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
           <CheckSquare className="h-4 w-4 mr-2" /> Criar Checklist
         </Button>
         <Button
           variant={activeSubTab === 'solicitacoes' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('solicitacoes')}
-          className={`rounded-lg relative ${activeSubTab === 'solicitacoes' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg relative ${activeSubTab === 'solicitacoes' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
           <ClipboardCheck className="h-4 w-4 mr-2" /> Solicitações
           {requests.filter(r => r.status === 'pendente').length > 0 && (
@@ -687,23 +674,16 @@ export function PlanejamentoFacilities() {
           )}
         </Button>
         <Button
-          variant={activeSubTab === 'relatorios' ? 'default' : 'ghost'}
-          onClick={() => setActiveSubTab('relatorios')}
-          className={`rounded-lg ${activeSubTab === 'relatorios' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
-        >
-          <FileText className="h-4 w-4 mr-2" /> Relatórios Clientes
-        </Button>
-        <Button
           variant={activeSubTab === 'guest' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('guest')}
-          className={`rounded-lg ${activeSubTab === 'guest' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg ${activeSubTab === 'guest' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
-          <Users className="h-4 w-4 mr-2" /> Leitores Ilimitados
+          <Users className="h-4 w-4 mr-2" /> Portal de Solicitações
         </Button>
         <Button
           variant={activeSubTab === 'medicoes' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('medicoes')}
-          className={`rounded-lg relative ${activeSubTab === 'medicoes' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg relative ${activeSubTab === 'medicoes' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
           <Activity className="h-4 w-4 mr-2" /> Medições Preditivas
           {(alerts.filter(a => a.status === 'Ativo').length > 0 || getDynamicOSVolumeAlerts().length > 0) && (
@@ -725,122 +705,88 @@ export function PlanejamentoFacilities() {
           {/* ======================================================== */}
           {activeSubTab === 'sla' && (
             <div className="space-y-6">
+              <p className="text-xs text-muted-foreground">
+                Calculado com as OS mais recentes da empresa (até 200), só corretivas e preditivas. Meta de resolução:
+                Urgente 2 h · Alta 6 h · Média e Baixa 24 h (da abertura ao fechamento).
+              </p>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="glass-panel border-white/5 relative overflow-hidden group">
+                <Card className="glass-panel border-border">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                      SLA de Atendimento Crítico
-                      <Badge className="bg-success/20 text-success border-transparent">96.4% OK</Badge>
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Cumprimento geral da meta</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="text-3xl font-mono font-bold text-foreground">54 min</div>
-                    <p className="text-xs text-muted-foreground">Tempo médio de resposta (Meta: &lt;1 hora)</p>
-                    <Progress value={96.4} className="h-1.5 [&>div]:bg-success bg-secondary" />
+                    <div className="text-3xl font-mono font-bold text-foreground">{formatarPercentual(sla.percentualGeral)}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {sla.finalizadas > 0
+                        ? `${sla.noPrazo} de ${sla.finalizadas} OS finalizadas dentro da meta`
+                        : 'Ainda não há OS finalizadas para calcular'}
+                    </p>
+                    {sla.percentualGeral !== null && <Progress value={sla.percentualGeral} className="h-1.5 bg-secondary" />}
                   </CardContent>
                 </Card>
 
-                <Card className="glass-panel border-white/5 relative overflow-hidden group">
+                <Card className="glass-panel border-border">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                      SLA de MTTR Corretivo
-                      <Badge className="bg-success/20 text-success border-transparent">92.1% OK</Badge>
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Tempo médio de resolução</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="text-3xl font-mono font-bold text-foreground">3h 12m</div>
-                    <p className="text-xs text-muted-foreground">Tempo médio de conserto (Meta: &lt;4 horas)</p>
-                    <Progress value={92.1} className="h-1.5 [&>div]:bg-success bg-secondary" />
+                    <div className="text-3xl font-mono font-bold text-foreground">{formatarHoras(sla.mediaGeralHoras)}</div>
+                    <p className="text-xs text-muted-foreground">Média real das OS finalizadas</p>
                   </CardContent>
                 </Card>
 
-                <Card className="glass-panel border-white/5 relative overflow-hidden group">
+                <Card className="glass-panel border-border">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                      SLA de Validação
-                      <Badge className="bg-warning/20 text-warning border-transparent">88.5% OK</Badge>
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Abertas fora do prazo agora</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="text-3xl font-mono font-bold text-foreground">42 min</div>
-                    <p className="text-xs text-muted-foreground">Verificação das solicitações (Meta: &lt;30 min)</p>
-                    <Progress value={88.5} className="h-1.5 [&>div]:bg-warning bg-secondary" />
+                    <div className={`text-3xl font-mono font-bold ${sla.abertasForaDoPrazo > 0 ? 'text-red-400' : 'text-foreground'}`}>
+                      {sla.abertasForaDoPrazo}
+                    </div>
+                    <p className="text-xs text-muted-foreground">OS ainda abertas que já passaram da meta</p>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* SLA details view */}
-              <Card className="glass-panel border-white/5">
+              <Card className="glass-panel border-border">
                 <CardHeader>
-                  <CardTitle className="font-mono text-lg flex items-center gap-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
                     <Clock className="h-5 w-5 text-primary" />
-                    Controle de Tempo de Atendimento e SLA por Criticidade
+                    SLA por prioridade
                   </CardTitle>
-                  <CardDescription>
-                    Monitore se os acordos de nível de serviço com a produção estão sendo cumpridos.
-                  </CardDescription>
+                  <CardDescription>Monitore se os prazos acordados com a produção estão sendo cumpridos.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-secondary/30 border border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="inline-block h-3 w-3 rounded-full bg-red-500 animate-pulse" />
-                          <strong className="text-sm font-semibold text-foreground">Nível 1 - Urgência Crítica</strong>
+                    {sla.niveis.map((n) => (
+                      <div
+                        key={n.nivel}
+                        className="p-4 rounded-xl bg-secondary/30 border border-border flex flex-col md:flex-row md:items-center justify-between gap-4"
+                      >
+                        <div>
+                          <strong className="text-sm font-semibold text-foreground">
+                            {n.nivel === 'Média' ? 'Média e Baixa' : n.nivel}
+                          </strong>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Meta de resolução: {formatarHoras(n.metaHoras)}
+                            {n.abertasForaDoPrazo > 0 && (
+                              <span className="text-red-400"> · {n.abertasForaDoPrazo} aberta(s) fora do prazo</span>
+                            )}
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">Parada de máquina essencial da linha principal. Meta de resolução: 2 horas.</p>
-                      </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <div className="text-sm font-mono font-bold text-foreground">94.8%</div>
-                          <div className="text-[10px] text-muted-foreground">Dentro do prazo</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-mono font-bold text-primary">1h 32m</div>
-                          <div className="text-[10px] text-muted-foreground">Média Real</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-secondary/30 border border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="inline-block h-3 w-3 rounded-full bg-orange-500" />
-                          <strong className="text-sm font-semibold text-foreground">Nível 2 - Alta Criticidade</strong>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">Falhas parciais que não paralisam a linha principal. Meta de resolução: 6 horas.</p>
-                      </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <div className="text-sm font-mono font-bold text-foreground">96.1%</div>
-                          <div className="text-[10px] text-muted-foreground">Dentro do prazo</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-mono font-bold text-foreground">4h 15m</div>
-                          <div className="text-[10px] text-muted-foreground">Média Real</div>
+                        <div className="flex items-center gap-6">
+                          <div className="text-right">
+                            <div className="text-sm font-mono font-bold text-foreground">{formatarPercentual(n.percentual)}</div>
+                            <div className="text-[10px] text-muted-foreground">Dentro do prazo ({n.finalizadas} OS)</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-mono font-bold text-foreground">{formatarHoras(n.mediaHoras)}</div>
+                            <div className="text-[10px] text-muted-foreground">Média real</div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-secondary/30 border border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="inline-block h-3 w-3 rounded-full bg-yellow-500" />
-                          <strong className="text-sm font-semibold text-foreground">Nível 3 - Média Criticidade</strong>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">Solicitações de facilities e ajustes ergonômicos. Meta de resolução: 24 horas.</p>
-                      </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <div className="text-sm font-mono font-bold text-foreground">100.0%</div>
-                          <div className="text-[10px] text-muted-foreground">Dentro do prazo</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-mono font-bold text-foreground">12h 40m</div>
-                          <div className="text-[10px] text-muted-foreground">Média Real</div>
-                        </div>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -851,11 +797,11 @@ export function PlanejamentoFacilities() {
           {/* TAB 2: CALENDÁRIO INTERATIVO */}
           {/* ======================================================== */}
           {activeSubTab === 'calendario' && (
-            <Card className="glass-panel border-white/5">
+            <Card className="glass-panel border-border">
               <CardHeader>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <CardTitle className="font-mono text-lg flex items-center gap-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
                       <CalendarIcon className="h-5 w-5 text-primary" />
                       Visualização de Calendário para Ordens de Serviço Real
                     </CardTitle>
@@ -863,7 +809,7 @@ export function PlanejamentoFacilities() {
                       Consulte todas as ordens de serviço (atualmente {realOSList.length} registradas) diretamente do Supabase.
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-4 bg-secondary/40 border border-white/5 p-2 rounded-lg text-xs font-mono">
+                  <div className="flex items-center gap-4 bg-secondary/40 border border-border p-2 rounded-lg text-xs font-mono">
                     <div className="flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-blue-500" /> Preventivas
                     </div>
@@ -876,11 +822,11 @@ export function PlanejamentoFacilities() {
               <CardContent className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Calendário Mensal */}
                 <div className="lg:col-span-8 space-y-4">
-                  <div className="flex items-center justify-between bg-secondary/20 p-3 rounded-lg border border-white/5 font-mono text-sm">
-                    <span className="font-bold text-primary">Maio {new Date().getFullYear()}</span>
+                  <div className="flex items-center justify-between bg-secondary/20 p-3 rounded-lg border border-border font-mono text-sm">
+                    <span className="font-bold text-primary capitalize">{new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
                     <span className="text-muted-foreground text-xs">Visão Sincronizada Supabase</span>
                   </div>
-                  <div className="grid grid-cols-7 gap-2 text-center text-xs font-mono font-bold text-muted-foreground p-1 border-b border-white/5">
+                  <div className="grid grid-cols-7 gap-2 text-center text-xs font-mono font-bold text-muted-foreground p-1 border-b border-border">
                     <div>DOM</div>
                     <div>SEG</div>
                     <div>TER</div>
@@ -906,8 +852,8 @@ export function PlanejamentoFacilities() {
                           onClick={() => setSelectedDay(dayNum)}
                           className={`h-14 p-1 text-left rounded-lg border flex flex-col justify-between transition-all relative group ${
                             isSelected 
-                              ? 'bg-primary/20 border-primary text-foreground shadow-neon' 
-                              : 'bg-secondary/20 border-white/5 text-muted-foreground hover:bg-secondary/40 hover:border-white/10'
+                              ? 'bg-primary/20 border-primary text-foreground' 
+                              : 'bg-secondary/20 border-border text-muted-foreground hover:bg-secondary/40 hover:border-border'
                           }`}
                         >
                           <span className={`text-[10px] font-mono font-bold ${isSelected ? 'text-primary' : 'text-foreground/70'}`}>{dayNum}</span>
@@ -929,10 +875,10 @@ export function PlanejamentoFacilities() {
                 </div>
 
                 {/* Tarefas do Dia Selecionado */}
-                <div className="lg:col-span-4 p-4 rounded-xl bg-secondary/20 border border-white/5 flex flex-col justify-between h-full min-h-[300px]">
+                <div className="lg:col-span-4 p-4 rounded-xl bg-secondary/20 border border-border flex flex-col justify-between h-full min-h-[300px]">
                   <div>
-                    <div className="pb-3 border-b border-white/5 flex items-center justify-between mb-4">
-                      <span className="font-mono text-sm font-bold text-foreground">Dia {selectedDay} de Maio</span>
+                    <div className="pb-3 border-b border-border flex items-center justify-between mb-4">
+                      <span className="font-mono text-sm font-bold text-foreground">Dia {selectedDay} de {new Date().toLocaleDateString('pt-BR', { month: 'long' })}</span>
                       <Badge className="bg-primary/10 text-primary border-primary/20">
                         {getTasksForDay(selectedDay).length} Ordens
                       </Badge>
@@ -967,9 +913,6 @@ export function PlanejamentoFacilities() {
                     </div>
                   </div>
 
-                  <Button className="w-full mt-4" size="sm" onClick={() => toast.success('Por favor, utilize o painel de criação de OS para registrar preventivas agendadas.')}>
-                    <Plus className="h-3 w-3 mr-1.5" /> Registrar Preventiva
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -979,22 +922,32 @@ export function PlanejamentoFacilities() {
           {/* TAB 3: APROVAR ORÇAMENTOS */}
           {/* ======================================================== */}
           {activeSubTab === 'orcamentos' && (
-            <Card className="glass-panel border-white/5">
+            <Card className="glass-panel border-border">
               <CardHeader>
-                <CardTitle className="font-mono text-lg flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <DollarSign className="h-5 w-5 text-primary" />
-                  Gerente de Manutenção: Aprovação de Orçamentos Real (Supabase)
+                  Orçamentos de Serviços Externos
                 </CardTitle>
                 <CardDescription>
-                  Sincronizado diretamente com a tabela `orcamentos_manutencao`.
+                  Qualquer membro da equipe cadastra; a aprovação é do administrador.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-2 p-3 rounded-xl bg-secondary/10 border border-border">
+                  <Input aria-label="Fornecedor" placeholder="Fornecedor" value={budgetForm.fornecedor} onChange={(e) => setBudgetForm({ ...budgetForm, fornecedor: e.target.value })} />
+                  <Input aria-label="Equipamento" placeholder="Equipamento (opcional)" value={budgetForm.equipamento_nome} onChange={(e) => setBudgetForm({ ...budgetForm, equipamento_nome: e.target.value })} />
+                  <Input aria-label="Serviço" placeholder="Serviço" value={budgetForm.servico} onChange={(e) => setBudgetForm({ ...budgetForm, servico: e.target.value })} />
+                  <Input aria-label="Valor" placeholder="Valor (R$)" inputMode="decimal" value={budgetForm.valor} onChange={(e) => setBudgetForm({ ...budgetForm, valor: e.target.value })} />
+                  <Button onClick={handleCreateBudget}><Plus className="h-4 w-4 mr-1" /> Solicitar</Button>
+                </div>
+                {budgets.length === 0 && (
+                  <p className="text-center text-xs text-muted-foreground py-6">Nenhum orçamento cadastrado.</p>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {budgets.map((budget, index) => (
                     <Card 
                       key={budget.id || index} 
-                      className={`border-white/5 bg-secondary/10 hover:bg-secondary/20 transition-all ${
+                      className={`border-border bg-secondary/10 hover:bg-secondary/20 transition-all ${
                         budget.status === 'aprovado' ? 'border-green-500/20' : budget.status === 'rejeitado' ? 'border-red-500/20' : ''
                       }`}
                     >
@@ -1019,10 +972,10 @@ export function PlanejamentoFacilities() {
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <p className="text-xs text-muted-foreground">{budget.servico}</p>
-                        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                        <div className="flex items-center justify-between pt-2 border-t border-border">
                           <div>
                             <span className="text-[10px] text-muted-foreground block">VALOR SOLICITADO</span>
-                            <span className="text-lg font-mono font-bold text-foreground">R$ {budget.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                            <span className="text-lg font-mono font-bold text-foreground">R$ {Number(budget.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                           </div>
                           {budget.status === 'pendente' && (
                             <div className="flex items-center gap-2">
@@ -1056,11 +1009,11 @@ export function PlanejamentoFacilities() {
           {/* TAB 4: CRIAÇÃO DE LISTA DE VERIFICAÇÃO (CHECKLIST) */}
           {/* ======================================================== */}
           {activeSubTab === 'checklists' && (
-            <Card className="glass-panel border-white/5">
+            <Card className="glass-panel border-border">
               <CardHeader>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <CardTitle className="font-mono text-lg flex items-center gap-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
                       <CheckSquare className="h-5 w-5 text-primary" />
                       Criação de Listas de Verificação (Supabase Sincronizado)
                     </CardTitle>
@@ -1096,11 +1049,11 @@ export function PlanejamentoFacilities() {
                   </Button>
                 </div>
 
-                <div className="space-y-2 p-4 rounded-xl bg-secondary/10 border border-white/5 max-h-[300px] overflow-y-auto">
+                <div className="space-y-2 p-4 rounded-xl bg-secondary/10 border border-border max-h-[300px] overflow-y-auto">
                   {customItems.map((item, index) => (
                     <div 
                       key={index} 
-                      className="p-2.5 rounded-lg bg-secondary/30 border border-white/5 flex items-center justify-between text-xs"
+                      className="p-2.5 rounded-lg bg-secondary/30 border border-border flex items-center justify-between text-xs"
                     >
                       <div className="flex items-center gap-3">
                         <span className="font-mono text-[10px] text-primary">#{index + 1}</span>
@@ -1118,9 +1071,9 @@ export function PlanejamentoFacilities() {
                   ))}
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                <div className="flex items-center justify-between pt-4 border-t border-border">
                   <span className="text-xs text-muted-foreground">{customItems.length} etapas registradas localmente</span>
-                  <Button className="shadow-neon" onClick={handleSaveChecklist}>
+                  <Button onClick={handleSaveChecklist}>
                     <CheckSquare className="h-4 w-4 mr-1.5" /> Salvar Template no Supabase
                   </Button>
                 </div>
@@ -1132,29 +1085,34 @@ export function PlanejamentoFacilities() {
           {/* TAB 5: SOLICITAÇÕES DE MANUTENÇÃO */}
           {/* ======================================================== */}
           {activeSubTab === 'solicitacoes' && (
-            <Card className="glass-panel border-white/5">
+            <Card className="glass-panel border-border">
               <CardHeader>
-                <CardTitle className="font-mono text-lg flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <ClipboardCheck className="h-5 w-5 text-primary" />
-                  Triagem de Solicitações de Manutenção do Operador (Real)
+                  Triagem de Solicitações de Manutenção
                 </CardTitle>
                 <CardDescription>
-                  Cada solicitação aprovada gera automaticamente uma Ordem de Serviço real na tabela `ordens_de_servico`.
+                  Chamados abertos pelo portal público ou QR code. Aprovar abre a Ordem de Serviço e atribui um técnico.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
+                  {requests.length === 0 && (
+                    <p className="text-center text-xs text-muted-foreground py-6">
+                      Nenhuma solicitação. Gere um link em "Portal de Solicitações" e divulgue o QR code aos operadores.
+                    </p>
+                  )}
                   {requests.map((request, index) => (
                     <div 
                       key={request.id || index} 
-                      className={`p-4 rounded-xl bg-secondary/10 border border-white/5 flex flex-col md:flex-row justify-between gap-4 transition-all ${
+                      className={`p-4 rounded-xl bg-secondary/10 border border-border flex flex-col md:flex-row justify-between gap-4 transition-all ${
                         request.status === 'verificado' ? 'border-success/20 opacity-80' : request.status === 'rejeitado' ? 'border-red-500/20 opacity-60' : 'border-primary/20 bg-primary/5'
                       }`}
                     >
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-xs font-bold text-primary">REQ-{request.id ? request.id.substring(0, 5) : 'NEW'}</span>
-                          <span className="text-xs text-muted-foreground font-mono">{new Date(request.created_at).toLocaleTimeString('pt-BR')}</span>
+                          <span className="text-xs text-muted-foreground font-mono">{new Date(request.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
                           <Badge className={
                             request.prioridade === 'Urgente' ? 'bg-red-500/20 text-red-500 border-transparent' :
                             request.prioridade === 'Alta' ? 'bg-orange-500/20 text-orange-500 border-transparent' :
@@ -1203,115 +1161,64 @@ export function PlanejamentoFacilities() {
           {/* ======================================================== */}
           {/* TAB 6: RELATÓRIOS PARA CLIENTES */}
           {/* ======================================================== */}
-          {activeSubTab === 'relatorios' && (
-            <Card className="glass-panel border-white/5">
-              <CardHeader>
-                <CardTitle className="font-mono text-lg flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  Gestão e Envio de Relatórios Técnicos Reais para Clientes
-                </CardTitle>
-                <CardDescription>
-                  Listagem dinâmica de Ordens de Serviço Fechadas disponíveis para compartilhamento.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  {realOSList.filter(os => os.status_os === 'Fechada').length > 0 ? (
-                    realOSList.filter(os => os.status_os === 'Fechada').map(os => (
-                      <div 
-                        key={os.id} 
-                        className="p-4 rounded-xl bg-secondary/10 border border-white/5 flex flex-col md:flex-row justify-between gap-4 items-start md:items-center"
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-primary font-bold">OS #{os.id}</span>
-                            <Badge variant="outline" className="border-success/30 text-success">FECHADA</Badge>
-                          </div>
-                          <h4 className="font-semibold text-sm text-foreground mt-1">{os.equipamento_nome}</h4>
-                          <div className="text-xs text-muted-foreground mt-0.5">Encerramento em: {new Date(os.data_fechamento || os.data_abertura).toLocaleDateString('pt-BR')}</div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => toast.success('Aberto para visualização prévia.')}>
-                            <Eye className="h-3.5 w-3.5 mr-1" /> Ver Parecer
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            className="h-8 text-xs bg-primary hover:bg-primary/90"
-                            onClick={() => {
-                              toast.success(`Relatório da OS #${os.id} enviado para o cliente cadastrado!`, {
-                                description: 'O link com acesso completo ao parecer técnico foi compartilhado.',
-                                icon: <Send className="h-4 w-4 text-green-400" />,
-                              });
-                            }}
-                          >
-                            <Send className="h-3.5 w-3.5 mr-1" /> Compartilhar
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-12 text-muted-foreground text-xs space-y-2">
-                      <FileText className="h-8 w-8 text-muted-foreground/30 mx-auto" />
-                      <p>Nenhuma ordem de serviço marcada como 'Fechada' no Supabase para gerar relatórios.</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* ======================================================== */}
           {/* TAB 7: ACESSO ILIMITADO FORNECEDORES E CLIENTES */}
           {/* ======================================================== */}
           {activeSubTab === 'guest' && (
-            <Card className="glass-panel border-white/5">
+            <Card className="glass-panel border-border">
               <CardHeader>
-                <CardTitle className="font-mono text-lg flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <Users className="h-5 w-5 text-primary" />
-                  Funções de Leitura Ilimitada para Fornecedores & Clientes (Supabase)
+                  Portal de Solicitações
                 </CardTitle>
                 <CardDescription>
-                  Permita que parceiros acompanhem o andamento das manutenções em tempo real de forma totalmente gratuita.
+                  Operadores e clientes abrem chamados sem login e sem licença: basta o link ou o QR code. Os chamados caem na triagem de Solicitações.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-sm text-foreground">Economia de Licenças no Supabase</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Gere tokens de visualização direta e ilimitada de forma altamente segura. As credenciais são persistidas na tabela `links_acesso_convidado` com suporte a Row Level Security.
-                  </p>
-                </div>
-
                 <div className="space-y-3">
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase">Links de Acesso Técnico Ativos</h4>
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase">Links ativos</h4>
+                  {links.length === 0 && (
+                    <p className="text-xs text-muted-foreground">Nenhum link ativo.</p>
+                  )}
                   {links.map((link, index) => (
-                    <div key={link.id || index} className="p-3 rounded-lg bg-secondary/30 border border-white/5 flex items-center justify-between gap-4">
+                    <div key={link.id || index} className="p-3 rounded-lg bg-secondary/30 border border-border flex items-center justify-between gap-4">
                       <div className="flex items-center gap-2 truncate">
                         <Lock className="h-3.5 w-3.5 text-success shrink-0" />
-                        <span className="font-mono text-xs text-muted-foreground truncate">{link.descricao}</span>
+                        <span className="font-mono text-xs text-muted-foreground truncate">
+                          {link.descricao}
+                          {link.expires_at && ` • expira em ${new Date(link.expires_at).toLocaleDateString('pt-BR')}`}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => handleCopyLink(link.token)}>
+                        <Button variant="ghost" size="icon" aria-label="QR code" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => setQrLink(link)}>
+                          <QrCode className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" aria-label="Copiar link" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => handleCopyLink(link.token)}>
                           <Share2 className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => {
-                          const fullUrl = `${window.location.origin}/share/guest-access-${link.token}`;
-                          window.open(fullUrl, '_blank');
-                        }}>
+                        <Button variant="ghost" size="icon" aria-label="Abrir portal" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => window.open(portalUrl(window.location.origin, link.token), '_blank', 'noopener')}>
                           <ExternalLink className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" aria-label="Desativar link" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleRevokeLink(link.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <Button className="w-full shadow-neon" onClick={handleGenerateGuestLink}>
-                  <Plus className="h-4 w-4 mr-1.5" /> Gerar Novo Acesso de Leitura Ilimitada
+                <Button className="w-full" onClick={handleGenerateGuestLink}>
+                  <Plus className="h-4 w-4 mr-1.5" /> Gerar link do portal
                 </Button>
+
+                <QRCodeDialog
+                  open={!!qrLink}
+                  onOpenChange={(open) => !open && setQrLink(null)}
+                  title="Solicitar manutenção"
+                  subtitle="Aponte a câmera do celular para abrir um chamado"
+                  items={qrLink ? [{ label: 'Portal', hint: 'Abre o formulário de solicitação (sem login)', url: portalUrl(window.location.origin, qrLink.token) }] : []}
+                />
               </CardContent>
             </Card>
           )}
@@ -1321,9 +1228,9 @@ export function PlanejamentoFacilities() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Coluna da Esquerda: Form de Medição & Autoatribuição */}
                 <div className="lg:col-span-1 space-y-6">
-                  <Card className="glass-panel border-white/5">
+                  <Card className="glass-panel border-border">
                   <CardHeader>
-                    <CardTitle className="font-mono text-lg flex items-center gap-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
                       <Activity className="h-5 w-5 text-primary animate-pulse" />
                       Registrar Medição
                     </CardTitle>
@@ -1338,7 +1245,7 @@ export function PlanejamentoFacilities() {
                         placeholder="Ex: Motor de Resfriamento Principal"
                         value={formEquipamento}
                         onChange={(e) => setFormEquipamento(e.target.value)}
-                        className="bg-secondary/20 border-white/5"
+                        className="bg-secondary/20 border-border"
                       />
                     </div>
 
@@ -1347,7 +1254,7 @@ export function PlanejamentoFacilities() {
                       <select
                         value={formVariavel}
                         onChange={(e) => setFormVariavel(e.target.value)}
-                        className="w-full bg-secondary/20 border border-white/5 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full bg-secondary/20 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                       >
                         <option value="Temperatura (ºC)" className="bg-background text-foreground">Temperatura (ºC)</option>
                         <option value="Pressão de Óleo (bar)" className="bg-background text-foreground">Pressão de Óleo (bar)</option>
@@ -1364,7 +1271,7 @@ export function PlanejamentoFacilities() {
                         placeholder="Ex: 85.4"
                         value={formValor}
                         onChange={(e) => setFormValor(e.target.value)}
-                        className="bg-secondary/20 border-white/5 font-mono"
+                        className="bg-secondary/20 border-border font-mono"
                       />
                     </div>
 
@@ -1377,7 +1284,7 @@ export function PlanejamentoFacilities() {
                           placeholder="Ex: 20"
                           value={formMin}
                           onChange={(e) => setFormMin(e.target.value)}
-                          className="bg-secondary/20 border-white/5 font-mono"
+                          className="bg-secondary/20 border-border font-mono"
                         />
                       </div>
                       <div className="space-y-2">
@@ -1388,21 +1295,21 @@ export function PlanejamentoFacilities() {
                           placeholder="Ex: 80"
                           value={formMax}
                           onChange={(e) => setFormMax(e.target.value)}
-                          className="bg-secondary/20 border-white/5 font-mono"
+                          className="bg-secondary/20 border-border font-mono"
                         />
                       </div>
                     </div>
 
-                    <Button className="w-full shadow-neon gap-1.5" onClick={handleAddMeasurement}>
+                    <Button className="w-full gap-1.5" onClick={handleAddMeasurement}>
                       <Plus className="h-4 w-4" /> Registrar Medição Operacional
                     </Button>
                   </CardContent>
                 </Card>
 
                 {/* Card de Autoatribuição Inteligente */}
-                <Card className="glass-panel border-white/5 overflow-hidden relative">
+                <Card className="glass-panel border-border overflow-hidden relative">
                   <div className="absolute top-0 right-0 p-3">
-                    <Badge className={autoAssignActive ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-muted/10 text-muted-foreground border-white/5"}>
+                    <Badge className={autoAssignActive ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-muted/10 text-muted-foreground border-border"}>
                       {autoAssignActive ? "ATIVO" : "INATIVO"}
                     </Badge>
                   </div>
@@ -1416,12 +1323,12 @@ export function PlanejamentoFacilities() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/10 border border-white/5">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/10 border border-border">
                       <span className="text-xs font-medium">Distribuição Autônoma</span>
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className={`h-7 px-3 rounded-full border transition-all ${autoAssignActive ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20 hover:text-green-300" : "bg-secondary/30 text-muted-foreground border-white/5 hover:bg-secondary/50"}`}
+                        className={`h-7 px-3 rounded-full border transition-all ${autoAssignActive ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20 hover:text-green-300" : "bg-secondary/30 text-muted-foreground border-border hover:bg-secondary/50"}`}
                         onClick={() => setAutoAssignActive(!autoAssignActive)}
                       >
                         {autoAssignActive ? "Ativado" : "Desativado"}
@@ -1431,15 +1338,15 @@ export function PlanejamentoFacilities() {
                     <div className="space-y-2">
                       <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Matriz de Especialidades</span>
                       <div className="space-y-2 font-mono text-[11px]">
-                        <div className="p-2 rounded bg-background/50 border border-white/5 flex items-center justify-between">
+                        <div className="p-2 rounded bg-background/50 border border-border flex items-center justify-between">
                           <span className="text-muted-foreground">🌡️ Hidráulica / HVAC</span>
                           <span className="text-primary font-bold">Mecânico / HVAC</span>
                         </div>
-                        <div className="p-2 rounded bg-background/50 border border-white/5 flex items-center justify-between">
+                        <div className="p-2 rounded bg-background/50 border border-border flex items-center justify-between">
                           <span className="text-muted-foreground">⚡ Eletroeletrônica</span>
                           <span className="text-primary font-bold">Eletricista</span>
                         </div>
-                        <div className="p-2 rounded bg-background/50 border border-white/5 flex items-center justify-between">
+                        <div className="p-2 rounded bg-background/50 border border-border flex items-center justify-between">
                           <span className="text-muted-foreground">⚙️ Outras Variáveis</span>
                           <span className="text-primary font-bold">Técnico Plantão</span>
                         </div>
@@ -1447,7 +1354,7 @@ export function PlanejamentoFacilities() {
                     </div>
 
                     <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      Ao disparar um alerta, a OS correspondente no Supabase é associada ao `tecnico_id` do profissional qualificado disponível, sem intervenção humana dos planejadores.
+                      Ao disparar um alerta, a OS é atribuída ao técnico cuja função combina com a variável medida; sem correspondência, vai para o primeiro técnico cadastrado.
                     </p>
                   </CardContent>
                 </Card>
@@ -1456,14 +1363,14 @@ export function PlanejamentoFacilities() {
                 {/* Histórico de Medições e Alertas Ativos */}
                 <div className="lg:col-span-2 space-y-6">
                   {/* Alertas Ativos */}
-                  <Card className="glass-panel border-white/5 border-red-500/20 bg-red-500/5">
+                  <Card className="glass-panel border-border border-red-500/20 bg-red-500/5">
                     <CardHeader>
-                      <CardTitle className="font-mono text-lg flex items-center gap-2 text-red-400">
+                      <CardTitle className="text-lg flex items-center gap-2 text-red-400">
                         <AlertTriangle className="h-5 w-5 animate-pulse" />
                         Alertas Ativos & Ordens de Serviço Automatizadas
                       </CardTitle>
                     <CardDescription className="text-red-300/60">
-                        Análise de desvios físicos e de fadiga por recorrência de Ordens de Serviço reais registradas no Supabase.
+                        Medições fora da faixa e equipamentos com OS recorrentes no mês.
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -1483,11 +1390,18 @@ export function PlanejamentoFacilities() {
                                 </Badge>
                               </div>
                               <p className="text-xs text-muted-foreground">{alert.descricao}</p>
-                              <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-white/5">
+                              <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border">
                                 <span>Gerado em: {new Date(alert.data_alerta).toLocaleString('pt-BR')}</span>
-                                {alert.os_gerada_id && (
-                                  <span className="font-mono text-primary font-bold">OS Gerada: #{alert.os_gerada_id}</span>
-                                )}
+                                <span className="flex items-center gap-3">
+                                  {alert.os_gerada_id && (
+                                    <span className="font-mono text-primary font-bold">OS Gerada: #{alert.os_gerada_id}</span>
+                                  )}
+                                  {!alert.id.startsWith('dyn_alrt_') && (
+                                    <Button variant="outline" size="sm" className="h-6 text-[10px]" onClick={() => handleResolveAlert(alert.id)}>
+                                      Marcar como tratado
+                                    </Button>
+                                  )}
+                                </span>
                               </div>
                             </div>
                           ));
@@ -1504,17 +1418,20 @@ export function PlanejamentoFacilities() {
                   </Card>
 
                   {/* Lista de Medições Recentes */}
-                  <Card className="glass-panel border-white/5">
+                  <Card className="glass-panel border-border">
                     <CardHeader>
-                      <CardTitle className="font-mono text-lg">Histórico de Medições de Condition Monitoring</CardTitle>
+                      <CardTitle className="text-lg">Histórico de Medições de Condition Monitoring</CardTitle>
                       <CardDescription>
                         Trilha de auditoria das últimas medições registradas por planejadores e técnicos.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
+                        {measurements.length === 0 && (
+                          <p className="text-center text-xs text-muted-foreground py-6">Nenhuma medição registrada.</p>
+                        )}
                         {measurements.map(med => (
-                          <div key={med.id} className="p-3 rounded-xl bg-secondary/10 border border-white/5 flex items-center justify-between gap-4">
+                          <div key={med.id} className="p-3 rounded-xl bg-secondary/10 border border-border flex items-center justify-between gap-4">
                             <div>
                               <h4 className="font-semibold text-sm text-foreground">{med.equipamento_nome}</h4>
                               <p className="text-xs text-muted-foreground mt-0.5">

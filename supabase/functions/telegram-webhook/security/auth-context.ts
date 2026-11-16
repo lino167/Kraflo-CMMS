@@ -17,16 +17,37 @@ export interface AuthContext {
 /**
  * Resolve authentication context from Telegram user ID
  */
-export async function resolveAuthContext(
+/**
+ * Encontra o técnico vinculado a esta conta do Telegram.
+ * A chave do técnico (id_telegram) é um número interno; o vínculo com o Telegram
+ * fica em telegram_user_id e só é gravado pelo comando /vincular, com código gerado no app.
+ * Enquanto a migration do vínculo não estiver aplicada, usa a chave antiga.
+ */
+async function findTecnicoByTelegram(
   telegramUserId: number,
   supabase: SupabaseClient
-): Promise<AuthContext> {
-  // Fetch technician record by Telegram ID
-  const { data: tecnico, error } = await supabase
+): Promise<{ tecnico: Tecnico | null; error: unknown }> {
+  const linked = await supabase
+    .from('tecnicos')
+    .select('*')
+    .eq('telegram_user_id', telegramUserId)
+    .maybeSingle();
+  if (!linked.error) return { tecnico: linked.data, error: null };
+  if (linked.error.code !== '42703') return { tecnico: null, error: linked.error };
+
+  const legacy = await supabase
     .from('tecnicos')
     .select('*')
     .eq('id_telegram', telegramUserId)
     .maybeSingle();
+  return { tecnico: legacy.data, error: legacy.error };
+}
+
+export async function resolveAuthContext(
+  telegramUserId: number,
+  supabase: SupabaseClient
+): Promise<AuthContext> {
+  const { tecnico, error } = await findTecnicoByTelegram(telegramUserId, supabase);
 
   if (error) {
     logger.error('Error fetching tecnico', error, { userId: telegramUserId });
@@ -37,12 +58,9 @@ export async function resolveAuthContext(
     return { tecnico: null, empresaId: null, isRegistered: false, role: null };
   }
 
-  // Check for admin roles via profiles table
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('id_telegram', telegramUserId)
-    .maybeSingle();
+  // Papel de admin vem da conta ligada ao técnico (não de um ID digitado no perfil)
+  const linkedUserId = (tecnico as Tecnico & { user_id?: string | null }).user_id ?? null;
+  const profile = linkedUserId ? { id: linkedUserId } : null;
 
   let role: AuthContext['role'] = 'tecnico';
 
@@ -81,11 +99,6 @@ export async function isRegistered(
   telegramUserId: number,
   supabase: SupabaseClient
 ): Promise<Tecnico | null> {
-  const { data: tecnico } = await supabase
-    .from('tecnicos')
-    .select('*')
-    .eq('id_telegram', telegramUserId)
-    .maybeSingle();
-
+  const { tecnico } = await findTecnicoByTelegram(telegramUserId, supabase);
   return tecnico || null;
 }

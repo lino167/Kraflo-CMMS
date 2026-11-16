@@ -78,16 +78,6 @@ Hook para buscar estatisticas do dashboard operacional.
 
 ---
 
-## `useDeepReportStats`
-
-**Arquivo:** `src/hooks/useDeepReportStats.ts`
-
-Hook para buscar relatorios avancados via Edge Function `reports-summary`.
-
-**Uso tipico:** Alimenta o componente `DeepReport` com dados consolidados por periodo.
-
----
-
 ## `useEquipmentHistory`
 
 **Arquivo:** `src/hooks/useEquipmentHistory.ts`

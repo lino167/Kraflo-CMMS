@@ -14,7 +14,6 @@ import { Badge, type BadgeProps } from '@/components/ui/badge'
 import {
   Lightbulb,
   Calendar,
-  Wrench,
   Plus,
   ChevronRight,
   Target,
@@ -24,7 +23,6 @@ import { AIRecommendation } from '@/lib/report-types'
 interface RecommendationCardsProps {
   recommendations: AIRecommendation[]
   onCreatePlan?: (rec: AIRecommendation) => void
-  onCreateOS?: (rec: AIRecommendation) => void
   onAddToExisting?: (rec: AIRecommendation) => void
 }
 
@@ -48,7 +46,6 @@ const scopeLabels = {
 export function RecommendationCards({
   recommendations,
   onCreatePlan,
-  onCreateOS,
   onAddToExisting,
 }: RecommendationCardsProps) {
   if (recommendations.length === 0) {
@@ -162,14 +159,6 @@ export function RecommendationCards({
                   >
                     <Calendar className="h-3 w-3 mr-1" />
                     Criar Plano
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onCreateOS?.(rec)}
-                  >
-                    <Wrench className="h-3 w-3 mr-1" />
-                    Criar OS
                   </Button>
                   <Button
                     size="sm"

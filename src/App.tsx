@@ -9,6 +9,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
+const RedefinirSenha = lazy(() => import("./pages/RedefinirSenha"));
+const GuiaTecnico = lazy(() => import("./pages/GuiaTecnico"));
 const OrdensServico = lazy(() => import("./pages/OrdensServico"));
 const Biblioteca = lazy(() => import("./pages/Biblioteca"));
 const IndexacaoAdmin = lazy(() => import("./pages/IndexacaoAdmin"));
@@ -16,6 +18,12 @@ const EquipamentoRaioX = lazy(() => import("./pages/EquipamentoRaioX"));
 const PerfilTecnico = lazy(() => import("./pages/PerfilTecnico"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
+const Campo = lazy(() => import("./pages/Campo"));
+const Conta = lazy(() => import("./pages/Conta"));
+// Pré-carrega a tela de campo para ela ficar no cache do service worker e abrir sem internet
+void import("./pages/Campo");
+const Estoque = lazy(() => import("./pages/Estoque"));
+const PortalSolicitacao = lazy(() => import("./pages/PortalSolicitacao"));
 import { AppLayout } from "@/components/AppLayout";
 
 
@@ -35,6 +43,9 @@ const App = () => (
           }>
             <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+              <Route path="/guia-do-tecnico" element={<GuiaTecnico />} />
+              <Route path="/solicitar/:token" element={<PortalSolicitacao />} />
               
               <Route path="/" element={<AppLayout><Index /></AppLayout>} />
               <Route path="/assistente" element={<AppLayout><Index defaultTab="chat" /></AppLayout>} />
@@ -43,6 +54,9 @@ const App = () => (
               <Route path="/ordens-servico" element={<AppLayout><OrdensServico /></AppLayout>} />
               <Route path="/biblioteca" element={<AppLayout><Biblioteca /></AppLayout>} />
               <Route path="/configuracoes" element={<AppLayout><Configuracoes /></AppLayout>} />
+              <Route path="/campo" element={<AppLayout><Campo /></AppLayout>} />
+              <Route path="/conta" element={<AppLayout><Conta /></AppLayout>} />
+              <Route path="/estoque" element={<AppLayout><Estoque /></AppLayout>} />
               <Route path="/admin/indexacao" element={<AppLayout><IndexacaoAdmin /></AppLayout>} />
               <Route path="/equipamento" element={<AppLayout><EquipamentoRaioX /></AppLayout>} />
               <Route path="/equipamento/:tag" element={<AppLayout><EquipamentoRaioX /></AppLayout>} />

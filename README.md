@@ -43,6 +43,9 @@ Centralize all technical manuals and procedures in a secure, easy-to-access libr
 - **Knowledge Base (Biblioteca):** Centralized repository for manuals and procedures.
 - **AI Assistant:** Integrated AI for technical assistance and industrial insights.
 - **Role-Based Access Control:** Secure, granular permissions using Supabase RLS.
+- **Spare-Parts Inventory:** Stock balance, minimum stock alerts, weighted average cost and automatic consumption when a work order is closed.
+- **Request Portal & QR Codes:** Operators open maintenance requests without login via link or QR code; each asset gets printable QR labels.
+- **Preventive Automation & Audit Trail:** Rolling 90-day PM schedule, overdue tracking, and a per-work-order history of status and assignment changes.
 
 ---
 

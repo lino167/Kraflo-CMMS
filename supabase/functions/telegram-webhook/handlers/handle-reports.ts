@@ -87,7 +87,12 @@ export async function generateMyOSReport(
   userId: number,
   supabase: SupabaseClient
 ): Promise<void> {
-  const stats = await getPersonalStats(supabase, userId);
+  const tecnicoAtual = await isRegistered(userId, supabase);
+  if (!tecnicoAtual) {
+    await sendMessage(chatId, '❌ Você precisa estar cadastrado.', mainMenuKeyboard);
+    return;
+  }
+  const stats = await getPersonalStats(supabase, tecnicoAtual.id_telegram);
 
   if (!stats || stats.total === 0) {
     await sendMessage(chatId, '📭 Você não tem nenhuma OS registrada.', mainMenuKeyboard);

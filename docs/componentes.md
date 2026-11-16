@@ -242,12 +242,6 @@ Gerador de relatorios via IA.
 
 ---
 
-### `DeepReport.tsx`
-
-Relatorio aprofundado com graficos e analises detalhadas.
-
----
-
 ## Componentes de Graficos/Analytics
 
 ### `MTTRLineChart.tsx`
@@ -258,13 +252,9 @@ Grafico de linha mostrando evolucao do MTTR ao longo do tempo.
 
 Grafico das maquinas com mais OS.
 
-### `TrendChart.tsx` / `TrendCharts.tsx`
+### `TrendChart.tsx`
 
 Graficos de tendencia de metricas operacionais.
-
-### `ServiceTypeBreakdown.tsx`
-
-Distribuicao de OS por tipo de servico.
 
 ### `FrequentProblemsCard.tsx`
 
@@ -285,14 +275,6 @@ Problemas por TAG de equipamento.
 ### `EquipmentHealthTable.tsx`
 
 Tabela de saude dos equipamentos (MTTR, MTBF, criticidade).
-
-### `EquipmentStatsCards.tsx`
-
-Cards de estatisticas por equipamento.
-
-### `EquipmentTimeline.tsx`
-
-Timeline de eventos de manutencao por equipamento.
 
 ### `BenchmarkComparisonCard.tsx`
 
@@ -340,10 +322,6 @@ Wizard (passo a passo) para criacao de planos de manutencao preventiva.
 ---
 
 ## Componentes de Layout/UI
-
-### `NavLink.tsx`
-
-Link de navegacao reutilizavel.
 
 ### `AccessDenied.tsx`
 

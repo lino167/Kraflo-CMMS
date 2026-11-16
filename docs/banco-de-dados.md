@@ -477,6 +477,31 @@ Timeline de eventos por tag de equipamento.
 
 ---
 
+### Módulos adicionados em 2026-11 (migrations `20261111120*`)
+
+| Tabela / objeto | Descricao |
+|---|---|
+| `setores`, `maquinas` | Cadastro de ativos (agora com migration). `maquinas.criticidade` = A, B ou C |
+| `pecas_estoque` | Pecas de reposicao: saldo, estoque minimo, custo medio, local |
+| `movimentacoes_estoque` | Razao imutavel de entradas, saidas e ajustes. O saldo so muda por aqui (trigger) |
+| `pecas_utilizadas.peca_estoque_id` | Quando preenchido, a insercao da baixa automatica no estoque e grava o custo |
+| `v_os_custo_pecas` | Custo de pecas por OS |
+| `links_acesso_convidado` | Tokens do portal publico de solicitacoes (`/solicitar/:token`) |
+| `solicitacoes_manutencao` | Chamados abertos por operadores; a triagem gera a OS |
+| `fn_portal_info`, `fn_portal_criar_solicitacao` | Unicas portas de entrada do visitante anonimo (validam token, limite de 20/h por link) |
+| `orcamentos_manutencao` | Orcamentos de servicos externos com aprovacao por admin |
+| `templates_checklist` | Modelos de checklist por categoria |
+| `medicoes_ativos` | Medicoes de condicao; `critico` e calculado a partir da faixa esperada |
+| `os_historico` | Trilha de auditoria da OS (criacao, status, tecnico, prioridade), gravada por trigger |
+| `fn_processar_preventivas` | Rotina diaria (pg_cron, 03:15 UTC): marca atrasadas e mantem 90 dias de agenda |
+| `v_preventivas_cumprimento` | Previstas x concluidas x atrasadas nos ultimos 90 dias |
+
+Regras de acesso: leitura para membros da empresa; cadastro de ativos, pecas, links e templates
+apenas para `admin_empresa`/`admin_kraflo`; qualquer membro registra saida de estoque, medicoes
+e solicitacoes; entrada e ajuste de estoque e decisao de orcamento sao de admin.
+
+---
+
 ## Migrations
 
 As migrations estao em `supabase/migrations/` e sao aplicadas na ordem cronologica (prefixo timestamp). Para aplicar todas as migrations em um projeto Supabase:

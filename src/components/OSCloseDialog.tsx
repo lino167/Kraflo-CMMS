@@ -1,4 +1,7 @@
 import { useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getErrorMessage } from '@/lib/error-handler';
+import { formatQtd } from '@/lib/estoque';
 import { supabase } from '@/integrations/supabase/client';
 import { useOSCategories } from '@/hooks/useOSCategories';
 import { Button } from '@/components/ui/button';
@@ -33,7 +36,10 @@ interface Peca {
   nome_peca: string;
   tag_peca: string;
   quantidade: number;
+  peca_estoque_id?: string | null;
 }
+
+const PECA_AVULSA = '__avulsa__';
 
 interface OSCloseDialogProps {
   open: boolean;
@@ -66,6 +72,31 @@ export function OSCloseDialog({ open, os, onClose, onSuccess }: OSCloseDialogPro
   const [usouPecas, setUsouPecas] = useState(false);
   const [pecas, setPecas] = useState<Peca[]>([]);
   const [novaPeca, setNovaPeca] = useState<Peca>({ nome_peca: '', tag_peca: '', quantidade: 1 });
+  const [estoqueSel, setEstoqueSel] = useState<string>(PECA_AVULSA);
+  const queryClient = useQueryClient();
+
+  // Itens do almoxarifado com saldo (vazio se o módulo de estoque não estiver em uso)
+  const { data: estoque = [] } = useQuery({
+    queryKey: ['estoque-para-os', os?.empresa_id],
+    enabled: open && !!os?.empresa_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pecas_estoque')
+        .select('id, nome, codigo, unidade, quantidade')
+        .eq('empresa_id', os!.empresa_id)
+        .eq('ativo', true)
+        .gt('quantidade', 0)
+        .order('nome');
+      if (error) return [];
+      return data;
+    },
+  });
+
+  const saldoDisponivel = (id: string) => {
+    const item = estoque.find((e) => e.id === id);
+    const reservado = pecas.filter((p) => p.peca_estoque_id === id).reduce((t, p) => t + p.quantidade, 0);
+    return (item?.quantidade ?? 0) - reservado;
+  };
 
   const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -85,6 +116,22 @@ export function OSCloseDialog({ open, os, onClose, onSuccess }: OSCloseDialogPro
   };
 
   const adicionarPeca = () => {
+    if (estoqueSel !== PECA_AVULSA) {
+      const item = estoque.find((e) => e.id === estoqueSel);
+      if (!item) return;
+      if (novaPeca.quantidade < 1) {
+        toast.error('Quantidade deve ser pelo menos 1');
+        return;
+      }
+      if (novaPeca.quantidade > saldoDisponivel(item.id)) {
+        toast.error(`Saldo insuficiente: ${formatQtd(saldoDisponivel(item.id))} ${item.unidade} disponível`);
+        return;
+      }
+      setPecas([...pecas, { nome_peca: item.nome, tag_peca: item.codigo ?? '', quantidade: novaPeca.quantidade, peca_estoque_id: item.id }]);
+      setNovaPeca({ nome_peca: '', tag_peca: '', quantidade: 1 });
+      setEstoqueSel(PECA_AVULSA);
+      return;
+    }
     if (!novaPeca.nome_peca.trim()) {
       toast.error('Informe o nome da peça');
       return;
@@ -142,6 +189,27 @@ export function OSCloseDialog({ open, os, onClose, onSuccess }: OSCloseDialogPro
         urlArquivoFechamento = publicUrl.publicUrl;
       }
 
+      // Peças primeiro: a OS ainda está ativa (regra de RLS) e, se faltar
+      // saldo no estoque, o fechamento é interrompido antes de mudar o status.
+      if (usouPecas && pecas.length > 0) {
+        const pecasData = pecas.map((peca) => ({
+          ordem_id: os.id,
+          nome_peca: peca.nome_peca,
+          tag_peca: peca.tag_peca || null,
+          quantidade: peca.quantidade,
+          peca_estoque_id: peca.peca_estoque_id ?? null,
+        }));
+
+        const { error: pecasError } = await supabase
+          .from('pecas_utilizadas')
+          .insert(pecasData);
+
+        if (pecasError) throw pecasError;
+        // Já gravadas: não reenviar se o passo seguinte falhar e o usuário tentar de novo
+        setPecas([]);
+        setUsouPecas(false);
+      }
+
       // Atualizar OS
       const { error } = await supabase
         .from('ordens_de_servico')
@@ -158,29 +226,15 @@ export function OSCloseDialog({ open, os, onClose, onSuccess }: OSCloseDialogPro
 
       if (error) throw error;
 
-      // Inserir peças utilizadas se houver
-      if (usouPecas && pecas.length > 0) {
-        const pecasData = pecas.map((peca) => ({
-          ordem_id: os.id,
-          nome_peca: peca.nome_peca,
-          tag_peca: peca.tag_peca || null,
-          quantidade: peca.quantidade,
-        }));
-
-        const { error: pecasError } = await supabase
-          .from('pecas_utilizadas')
-          .insert(pecasData);
-
-        if (pecasError) throw pecasError;
-      }
-
+      queryClient.invalidateQueries({ queryKey: ['estoque'] });
+      queryClient.invalidateQueries({ queryKey: ['estoque-para-os'] });
       toast.success('OS fechada com sucesso!');
       resetForm();
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Error closing OS:', error);
-      toast.error('Erro ao fechar OS');
+      toast.error(getErrorMessage(error) || 'Erro ao fechar OS');
     } finally {
       setIsLoading(false);
     }
@@ -197,6 +251,7 @@ export function OSCloseDialog({ open, os, onClose, onSuccess }: OSCloseDialogPro
     setUsouPecas(false);
     setPecas([]);
     setNovaPeca({ nome_peca: '', tag_peca: '', quantidade: 1 });
+    setEstoqueSel(PECA_AVULSA);
   };
 
   const handleClose = () => {
@@ -329,6 +384,7 @@ export function OSCloseDialog({ open, os, onClose, onSuccess }: OSCloseDialogPro
                           <p className="text-xs text-muted-foreground">
                             {peca.tag_peca && `TAG: ${peca.tag_peca} • `}
                             Qtd: {peca.quantidade}
+                            {peca.peca_estoque_id && ' • baixa no estoque'}
                           </p>
                         </div>
                         <Button
@@ -346,6 +402,22 @@ export function OSCloseDialog({ open, os, onClose, onSuccess }: OSCloseDialogPro
 
                 {/* Formulário para adicionar nova peça */}
                 <div className="space-y-2">
+                  {estoque.length > 0 && (
+                    <Select value={estoqueSel} onValueChange={setEstoqueSel}>
+                      <SelectTrigger aria-label="Origem da peça">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={PECA_AVULSA}>Peça avulsa (fora do estoque)</SelectItem>
+                        {estoque.map((item) => (
+                          <SelectItem key={item.id} value={item.id} disabled={saldoDisponivel(item.id) <= 0}>
+                            {item.nome} — {formatQtd(saldoDisponivel(item.id))} {item.unidade} em estoque
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {estoqueSel === PECA_AVULSA && (
                   <div className="grid grid-cols-2 gap-2">
                     <Input
                       placeholder="Nome da peça *"
@@ -362,6 +434,7 @@ export function OSCloseDialog({ open, os, onClose, onSuccess }: OSCloseDialogPro
                       }
                     />
                   </div>
+                  )}
                   <div className="flex gap-2">
                     <Input
                       type="number"

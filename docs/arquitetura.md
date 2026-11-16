@@ -64,11 +64,9 @@ src/
     ...                   # Outros componentes de dashboard e analytics
   domain/                 # Servicos de dominio (logica de negocio)
     osService.ts          # Servico para categorias e classificacao de OS
-    reportService.ts      # Servico para relatorios e benchmarks
   hooks/                  # Custom React hooks
     useAuth.tsx           # Autenticacao e controle de acesso
     useReportStats.ts     # Estatisticas para o dashboard
-    useDeepReportStats.ts # Relatorios avancados via Edge Function
     useEquipmentHistory.ts # Historico e analise de equipamentos
     useTechnicianStats.ts # Metricas de desempenho de tecnicos
     useOSCategories.ts    # Categorias de OS (parada/problema)
@@ -302,7 +300,7 @@ Pages (rotas)
   |     |
   |     +-- hooks
   |
-  +-- domain (osService, reportService)
+  +-- domain (osService)
   |     |
   |     +-- integrations/supabase/client.ts
   |

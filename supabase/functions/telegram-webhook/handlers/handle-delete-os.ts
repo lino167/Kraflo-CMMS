@@ -25,7 +25,7 @@ export async function handleDeleteOSStart(
     return;
   }
 
-  const osList = await getOpenOSByTechnician(supabase, userId);
+  const osList = await getOpenOSByTechnician(supabase, tecnico.id_telegram);
 
   if (osList.length === 0) {
     await sendMessage(

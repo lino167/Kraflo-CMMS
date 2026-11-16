@@ -20,10 +20,12 @@ import {
 } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DateRangeFilter, DateRange } from '@/components/DateRangeFilter'
 import { FrequentProblemsCard } from '@/components/FrequentProblemsCard'
 import { TrendChart } from '@/components/TrendChart'
+import { DraggableWidgetGrid, type WidgetItem } from '@/components/ui/draggable-widget-grid'
 import { DashboardSkeleton } from '@/components/DashboardSkeleton'
 import {
   ClipboardList,
@@ -107,18 +109,168 @@ interface DashboardProps {
   onAskAI?: (question: string) => void
 }
 
+
+/* ---------- Grade de widgets arrastáveis (aba Operacional) ---------- */
+
+const WIDGETS_KEY = 'kraflo:dashboard-widgets:v1'
+const EQUIP_WIDGETS_KEY = 'kraflo:dashboard-equipamentos:v1'
+const INTEL_WIDGETS_KEY = 'kraflo:dashboard-inteligencia:v1'
+
+const DEFAULT_WIDGETS: WidgetItem[] = [
+  { id: 'os-abertas', size: 'sm', label: 'OS Abertas' },
+  { id: 'fechadas-hoje', size: 'sm', label: 'Fechadas Hoje' },
+  { id: 'urgentes', size: 'sm', label: 'OS Urgentes' },
+  { id: 'mttr', size: 'sm', label: 'Velocidade (MTTR)' },
+  { id: 'chart-evolucao', size: 'lg', label: 'Evolução de OS' },
+  { id: 'tempo-fila', size: 'sm', label: 'Tempo na Fila' },
+  { id: 'atrasadas', size: 'sm', label: 'Atrasadas' },
+  { id: 'novas-quebras', size: 'sm', label: 'Novas Quebras (7 dias)' },
+  { id: 'consertos', size: 'sm', label: 'Consertos Entregues (7 dias)' },
+  { id: 'chart-mttr', size: 'lg', label: 'MTTR por Dia' },
+]
+
+const EQUIP_WIDGETS: WidgetItem[] = [
+  { id: 'taxa-resolucao', size: 'sm', label: 'Taxa de Resolução' },
+  { id: 'reincidentes', size: 'sm', label: 'OS Reincidentes' },
+  { id: 'top-maquinas', size: 'lg', label: 'Máquinas com mais OS' },
+  { id: 'problemas-frequentes', size: 'lg', label: 'Problemas Frequentes' },
+  { id: 'pareto', size: 'lg', label: 'Análise de Pareto' },
+  { id: 'criticos', size: 'lg', label: 'Equipamentos Críticos' },
+]
+
+const INTEL_WIDGETS: WidgetItem[] = [
+  { id: 'categorias', size: 'lg', label: 'Distribuição por Categoria' },
+  { id: 'tipos', size: 'wide', label: 'Distribuição por Tipo' },
+  { id: 'historico', size: 'lg', label: 'Histórico Recente' },
+]
+
+/** A ordem guardada neste aparelho; qualquer divergência dos widgets atuais volta ao padrão. */
+function loadWidgets(key: string, defaults: WidgetItem[]): WidgetItem[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) || 'null') as string[] | null
+    if (!Array.isArray(saved) || saved.length !== defaults.length) return defaults
+    const byId = new Map(defaults.map((w) => [w.id, w]))
+    const ordered = saved.map((id) => byId.get(id))
+    if (ordered.some((w) => !w) || new Set(saved).size !== saved.length) return defaults
+    return ordered as WidgetItem[]
+  } catch {
+    return defaults
+  }
+}
+
+function saveWidgets(key: string, items: WidgetItem[]) {
+  try {
+    localStorage.setItem(key, JSON.stringify(items.map((w) => w.id)))
+  } catch {
+    // armazenamento cheio ou bloqueado: a ordem só não é lembrada
+  }
+}
+
+/** Uma aba de widgets arrastáveis, com a ordem guardada no aparelho e o botão de restaurar. */
+function WidgetBoard({
+  storageKey,
+  defaults,
+  renderItem,
+  maxColumns = 5,
+  cellSize = 210,
+}: {
+  storageKey: string
+  defaults: WidgetItem[]
+  renderItem: (item: WidgetItem) => React.ReactNode
+  maxColumns?: number
+  cellSize?: number
+}) {
+  const [boardKey, setBoardKey] = useState(0)
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">Arraste os cartões para organizar o painel do seu jeito.</p>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-xs text-muted-foreground"
+          onClick={() => {
+            try {
+              localStorage.removeItem(storageKey)
+            } catch {
+              // sem armazenamento: nada a limpar
+            }
+            setBoardKey((k) => k + 1)
+          }}
+        >
+          Restaurar layout
+        </Button>
+      </div>
+      <DraggableWidgetGrid
+        key={boardKey}
+        items={boardKey === 0 ? loadWidgets(storageKey, defaults) : defaults}
+        onChange={(items) => saveWidgets(storageKey, items)}
+        maxColumns={maxColumns}
+        cellSize={cellSize}
+        gap={16}
+        radius={12}
+        renderItem={renderItem}
+      />
+    </>
+  )
+}
+
+/** O conteúdo de um widget que já traz o próprio Card: sem contorno duplo, rolando se passar da altura. */
+function WidgetBody({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="h-full overflow-auto [&>*]:h-full [&>*]:rounded-none [&>*]:border-0 [&>*]:bg-transparent">
+      {children}
+    </div>
+  )
+}
+
+function Kpi({
+  title,
+  help,
+  icon,
+  value,
+  valueClass = 'text-foreground',
+  sub,
+  urgent = false,
+}: {
+  title: string
+  help: string
+  icon?: React.ReactNode
+  value: React.ReactNode
+  valueClass?: string
+  sub: React.ReactNode
+  urgent?: boolean
+}) {
+  return (
+    <div className="relative flex h-full flex-col justify-between p-5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center text-sm font-medium text-muted-foreground">
+          {title}
+          <HelpBadge text={help} />
+        </div>
+        {icon}
+      </div>
+      <div>
+        <div className={`flex items-baseline gap-2 text-3xl font-mono font-bold ${valueClass}`}>{value}</div>
+        <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
+      </div>
+      {urgent && <div className="absolute right-0 top-0 h-full w-1 bg-red-500 animate-pulse-neon" />}
+    </div>
+  )
+}
+
 function HelpBadge({ text }: { text: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <span 
-          className="inline-flex items-center justify-center rounded-full bg-primary/10 hover:bg-primary/25 text-primary h-4.5 w-4.5 text-[11px] font-mono font-bold cursor-help transition-all ml-1.5 border border-primary/20 hover:scale-110 select-none shadow-sm shadow-primary/5 shrink-0" 
+          className="inline-flex items-center justify-center rounded-full bg-secondary hover:bg-muted text-muted-foreground h-4.5 w-4.5 text-[11px] font-mono font-bold cursor-help transition-all ml-1.5 border border-primary/20 hover:scale-110 select-none shadow-sm shadow-primary/5 shrink-0" 
           onClick={(e) => e.stopPropagation()}
         >
           ?
         </span>
       </TooltipTrigger>
-      <TooltipContent className="bg-secondary/95 backdrop-blur-md border border-white/10 text-muted-foreground text-xs p-3 rounded-xl max-w-[260px] shadow-neon animate-in fade-in-50 zoom-in-95 z-50">
+      <TooltipContent className="bg-secondary/95 border border-border text-muted-foreground text-xs p-3 rounded-xl max-w-[260px] animate-in fade-in-50 zoom-in-95 z-50">
         <p className="font-sans leading-relaxed text-foreground/90 font-medium">{text}</p>
       </TooltipContent>
     </Tooltip>
@@ -480,162 +632,160 @@ export function Dashboard({ onAskAI }: DashboardProps) {
     <TooltipProvider delayDuration={150}>
       <div className="space-y-6 animate-slide-up-fade">
         {/* Header with Filters */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-4 rounded-xl border-white/5 shadow-surface">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-4 rounded-xl border-border">
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
         </div>
 
         <Tabs defaultValue="operacional" className="space-y-6 w-full">
-          <TabsList className="grid w-full md:w-fit grid-cols-2 md:grid-cols-4 glass-panel border border-white/10 p-1 h-auto rounded-xl gap-1">
-            <TabsTrigger value="operacional" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
+          <TabsList className="grid w-full md:w-fit grid-cols-2 md:grid-cols-4 glass-panel border border-border p-1 h-auto rounded-xl gap-1">
+            <TabsTrigger value="operacional" className="rounded-lg data-[state=active]:bg-secondary data-[state=active]:text-foreground px-6 py-2">
               Visão Operacional
             </TabsTrigger>
-            <TabsTrigger value="equipamentos" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
+            <TabsTrigger value="equipamentos" className="rounded-lg data-[state=active]:bg-secondary data-[state=active]:text-foreground px-6 py-2">
               Equipamentos
             </TabsTrigger>
-            <TabsTrigger value="planning" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
+            <TabsTrigger value="planning" className="rounded-lg data-[state=active]:bg-secondary data-[state=active]:text-foreground px-6 py-2">
               Gestão & Facilities
             </TabsTrigger>
-            <TabsTrigger value="inteligencia" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
+            <TabsTrigger value="inteligencia" className="rounded-lg data-[state=active]:bg-secondary data-[state=active]:text-foreground px-6 py-2">
               Análises & Histórico
             </TabsTrigger>
           </TabsList>
 
           {/* --- ABA OPERACIONAL --- */}
           <TabsContent value="operacional" className="space-y-6 animate-slide-in-right">
-            {/* KPI Cards - Bento Grid High Density */}
-            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4">
-              <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    OS Abertas
-                    <HelpBadge text="📋 Serviços na fila esperando início do trabalho." />
-                  </CardTitle>
-                  <ClipboardList className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-mono font-bold text-primary">{stats.osAbertas}</div>
-                  <p className="text-xs text-muted-foreground mt-1">aguardando resolução</p>
-                </CardContent>
-              </Card>
-
-              <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    Fechadas Hoje
-                    <HelpBadge text="🛠️ Consertos finalizados e entregues para a produção hoje." />
-                  </CardTitle>
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-mono font-bold text-foreground">{stats.osFechadasHoje}</div>
-                  <p className="text-xs text-muted-foreground mt-1">concluídas nas últimas 24h</p>
-                </CardContent>
-              </Card>
-
-              <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5 relative overflow-hidden group">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    OS Urgentes
-                    <HelpBadge text="🚨 Máquinas com falhas graves que precisam de atenção imediata." />
-                  </CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-red-500 group-hover:scale-110 transition-transform" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-mono font-bold text-foreground">{stats.osUrgentes}</div>
-                  <p className="text-xs text-muted-foreground mt-1">prioridade alta/urgente</p>
-                </CardContent>
-                {stats.osUrgentes > 0 && <div className="absolute top-0 right-0 w-1 h-full bg-red-500 animate-pulse-neon" />}
-              </Card>
-
-              <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    Velocidade (MTTR)
-                    <HelpBadge text="⏱️ MTTR: Nosso tempo médio real para consertar e devolver uma máquina rodando." />
-                  </CardTitle>
-                  <Clock className="h-4 w-4 text-blue-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-mono font-bold text-foreground">{stats.tempoMedioResolucao}h</div>
-                  <p className="text-xs text-muted-foreground mt-1">tempo médio de resolução (MTTR)</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="industrial-card border-white/5">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
-                    Tempo na Fila (Idade Média)
-                    <HelpBadge text="⏳ Quanto tempo os chamados esperam por nós na fila." />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-mono font-bold text-foreground">{idadeMediaAbertasHoras}h</div>
-                  <p className="text-xs text-muted-foreground mt-1">idade média das OS abertas</p>
-                </CardContent>
-              </Card>
-
-              <Card className="industrial-card border-white/5">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
-                    Atrasadas (≥24h)
-                    <HelpBadge text="⚠️ Serviços atrasados há mais de 1 dia na fila." />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-mono font-bold text-red-400">{atrasadas}</div>
-                  <p className="text-xs text-muted-foreground mt-1">no prazo: {dentroPrazo}</p>
-                </CardContent>
-              </Card>
-
-               <Card className="industrial-card border-white/5">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
-                    Novas Quebras (7 dias)
-                    <HelpBadge text="📊 Novos chamados de manutenção abertos nesta semana." />
-                  </CardTitle>
-                  {tendenciaAbertura.variacao <= 0 ? <TrendingDown className="h-3 w-3 text-green-500" /> : <TrendingUp className="h-3 w-3 text-red-500" />}
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-mono font-bold text-foreground flex items-baseline gap-2">
-                    {tendenciaAbertura.semanaAtual}
-                    <span className={`text-xs ${tendenciaAbertura.variacao <= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {tendenciaAbertura.variacao > 0 ? '+' : ''}{tendenciaAbertura.variacao}%
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">novas OS abertas na semana</p>
-                </CardContent>
-              </Card>
-
-              <Card className="industrial-card border-white/5">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
-                    Consertos Entregues (7 dias)
-                    <HelpBadge text="🛠️ Consertos finalizados e entregues nesta semana." />
-                  </CardTitle>
-                  {tendenciaFechamento.variacao >= 0 ? <TrendingUp className="h-3 w-3 text-green-500" /> : <TrendingDown className="h-3 w-3 text-red-500" />}
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-mono font-bold text-foreground flex items-baseline gap-2">
-                    {tendenciaFechamento.semanaAtual}
-                    <span className={`text-xs ${tendenciaFechamento.variacao >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {tendenciaFechamento.variacao > 0 ? '+' : ''}{tendenciaFechamento.variacao}%
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">OS concluídas na semana</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="glow-border rounded-xl">
-                <TrendChart dateRange={dateRange} />
-              </div>
-              <div className="glow-border rounded-xl">
-                <MTTRLineChart dateRange={dateRange} />
-              </div>
-            </div>
+            <WidgetBoard
+              storageKey={WIDGETS_KEY}
+              defaults={DEFAULT_WIDGETS}
+              maxColumns={5}
+              cellSize={210}
+              renderItem={(item) => {
+                switch (item.id) {
+                  case 'os-abertas':
+                    return (
+                      <Kpi
+                        title="OS Abertas"
+                        help="📋 Serviços na fila esperando início do trabalho."
+                        icon={<ClipboardList className="h-4 w-4 text-primary" />}
+                        value={stats.osAbertas}
+                        sub="aguardando resolução"
+                      />
+                    )
+                  case 'fechadas-hoje':
+                    return (
+                      <Kpi
+                        title="Fechadas Hoje"
+                        help="🛠️ Consertos finalizados e entregues para a produção hoje."
+                        icon={<CheckCircle2 className="h-4 w-4 text-green-500" />}
+                        value={stats.osFechadasHoje}
+                        sub="concluídas nas últimas 24h"
+                      />
+                    )
+                  case 'urgentes':
+                    return (
+                      <Kpi
+                        title="OS Urgentes"
+                        help="🚨 Máquinas com falhas graves que precisam de atenção imediata."
+                        icon={<AlertTriangle className="h-4 w-4 text-red-500" />}
+                        value={stats.osUrgentes}
+                        sub="prioridade alta/urgente"
+                        urgent={stats.osUrgentes > 0}
+                      />
+                    )
+                  case 'mttr':
+                    return (
+                      <Kpi
+                        title="Velocidade (MTTR)"
+                        help="⏱️ MTTR: Nosso tempo médio real para consertar e devolver uma máquina rodando."
+                        icon={<Clock className="h-4 w-4 text-blue-500" />}
+                        value={`${stats.tempoMedioResolucao}h`}
+                        sub="tempo médio de resolução (MTTR)"
+                      />
+                    )
+                  case 'tempo-fila':
+                    return (
+                      <Kpi
+                        title="Tempo na Fila"
+                        help="⏳ Quanto tempo os chamados esperam por nós na fila."
+                        value={`${idadeMediaAbertasHoras}h`}
+                        sub="idade média das OS abertas"
+                      />
+                    )
+                  case 'atrasadas':
+                    return (
+                      <Kpi
+                        title="Atrasadas (≥24h)"
+                        help="⚠️ Serviços atrasados há mais de 1 dia na fila."
+                        value={atrasadas}
+                        valueClass="text-red-400"
+                        sub={`no prazo: ${dentroPrazo}`}
+                      />
+                    )
+                  case 'novas-quebras':
+                    return (
+                      <Kpi
+                        title="Novas Quebras (7 dias)"
+                        help="📊 Novos chamados de manutenção abertos nesta semana."
+                        icon={
+                          tendenciaAbertura.variacao <= 0 ? (
+                            <TrendingDown className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <TrendingUp className="h-3 w-3 text-red-500" />
+                          )
+                        }
+                        value={
+                          <>
+                            {tendenciaAbertura.semanaAtual}
+                            <span className={`text-xs ${tendenciaAbertura.variacao <= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              {tendenciaAbertura.variacao > 0 ? '+' : ''}
+                              {tendenciaAbertura.variacao}%
+                            </span>
+                          </>
+                        }
+                        sub="novas OS abertas na semana"
+                      />
+                    )
+                  case 'consertos':
+                    return (
+                      <Kpi
+                        title="Consertos Entregues (7 dias)"
+                        help="🛠️ Consertos finalizados e entregues nesta semana."
+                        icon={
+                          tendenciaFechamento.variacao >= 0 ? (
+                            <TrendingUp className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <TrendingDown className="h-3 w-3 text-red-500" />
+                          )
+                        }
+                        value={
+                          <>
+                            {tendenciaFechamento.semanaAtual}
+                            <span className={`text-xs ${tendenciaFechamento.variacao >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              {tendenciaFechamento.variacao > 0 ? '+' : ''}
+                              {tendenciaFechamento.variacao}%
+                            </span>
+                          </>
+                        }
+                        sub="OS concluídas na semana"
+                      />
+                    )
+                  case 'chart-evolucao':
+                    return (
+                      <WidgetBody>
+                        <TrendChart dateRange={dateRange} />
+                      </WidgetBody>
+                    )
+                  case 'chart-mttr':
+                    return (
+                      <WidgetBody>
+                        <MTTRLineChart dateRange={dateRange} />
+                      </WidgetBody>
+                    )
+                  default:
+                    return null
+                }
+              }}
+            />
           </TabsContent>
 
           {/* --- ABA PLANEJAMENTO E FACILITIES --- */}
@@ -645,54 +795,58 @@ export function Dashboard({ onAskAI }: DashboardProps) {
 
           {/* --- ABA EQUIPAMENTOS --- */}
           <TabsContent value="equipamentos" className="space-y-6 animate-slide-in-right">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="col-span-2 industrial-card border-white/5">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    Taxa de Resolução
-                    <HelpBadge text="🎯 Porcentagem de ordens abertas que já conseguimos consertar." />
-                  </CardTitle>
-                  <Target className="h-4 w-4 text-green-400" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-mono font-bold text-foreground">{taxaResolucao}%</div>
-                  <Progress value={taxaResolucao} className="mt-2 h-2 [&>div]:bg-green-400" />
-                </CardContent>
-              </Card>
-
-              <Card className="col-span-2 industrial-card border-white/5">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    OS Reincidentes
-                    <HelpBadge text="🔄 Máquinas que voltaram a quebrar ou apresentaram novos chamados no período." />
-                  </CardTitle>
-                  <Repeat className="h-4 w-4 text-orange-400" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-mono font-bold text-orange-400">{osReincidentes}</div>
-                  <p className="text-xs text-muted-foreground mt-2">equipamentos com múltiplas OS no período</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="glow-border rounded-xl">
-                <TopMachinesChart />
-              </div>
-              <div className="glow-border rounded-xl">
-                <FrequentProblemsCard dateRange={dateRange} onAskAI={onAskAI} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-               <div className="glow-border rounded-xl">
-                <ParetoCrossAnalysisCard dateRange={dateRange} />
-               </div>
-
-               {/* Equipamentos Problemáticos */}
-               <Card className="glass-panel border-white/5">
+            <WidgetBoard
+              storageKey={EQUIP_WIDGETS_KEY}
+              defaults={EQUIP_WIDGETS}
+              maxColumns={5}
+              cellSize={210}
+              renderItem={(item) => {
+                switch (item.id) {
+                  case 'taxa-resolucao':
+                    return (
+                      <Kpi
+                        title="Taxa de Resolução"
+                        help="🎯 Porcentagem de ordens abertas que já conseguimos consertar."
+                        icon={<Target className="h-4 w-4 text-green-400" />}
+                        value={`${taxaResolucao}%`}
+                        sub={<Progress value={taxaResolucao} className="mt-2 h-2 [&>div]:bg-green-400" />}
+                      />
+                    )
+                  case 'reincidentes':
+                    return (
+                      <Kpi
+                        title="OS Reincidentes"
+                        help="🔄 Máquinas que voltaram a quebrar ou apresentaram novos chamados no período."
+                        icon={<Repeat className="h-4 w-4 text-orange-400" />}
+                        value={osReincidentes}
+                        valueClass="text-orange-400"
+                        sub="equipamentos com múltiplas OS no período"
+                      />
+                    )
+                  case 'top-maquinas':
+                    return (
+                      <WidgetBody>
+                        <TopMachinesChart />
+                      </WidgetBody>
+                    )
+                  case 'problemas-frequentes':
+                    return (
+                      <WidgetBody>
+                        <FrequentProblemsCard dateRange={dateRange} onAskAI={onAskAI} />
+                      </WidgetBody>
+                    )
+                  case 'pareto':
+                    return (
+                      <WidgetBody>
+                        <ParetoCrossAnalysisCard dateRange={dateRange} />
+                      </WidgetBody>
+                    )
+                  case 'criticos':
+                    return (
+                      <WidgetBody>
+                        <Card className="glass-panel border-border">
                 <CardHeader>
-                  <CardTitle className="font-mono text-lg flex items-center gap-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 text-orange-500" />
                     Equipamentos Críticos
                     <HelpBadge text="🚨 As máquinas com menor MTBF (que quebram no menor espaço de tempo)." />
@@ -705,14 +859,14 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                   <div className="space-y-3">
                     {equipamentosProblematicos.length > 0 ? (
                       equipamentosProblematicos.map((equip: EquipamentoProblematico, index: number) => (
-                        <div key={index} className="p-3 rounded-lg bg-secondary/30 border border-white/5 hover:bg-secondary/50 transition-colors">
+                        <div key={index} className="p-3 rounded-lg bg-secondary/30 border border-border hover:bg-secondary/50 transition-colors">
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <Settings className="h-4 w-4 text-muted-foreground" />
                                 <span className="font-medium text-sm truncate text-foreground">{equip.nome}</span>
                                 {equip.tag && (
-                                  <Badge variant="outline" className="text-xs bg-black/20 border-white/10">{equip.tag}</Badge>
+                                  <Badge variant="outline" className="text-xs bg-black/20 border-border">{equip.tag}</Badge>
                                 )}
                               </div>
                               <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
@@ -736,18 +890,36 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+                      </WidgetBody>
+                    )
+                  default:
+                    return null
+                }
+              }}
+            />
           </TabsContent>
 
           {/* --- ABA INTELIGENCIA & OS --- */}
           <TabsContent value="inteligencia" className="space-y-6 animate-slide-in-right">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="glow-border rounded-xl">
-                <CategoryDistributionCard dateRange={dateRange} />
-              </div>
-              <Card className="glass-panel border-white/5">
+            <WidgetBoard
+              storageKey={INTEL_WIDGETS_KEY}
+              defaults={INTEL_WIDGETS}
+              maxColumns={4}
+              cellSize={250}
+              renderItem={(item) => {
+                switch (item.id) {
+                  case 'categorias':
+                    return (
+                      <WidgetBody>
+                        <CategoryDistributionCard dateRange={dateRange} />
+                      </WidgetBody>
+                    )
+                  case 'tipos':
+                    return (
+                      <WidgetBody>
+                        <Card className="glass-panel border-border">
                 <CardHeader>
-                <CardTitle className="font-mono text-lg flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-primary" />
                   Distribuição por Tipo
                 </CardTitle>
@@ -787,11 +959,14 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                 </div>
               </CardContent>
             </Card>
-           </div>
-
-           <Card className="glass-panel border-white/5 col-span-1 lg:col-span-2">
+                      </WidgetBody>
+                    )
+                  case 'historico':
+                    return (
+                      <WidgetBody>
+                        <Card className="glass-panel border-border col-span-1 lg:col-span-2">
             <CardHeader>
-              <CardTitle className="font-mono text-lg flex items-center gap-2">
+              <CardTitle className="text-lg flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-primary" />
                 Histórico Recente
               </CardTitle>
@@ -800,14 +975,14 @@ export function Dashboard({ onAskAI }: DashboardProps) {
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-3">
                   {recentOS.map((os: OS, index: number) => (
-                    <div key={os.id} className={`p-4 rounded-xl bg-secondary/30 border border-white/5 hover:bg-secondary/60 transition-colors animate-slide-up-fade stagger-${(index % 5) + 1}`}>
+                    <div key={os.id} className={`p-4 rounded-xl bg-secondary/30 border border-border hover:bg-secondary/60 transition-colors animate-slide-up-fade stagger-${(index % 5) + 1}`}>
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <span className="font-mono text-sm font-bold text-primary">OS #{os.id}</span>
-                            <Badge variant="outline" className={`${getStatusColor(os.status_os)} border-transparent bg-background/50 backdrop-blur`}>{os.status_os}</Badge>
-                            {os.prioridade && <Badge variant="outline" className={`${getPrioridadeColor(os.prioridade)} border-transparent bg-background/50 backdrop-blur`}>{os.prioridade}</Badge>}
-                            {os.tipo_manutencao && <Badge variant="outline" className="bg-secondary/50 border-white/10">{os.tipo_manutencao}</Badge>}
+                            <Badge variant="outline" className={`${getStatusColor(os.status_os)} border-transparent bg-background/50`}>{os.status_os}</Badge>
+                            {os.prioridade && <Badge variant="outline" className={`${getPrioridadeColor(os.prioridade)} border-transparent bg-background/50`}>{os.prioridade}</Badge>}
+                            {os.tipo_manutencao && <Badge variant="outline" className="bg-secondary/50 border-border">{os.tipo_manutencao}</Badge>}
                           </div>
                           <h4 className="font-medium text-foreground truncate text-base">
                             {os.equipamento_nome}
@@ -815,7 +990,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                           </h4>
                           {os.descricao_problema && <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{os.descricao_problema}</p>}
                         </div>
-                        <div className="text-right text-xs text-muted-foreground shrink-0 bg-background/30 p-2 rounded-lg border border-white/5">
+                        <div className="text-right text-xs text-muted-foreground shrink-0 bg-background/30 p-2 rounded-lg border border-border">
                           <div className="flex items-center gap-1.5 justify-end">
                             <Calendar className="h-3 w-3 text-primary" />
                             {format(parseISO(os.data_abertura), 'dd/MM/yyyy')}
@@ -832,6 +1007,13 @@ export function Dashboard({ onAskAI }: DashboardProps) {
               </ScrollArea>
             </CardContent>
           </Card>
+                      </WidgetBody>
+                    )
+                  default:
+                    return null
+                }
+              }}
+            />
         </TabsContent>
       </Tabs>
     </div>
