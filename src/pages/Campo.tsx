@@ -63,6 +63,7 @@ interface OSView {
 const emptyForm = {
   maquina_id: '',
   equipamento_manual: '',
+  equipamento_tag: '',
   categoria_parada_id: '',
   subcategoria_parada_id: '',
   tipo_manutencao: 'Corretiva',
@@ -139,7 +140,12 @@ export default function Campo() {
 
   // Alerta de reincidência (igual à versão web): informa, não bloqueia.
   // Precisa do servidor; sem conexão o aviso simplesmente não aparece.
-  const tagSelecionada = snap?.maquinas.find((m) => m.id === form.maquina_id)?.tag ?? null
+  const tagDigitada = form.equipamento_tag.trim()
+  const [tagSelecionada, setTagSelecionada] = useState<string | null>(null)
+  useEffect(() => {
+    const t = setTimeout(() => setTagSelecionada(tagDigitada.length >= 2 ? tagDigitada : null), 500)
+    return () => clearTimeout(t)
+  }, [tagDigitada])
   useEffect(() => {
     setReincidencia(null)
     if (!online || !empresaId || !tagSelecionada || tagSelecionada.length < 2) return
@@ -243,7 +249,10 @@ export default function Campo() {
     const equipamento = maq ? maq.nome : form.equipamento_manual.trim()
     const tecnicoId = meuTecnicoId ?? Number(form.tecnico_id)
 
+    const tag = form.equipamento_tag.trim()
+
     if (!equipamento) return toast.error('Informe o equipamento.')
+    if (!tag) return toast.error('Informe a TAG do equipamento.')
     if (!form.categoria_parada_id) return toast.error('Selecione o motivo da parada.')
     if (form.descricao_problema.trim().length < 5) return toast.error('Descreva o problema (mínimo de 5 caracteres).')
     if (!tecnicoId || Number.isNaN(tecnicoId)) return toast.error('Selecione o técnico responsável.')
@@ -255,7 +264,7 @@ export default function Campo() {
         empresa_id: empresaId,
         tecnico_id: tecnicoId,
         equipamento_nome: equipamento,
-        equipamento_tag: maq?.tag ?? null,
+        equipamento_tag: tag,
         localizacao: form.localizacao.trim() || null,
         tipo_manutencao: form.tipo_manutencao,
         prioridade: form.prioridade,
@@ -464,7 +473,12 @@ export default function Campo() {
               value={form.maquina_id}
               onChange={(e) => {
                 const m = snap?.maquinas.find((x) => x.id === e.target.value)
-                setForm({ ...form, maquina_id: e.target.value, localizacao: m?.setor_nome ?? form.localizacao })
+                setForm({
+                  ...form,
+                  maquina_id: e.target.value,
+                  equipamento_tag: m?.tag ?? '',
+                  localizacao: m?.setor_nome ?? form.localizacao,
+                })
               }}
             >
               <option value="">Outra (digitar o nome)</option>
@@ -484,6 +498,15 @@ export default function Campo() {
                 onChange={(e) => setForm({ ...form, equipamento_manual: e.target.value })}
               />
             )}
+            <Label htmlFor="tag">TAG do equipamento</Label>
+            <Input
+              id="tag"
+              className="h-11"
+              placeholder="Ex: TP-001"
+              autoCapitalize="characters"
+              value={form.equipamento_tag}
+              onChange={(e) => setForm({ ...form, equipamento_tag: e.target.value })}
+            />
           </div>
 
           <div className="space-y-2">
