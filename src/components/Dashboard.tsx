@@ -113,6 +113,8 @@ interface DashboardProps {
 /* ---------- Grade de widgets arrastáveis (aba Operacional) ---------- */
 
 const WIDGETS_KEY = 'kraflo:dashboard-widgets:v1'
+const EQUIP_WIDGETS_KEY = 'kraflo:dashboard-equipamentos:v1'
+const INTEL_WIDGETS_KEY = 'kraflo:dashboard-inteligencia:v1'
 
 const DEFAULT_WIDGETS: WidgetItem[] = [
   { id: 'os-abertas', size: 'sm', label: 'OS Abertas' },
@@ -127,26 +129,99 @@ const DEFAULT_WIDGETS: WidgetItem[] = [
   { id: 'chart-mttr', size: 'lg', label: 'MTTR por Dia' },
 ]
 
+const EQUIP_WIDGETS: WidgetItem[] = [
+  { id: 'taxa-resolucao', size: 'sm', label: 'Taxa de Resolução' },
+  { id: 'reincidentes', size: 'sm', label: 'OS Reincidentes' },
+  { id: 'top-maquinas', size: 'lg', label: 'Máquinas com mais OS' },
+  { id: 'problemas-frequentes', size: 'lg', label: 'Problemas Frequentes' },
+  { id: 'pareto', size: 'lg', label: 'Análise de Pareto' },
+  { id: 'criticos', size: 'lg', label: 'Equipamentos Críticos' },
+]
+
+const INTEL_WIDGETS: WidgetItem[] = [
+  { id: 'categorias', size: 'lg', label: 'Distribuição por Categoria' },
+  { id: 'tipos', size: 'wide', label: 'Distribuição por Tipo' },
+  { id: 'historico', size: 'lg', label: 'Histórico Recente' },
+]
+
 /** A ordem guardada neste aparelho; qualquer divergência dos widgets atuais volta ao padrão. */
-function loadWidgets(): WidgetItem[] {
+function loadWidgets(key: string, defaults: WidgetItem[]): WidgetItem[] {
   try {
-    const saved = JSON.parse(localStorage.getItem(WIDGETS_KEY) || 'null') as string[] | null
-    if (!Array.isArray(saved) || saved.length !== DEFAULT_WIDGETS.length) return DEFAULT_WIDGETS
-    const byId = new Map(DEFAULT_WIDGETS.map((w) => [w.id, w]))
+    const saved = JSON.parse(localStorage.getItem(key) || 'null') as string[] | null
+    if (!Array.isArray(saved) || saved.length !== defaults.length) return defaults
+    const byId = new Map(defaults.map((w) => [w.id, w]))
     const ordered = saved.map((id) => byId.get(id))
-    if (ordered.some((w) => !w) || new Set(saved).size !== saved.length) return DEFAULT_WIDGETS
+    if (ordered.some((w) => !w) || new Set(saved).size !== saved.length) return defaults
     return ordered as WidgetItem[]
   } catch {
-    return DEFAULT_WIDGETS
+    return defaults
   }
 }
 
-function saveWidgets(items: WidgetItem[]) {
+function saveWidgets(key: string, items: WidgetItem[]) {
   try {
-    localStorage.setItem(WIDGETS_KEY, JSON.stringify(items.map((w) => w.id)))
+    localStorage.setItem(key, JSON.stringify(items.map((w) => w.id)))
   } catch {
     // armazenamento cheio ou bloqueado: a ordem só não é lembrada
   }
+}
+
+/** Uma aba de widgets arrastáveis, com a ordem guardada no aparelho e o botão de restaurar. */
+function WidgetBoard({
+  storageKey,
+  defaults,
+  renderItem,
+  maxColumns = 5,
+  cellSize = 210,
+}: {
+  storageKey: string
+  defaults: WidgetItem[]
+  renderItem: (item: WidgetItem) => React.ReactNode
+  maxColumns?: number
+  cellSize?: number
+}) {
+  const [boardKey, setBoardKey] = useState(0)
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">Arraste os cartões para organizar o painel do seu jeito.</p>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-xs text-muted-foreground"
+          onClick={() => {
+            try {
+              localStorage.removeItem(storageKey)
+            } catch {
+              // sem armazenamento: nada a limpar
+            }
+            setBoardKey((k) => k + 1)
+          }}
+        >
+          Restaurar layout
+        </Button>
+      </div>
+      <DraggableWidgetGrid
+        key={boardKey}
+        items={boardKey === 0 ? loadWidgets(storageKey, defaults) : defaults}
+        onChange={(items) => saveWidgets(storageKey, items)}
+        maxColumns={maxColumns}
+        cellSize={cellSize}
+        gap={16}
+        radius={12}
+        renderItem={renderItem}
+      />
+    </>
+  )
+}
+
+/** O conteúdo de um widget que já traz o próprio Card: sem contorno duplo, rolando se passar da altura. */
+function WidgetBody({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="h-full overflow-auto [&>*]:h-full [&>*]:rounded-none [&>*]:border-0 [&>*]:bg-transparent">
+      {children}
+    </div>
+  )
 }
 
 function Kpi({
@@ -204,7 +279,6 @@ function HelpBadge({ text }: { text: string }) {
 
 export function Dashboard({ onAskAI }: DashboardProps) {
   const { profile, isAdminKraflo } = useAuth()
-  const [widgetsKey, setWidgetsKey] = useState(0)
   const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
@@ -580,36 +654,11 @@ export function Dashboard({ onAskAI }: DashboardProps) {
 
           {/* --- ABA OPERACIONAL --- */}
           <TabsContent value="operacional" className="space-y-6 animate-slide-in-right">
-            {/* Widgets arrastáveis: arraste para reorganizar (a ordem fica guardada neste aparelho) */}
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-xs text-muted-foreground">
-                Arraste os cartões para organizar o painel do seu jeito.
-              </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs text-muted-foreground"
-                onClick={() => {
-                  try {
-                    localStorage.removeItem(WIDGETS_KEY)
-                  } catch {
-                    // sem armazenamento: nada a limpar
-                  }
-                  setWidgetsKey((k) => k + 1)
-                }}
-              >
-                Restaurar layout
-              </Button>
-            </div>
-
-            <DraggableWidgetGrid
-              key={widgetsKey}
-              items={widgetsKey === 0 ? loadWidgets() : DEFAULT_WIDGETS}
-              onChange={saveWidgets}
+            <WidgetBoard
+              storageKey={WIDGETS_KEY}
+              defaults={DEFAULT_WIDGETS}
               maxColumns={5}
               cellSize={210}
-              gap={16}
-              radius={12}
               renderItem={(item) => {
                 switch (item.id) {
                   case 'os-abertas':
@@ -722,15 +771,15 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                     )
                   case 'chart-evolucao':
                     return (
-                      <div className="h-full overflow-auto [&>*]:h-full [&>*]:rounded-none [&>*]:border-0 [&>*]:bg-transparent">
+                      <WidgetBody>
                         <TrendChart dateRange={dateRange} />
-                      </div>
+                      </WidgetBody>
                     )
                   case 'chart-mttr':
                     return (
-                      <div className="h-full overflow-auto [&>*]:h-full [&>*]:rounded-none [&>*]:border-0 [&>*]:bg-transparent">
+                      <WidgetBody>
                         <MTTRLineChart dateRange={dateRange} />
-                      </div>
+                      </WidgetBody>
                     )
                   default:
                     return null
@@ -746,52 +795,56 @@ export function Dashboard({ onAskAI }: DashboardProps) {
 
           {/* --- ABA EQUIPAMENTOS --- */}
           <TabsContent value="equipamentos" className="space-y-6 animate-slide-in-right">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="col-span-2 industrial-card border-border">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    Taxa de Resolução
-                    <HelpBadge text="🎯 Porcentagem de ordens abertas que já conseguimos consertar." />
-                  </CardTitle>
-                  <Target className="h-4 w-4 text-green-400" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-mono font-bold text-foreground">{taxaResolucao}%</div>
-                  <Progress value={taxaResolucao} className="mt-2 h-2 [&>div]:bg-green-400" />
-                </CardContent>
-              </Card>
-
-              <Card className="col-span-2 industrial-card border-border">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    OS Reincidentes
-                    <HelpBadge text="🔄 Máquinas que voltaram a quebrar ou apresentaram novos chamados no período." />
-                  </CardTitle>
-                  <Repeat className="h-4 w-4 text-orange-400" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-mono font-bold text-orange-400">{osReincidentes}</div>
-                  <p className="text-xs text-muted-foreground mt-2">equipamentos com múltiplas OS no período</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="glow-border rounded-xl">
-                <TopMachinesChart />
-              </div>
-              <div className="glow-border rounded-xl">
-                <FrequentProblemsCard dateRange={dateRange} onAskAI={onAskAI} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-               <div className="glow-border rounded-xl">
-                <ParetoCrossAnalysisCard dateRange={dateRange} />
-               </div>
-
-               {/* Equipamentos Problemáticos */}
-               <Card className="glass-panel border-border">
+            <WidgetBoard
+              storageKey={EQUIP_WIDGETS_KEY}
+              defaults={EQUIP_WIDGETS}
+              maxColumns={5}
+              cellSize={210}
+              renderItem={(item) => {
+                switch (item.id) {
+                  case 'taxa-resolucao':
+                    return (
+                      <Kpi
+                        title="Taxa de Resolução"
+                        help="🎯 Porcentagem de ordens abertas que já conseguimos consertar."
+                        icon={<Target className="h-4 w-4 text-green-400" />}
+                        value={`${taxaResolucao}%`}
+                        sub={<Progress value={taxaResolucao} className="mt-2 h-2 [&>div]:bg-green-400" />}
+                      />
+                    )
+                  case 'reincidentes':
+                    return (
+                      <Kpi
+                        title="OS Reincidentes"
+                        help="🔄 Máquinas que voltaram a quebrar ou apresentaram novos chamados no período."
+                        icon={<Repeat className="h-4 w-4 text-orange-400" />}
+                        value={osReincidentes}
+                        valueClass="text-orange-400"
+                        sub="equipamentos com múltiplas OS no período"
+                      />
+                    )
+                  case 'top-maquinas':
+                    return (
+                      <WidgetBody>
+                        <TopMachinesChart />
+                      </WidgetBody>
+                    )
+                  case 'problemas-frequentes':
+                    return (
+                      <WidgetBody>
+                        <FrequentProblemsCard dateRange={dateRange} onAskAI={onAskAI} />
+                      </WidgetBody>
+                    )
+                  case 'pareto':
+                    return (
+                      <WidgetBody>
+                        <ParetoCrossAnalysisCard dateRange={dateRange} />
+                      </WidgetBody>
+                    )
+                  case 'criticos':
+                    return (
+                      <WidgetBody>
+                        <Card className="glass-panel border-border">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 text-orange-500" />
@@ -837,16 +890,34 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+                      </WidgetBody>
+                    )
+                  default:
+                    return null
+                }
+              }}
+            />
           </TabsContent>
 
           {/* --- ABA INTELIGENCIA & OS --- */}
           <TabsContent value="inteligencia" className="space-y-6 animate-slide-in-right">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="glow-border rounded-xl">
-                <CategoryDistributionCard dateRange={dateRange} />
-              </div>
-              <Card className="glass-panel border-border">
+            <WidgetBoard
+              storageKey={INTEL_WIDGETS_KEY}
+              defaults={INTEL_WIDGETS}
+              maxColumns={4}
+              cellSize={250}
+              renderItem={(item) => {
+                switch (item.id) {
+                  case 'categorias':
+                    return (
+                      <WidgetBody>
+                        <CategoryDistributionCard dateRange={dateRange} />
+                      </WidgetBody>
+                    )
+                  case 'tipos':
+                    return (
+                      <WidgetBody>
+                        <Card className="glass-panel border-border">
                 <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-primary" />
@@ -888,9 +959,12 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                 </div>
               </CardContent>
             </Card>
-           </div>
-
-           <Card className="glass-panel border-border col-span-1 lg:col-span-2">
+                      </WidgetBody>
+                    )
+                  case 'historico':
+                    return (
+                      <WidgetBody>
+                        <Card className="glass-panel border-border col-span-1 lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-primary" />
@@ -933,6 +1007,13 @@ export function Dashboard({ onAskAI }: DashboardProps) {
               </ScrollArea>
             </CardContent>
           </Card>
+                      </WidgetBody>
+                    )
+                  default:
+                    return null
+                }
+              }}
+            />
         </TabsContent>
       </Tabs>
     </div>
