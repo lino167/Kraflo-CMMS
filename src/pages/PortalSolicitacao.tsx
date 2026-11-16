@@ -140,7 +140,7 @@ export default function PortalSolicitacao() {
   if (isError || !info?.valido) {
     return (
       <PortalShell>
-        <Card className="glass-panel border-white/10">
+        <Card className="glass-panel border-border">
           <CardContent className="space-y-3 p-8 text-center">
             <AlertTriangle className="mx-auto h-10 w-10 text-yellow-400" />
             <h1 className="text-lg font-semibold">Link indisponível</h1>
@@ -158,7 +158,7 @@ export default function PortalSolicitacao() {
   if (protocolo !== null) {
     return (
       <PortalShell>
-        <Card className="glass-panel border-white/10">
+        <Card className="glass-panel border-border">
           <CardContent className="space-y-4 p-8 text-center">
             <CheckCircle2 className="mx-auto h-12 w-12 text-green-500" />
             <h1 className="text-xl font-semibold">Solicitação enviada</h1>
@@ -187,7 +187,7 @@ export default function PortalSolicitacao() {
 
   return (
     <PortalShell>
-      <Card className="glass-panel border-white/10">
+      <Card className="glass-panel border-border">
         <CardHeader>
           <CardTitle>Solicitar manutenção</CardTitle>
           <CardDescription>{info.empresa_nome} — descreva o problema e a equipe de manutenção será avisada.</CardDescription>

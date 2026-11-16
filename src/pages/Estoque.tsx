@@ -295,7 +295,7 @@ export default function Estoque() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="glass-panel border-white/5">
+        <Card className="glass-panel border-border">
           <CardContent className="flex items-center gap-3 p-4">
             <Boxes className="h-5 w-5 text-primary" />
             <div>
@@ -304,7 +304,7 @@ export default function Estoque() {
             </div>
           </CardContent>
         </Card>
-        <Card className="glass-panel border-white/5">
+        <Card className="glass-panel border-border">
           <CardContent className="flex items-center gap-3 p-4">
             <Wallet className="h-5 w-5 text-primary" />
             <div>
@@ -313,7 +313,7 @@ export default function Estoque() {
             </div>
           </CardContent>
         </Card>
-        <Card className={`glass-panel ${criticos.length ? 'border-yellow-500/30' : 'border-white/5'}`}>
+        <Card className={`glass-panel ${criticos.length ? 'border-yellow-500/30' : 'border-border'}`}>
           <CardContent className="flex items-center justify-between gap-3 p-4">
             <div className="flex items-center gap-3">
               <AlertTriangle className={`h-5 w-5 ${criticos.length ? 'text-yellow-400' : 'text-muted-foreground'}`} />
@@ -341,7 +341,7 @@ export default function Estoque() {
         />
       </div>
 
-      <Card className="glass-panel overflow-hidden border-white/5">
+      <Card className="glass-panel overflow-hidden border-border">
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex justify-center py-12">
@@ -445,7 +445,7 @@ export default function Estoque() {
 
       {/* Cadastro / edição */}
       <Dialog open={pecaDialog.open} onOpenChange={(open) => setPecaDialog({ open, peca: open ? pecaDialog.peca : null })}>
-        <DialogContent className="glass-panel border-white/10 sm:max-w-[520px]">
+        <DialogContent className="glass-panel border-border sm:max-w-[520px]">
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -531,7 +531,7 @@ export default function Estoque() {
 
       {/* Movimentação */}
       <Dialog open={!!movDialog} onOpenChange={(open) => !open && setMovDialog(null)}>
-        <DialogContent className="glass-panel border-white/10 sm:max-w-[420px]">
+        <DialogContent className="glass-panel border-border sm:max-w-[420px]">
           {movDialog && (
             <form
               onSubmit={(e) => {
@@ -587,7 +587,7 @@ export default function Estoque() {
 
       {/* Histórico */}
       <Dialog open={!!historicoPeca} onOpenChange={(open) => !open && setHistoricoPeca(null)}>
-        <DialogContent className="glass-panel max-h-[80vh] overflow-y-auto border-white/10 sm:max-w-[560px]">
+        <DialogContent className="glass-panel max-h-[80vh] overflow-y-auto border-border sm:max-w-[560px]">
           <DialogHeader>
             <DialogTitle>Histórico — {historicoPeca?.nome}</DialogTitle>
             <DialogDescription>Últimas 50 movimentações.</DialogDescription>
@@ -601,7 +601,7 @@ export default function Estoque() {
           ) : (
             <ul className="space-y-2">
               {historico.map((m) => (
-                <li key={m.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-secondary/20 p-3">
+                <li key={m.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-secondary/20 p-3">
                   <div>
                     <p className="text-sm font-medium">
                       {TIPO_LABEL[m.tipo as TipoMov] ?? m.tipo}

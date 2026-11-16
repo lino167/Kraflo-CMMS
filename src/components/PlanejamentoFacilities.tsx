@@ -635,39 +635,39 @@ export function PlanejamentoFacilities() {
   return (
     <div className="space-y-6">
       {/* Sub tabs selectors */}
-      <div className="flex flex-wrap gap-2 p-1.5 bg-card/40 border border-white/5 rounded-xl backdrop-blur-xl">
+      <div className="flex flex-wrap gap-2 p-1.5 bg-card/40 border border-border rounded-xl">
         <Button
           variant={activeSubTab === 'sla' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('sla')}
-          className={`rounded-lg ${activeSubTab === 'sla' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg ${activeSubTab === 'sla' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
           <Clock className="h-4 w-4 mr-2" /> SLAs & Operações
         </Button>
         <Button
           variant={activeSubTab === 'calendario' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('calendario')}
-          className={`rounded-lg ${activeSubTab === 'calendario' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg ${activeSubTab === 'calendario' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
           <CalendarIcon className="h-4 w-4 mr-2" /> Calendário de OS
         </Button>
         <Button
           variant={activeSubTab === 'orcamentos' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('orcamentos')}
-          className={`rounded-lg ${activeSubTab === 'orcamentos' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg ${activeSubTab === 'orcamentos' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
           <DollarSign className="h-4 w-4 mr-2" /> Aprovar Orçamentos
         </Button>
         <Button
           variant={activeSubTab === 'checklists' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('checklists')}
-          className={`rounded-lg ${activeSubTab === 'checklists' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg ${activeSubTab === 'checklists' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
           <CheckSquare className="h-4 w-4 mr-2" /> Criar Checklist
         </Button>
         <Button
           variant={activeSubTab === 'solicitacoes' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('solicitacoes')}
-          className={`rounded-lg relative ${activeSubTab === 'solicitacoes' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg relative ${activeSubTab === 'solicitacoes' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
           <ClipboardCheck className="h-4 w-4 mr-2" /> Solicitações
           {requests.filter(r => r.status === 'pendente').length > 0 && (
@@ -677,21 +677,21 @@ export function PlanejamentoFacilities() {
         <Button
           variant={activeSubTab === 'relatorios' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('relatorios')}
-          className={`rounded-lg ${activeSubTab === 'relatorios' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg ${activeSubTab === 'relatorios' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
           <FileText className="h-4 w-4 mr-2" /> Relatórios Clientes
         </Button>
         <Button
           variant={activeSubTab === 'guest' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('guest')}
-          className={`rounded-lg ${activeSubTab === 'guest' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg ${activeSubTab === 'guest' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
           <Users className="h-4 w-4 mr-2" /> Portal de Solicitações
         </Button>
         <Button
           variant={activeSubTab === 'medicoes' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('medicoes')}
-          className={`rounded-lg relative ${activeSubTab === 'medicoes' ? 'bg-primary/20 text-primary hover:bg-primary/30 shadow-neon border border-primary/20' : 'text-muted-foreground'}`}
+          className={`rounded-lg relative ${activeSubTab === 'medicoes' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
         >
           <Activity className="h-4 w-4 mr-2" /> Medições Preditivas
           {(alerts.filter(a => a.status === 'Ativo').length > 0 || getDynamicOSVolumeAlerts().length > 0) && (
@@ -714,7 +714,7 @@ export function PlanejamentoFacilities() {
           {activeSubTab === 'sla' && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="glass-panel border-white/5 relative overflow-hidden group">
+                <Card className="glass-panel border-border relative overflow-hidden group">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
                       SLA de Atendimento Crítico
@@ -728,7 +728,7 @@ export function PlanejamentoFacilities() {
                   </CardContent>
                 </Card>
 
-                <Card className="glass-panel border-white/5 relative overflow-hidden group">
+                <Card className="glass-panel border-border relative overflow-hidden group">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
                       SLA de MTTR Corretivo
@@ -742,7 +742,7 @@ export function PlanejamentoFacilities() {
                   </CardContent>
                 </Card>
 
-                <Card className="glass-panel border-white/5 relative overflow-hidden group">
+                <Card className="glass-panel border-border relative overflow-hidden group">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
                       SLA de Validação
@@ -758,7 +758,7 @@ export function PlanejamentoFacilities() {
               </div>
 
               {/* SLA details view */}
-              <Card className="glass-panel border-white/5">
+              <Card className="glass-panel border-border">
                 <CardHeader>
                   <CardTitle className="font-mono text-lg flex items-center gap-2">
                     <Clock className="h-5 w-5 text-primary" />
@@ -770,7 +770,7 @@ export function PlanejamentoFacilities() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-secondary/30 border border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="p-4 rounded-xl bg-secondary/30 border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="inline-block h-3 w-3 rounded-full bg-red-500 animate-pulse" />
@@ -790,7 +790,7 @@ export function PlanejamentoFacilities() {
                       </div>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-secondary/30 border border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="p-4 rounded-xl bg-secondary/30 border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="inline-block h-3 w-3 rounded-full bg-orange-500" />
@@ -810,7 +810,7 @@ export function PlanejamentoFacilities() {
                       </div>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-secondary/30 border border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="p-4 rounded-xl bg-secondary/30 border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="inline-block h-3 w-3 rounded-full bg-yellow-500" />
@@ -839,7 +839,7 @@ export function PlanejamentoFacilities() {
           {/* TAB 2: CALENDÁRIO INTERATIVO */}
           {/* ======================================================== */}
           {activeSubTab === 'calendario' && (
-            <Card className="glass-panel border-white/5">
+            <Card className="glass-panel border-border">
               <CardHeader>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
@@ -851,7 +851,7 @@ export function PlanejamentoFacilities() {
                       Consulte todas as ordens de serviço (atualmente {realOSList.length} registradas) diretamente do Supabase.
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-4 bg-secondary/40 border border-white/5 p-2 rounded-lg text-xs font-mono">
+                  <div className="flex items-center gap-4 bg-secondary/40 border border-border p-2 rounded-lg text-xs font-mono">
                     <div className="flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-blue-500" /> Preventivas
                     </div>
@@ -864,11 +864,11 @@ export function PlanejamentoFacilities() {
               <CardContent className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Calendário Mensal */}
                 <div className="lg:col-span-8 space-y-4">
-                  <div className="flex items-center justify-between bg-secondary/20 p-3 rounded-lg border border-white/5 font-mono text-sm">
+                  <div className="flex items-center justify-between bg-secondary/20 p-3 rounded-lg border border-border font-mono text-sm">
                     <span className="font-bold text-primary">Maio {new Date().getFullYear()}</span>
                     <span className="text-muted-foreground text-xs">Visão Sincronizada Supabase</span>
                   </div>
-                  <div className="grid grid-cols-7 gap-2 text-center text-xs font-mono font-bold text-muted-foreground p-1 border-b border-white/5">
+                  <div className="grid grid-cols-7 gap-2 text-center text-xs font-mono font-bold text-muted-foreground p-1 border-b border-border">
                     <div>DOM</div>
                     <div>SEG</div>
                     <div>TER</div>
@@ -894,8 +894,8 @@ export function PlanejamentoFacilities() {
                           onClick={() => setSelectedDay(dayNum)}
                           className={`h-14 p-1 text-left rounded-lg border flex flex-col justify-between transition-all relative group ${
                             isSelected 
-                              ? 'bg-primary/20 border-primary text-foreground shadow-neon' 
-                              : 'bg-secondary/20 border-white/5 text-muted-foreground hover:bg-secondary/40 hover:border-white/10'
+                              ? 'bg-primary/20 border-primary text-foreground' 
+                              : 'bg-secondary/20 border-border text-muted-foreground hover:bg-secondary/40 hover:border-border'
                           }`}
                         >
                           <span className={`text-[10px] font-mono font-bold ${isSelected ? 'text-primary' : 'text-foreground/70'}`}>{dayNum}</span>
@@ -917,9 +917,9 @@ export function PlanejamentoFacilities() {
                 </div>
 
                 {/* Tarefas do Dia Selecionado */}
-                <div className="lg:col-span-4 p-4 rounded-xl bg-secondary/20 border border-white/5 flex flex-col justify-between h-full min-h-[300px]">
+                <div className="lg:col-span-4 p-4 rounded-xl bg-secondary/20 border border-border flex flex-col justify-between h-full min-h-[300px]">
                   <div>
-                    <div className="pb-3 border-b border-white/5 flex items-center justify-between mb-4">
+                    <div className="pb-3 border-b border-border flex items-center justify-between mb-4">
                       <span className="font-mono text-sm font-bold text-foreground">Dia {selectedDay} de Maio</span>
                       <Badge className="bg-primary/10 text-primary border-primary/20">
                         {getTasksForDay(selectedDay).length} Ordens
@@ -967,7 +967,7 @@ export function PlanejamentoFacilities() {
           {/* TAB 3: APROVAR ORÇAMENTOS */}
           {/* ======================================================== */}
           {activeSubTab === 'orcamentos' && (
-            <Card className="glass-panel border-white/5">
+            <Card className="glass-panel border-border">
               <CardHeader>
                 <CardTitle className="font-mono text-lg flex items-center gap-2">
                   <DollarSign className="h-5 w-5 text-primary" />
@@ -978,7 +978,7 @@ export function PlanejamentoFacilities() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-2 p-3 rounded-xl bg-secondary/10 border border-white/5">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-2 p-3 rounded-xl bg-secondary/10 border border-border">
                   <Input aria-label="Fornecedor" placeholder="Fornecedor" value={budgetForm.fornecedor} onChange={(e) => setBudgetForm({ ...budgetForm, fornecedor: e.target.value })} />
                   <Input aria-label="Equipamento" placeholder="Equipamento (opcional)" value={budgetForm.equipamento_nome} onChange={(e) => setBudgetForm({ ...budgetForm, equipamento_nome: e.target.value })} />
                   <Input aria-label="Serviço" placeholder="Serviço" value={budgetForm.servico} onChange={(e) => setBudgetForm({ ...budgetForm, servico: e.target.value })} />
@@ -992,7 +992,7 @@ export function PlanejamentoFacilities() {
                   {budgets.map((budget, index) => (
                     <Card 
                       key={budget.id || index} 
-                      className={`border-white/5 bg-secondary/10 hover:bg-secondary/20 transition-all ${
+                      className={`border-border bg-secondary/10 hover:bg-secondary/20 transition-all ${
                         budget.status === 'aprovado' ? 'border-green-500/20' : budget.status === 'rejeitado' ? 'border-red-500/20' : ''
                       }`}
                     >
@@ -1017,7 +1017,7 @@ export function PlanejamentoFacilities() {
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <p className="text-xs text-muted-foreground">{budget.servico}</p>
-                        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                        <div className="flex items-center justify-between pt-2 border-t border-border">
                           <div>
                             <span className="text-[10px] text-muted-foreground block">VALOR SOLICITADO</span>
                             <span className="text-lg font-mono font-bold text-foreground">R$ {Number(budget.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
@@ -1054,7 +1054,7 @@ export function PlanejamentoFacilities() {
           {/* TAB 4: CRIAÇÃO DE LISTA DE VERIFICAÇÃO (CHECKLIST) */}
           {/* ======================================================== */}
           {activeSubTab === 'checklists' && (
-            <Card className="glass-panel border-white/5">
+            <Card className="glass-panel border-border">
               <CardHeader>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
@@ -1094,11 +1094,11 @@ export function PlanejamentoFacilities() {
                   </Button>
                 </div>
 
-                <div className="space-y-2 p-4 rounded-xl bg-secondary/10 border border-white/5 max-h-[300px] overflow-y-auto">
+                <div className="space-y-2 p-4 rounded-xl bg-secondary/10 border border-border max-h-[300px] overflow-y-auto">
                   {customItems.map((item, index) => (
                     <div 
                       key={index} 
-                      className="p-2.5 rounded-lg bg-secondary/30 border border-white/5 flex items-center justify-between text-xs"
+                      className="p-2.5 rounded-lg bg-secondary/30 border border-border flex items-center justify-between text-xs"
                     >
                       <div className="flex items-center gap-3">
                         <span className="font-mono text-[10px] text-primary">#{index + 1}</span>
@@ -1116,9 +1116,9 @@ export function PlanejamentoFacilities() {
                   ))}
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                <div className="flex items-center justify-between pt-4 border-t border-border">
                   <span className="text-xs text-muted-foreground">{customItems.length} etapas registradas localmente</span>
-                  <Button className="shadow-neon" onClick={handleSaveChecklist}>
+                  <Button onClick={handleSaveChecklist}>
                     <CheckSquare className="h-4 w-4 mr-1.5" /> Salvar Template no Supabase
                   </Button>
                 </div>
@@ -1130,7 +1130,7 @@ export function PlanejamentoFacilities() {
           {/* TAB 5: SOLICITAÇÕES DE MANUTENÇÃO */}
           {/* ======================================================== */}
           {activeSubTab === 'solicitacoes' && (
-            <Card className="glass-panel border-white/5">
+            <Card className="glass-panel border-border">
               <CardHeader>
                 <CardTitle className="font-mono text-lg flex items-center gap-2">
                   <ClipboardCheck className="h-5 w-5 text-primary" />
@@ -1150,7 +1150,7 @@ export function PlanejamentoFacilities() {
                   {requests.map((request, index) => (
                     <div 
                       key={request.id || index} 
-                      className={`p-4 rounded-xl bg-secondary/10 border border-white/5 flex flex-col md:flex-row justify-between gap-4 transition-all ${
+                      className={`p-4 rounded-xl bg-secondary/10 border border-border flex flex-col md:flex-row justify-between gap-4 transition-all ${
                         request.status === 'verificado' ? 'border-success/20 opacity-80' : request.status === 'rejeitado' ? 'border-red-500/20 opacity-60' : 'border-primary/20 bg-primary/5'
                       }`}
                     >
@@ -1207,7 +1207,7 @@ export function PlanejamentoFacilities() {
           {/* TAB 6: RELATÓRIOS PARA CLIENTES */}
           {/* ======================================================== */}
           {activeSubTab === 'relatorios' && (
-            <Card className="glass-panel border-white/5">
+            <Card className="glass-panel border-border">
               <CardHeader>
                 <CardTitle className="font-mono text-lg flex items-center gap-2">
                   <FileText className="h-5 w-5 text-primary" />
@@ -1223,7 +1223,7 @@ export function PlanejamentoFacilities() {
                     realOSList.filter(os => os.status_os === 'Fechada').map(os => (
                       <div 
                         key={os.id} 
-                        className="p-4 rounded-xl bg-secondary/10 border border-white/5 flex flex-col md:flex-row justify-between gap-4 items-start md:items-center"
+                        className="p-4 rounded-xl bg-secondary/10 border border-border flex flex-col md:flex-row justify-between gap-4 items-start md:items-center"
                       >
                         <div>
                           <div className="flex items-center gap-2">
@@ -1268,7 +1268,7 @@ export function PlanejamentoFacilities() {
           {/* TAB 7: ACESSO ILIMITADO FORNECEDORES E CLIENTES */}
           {/* ======================================================== */}
           {activeSubTab === 'guest' && (
-            <Card className="glass-panel border-white/5">
+            <Card className="glass-panel border-border">
               <CardHeader>
                 <CardTitle className="font-mono text-lg flex items-center gap-2">
                   <Users className="h-5 w-5 text-primary" />
@@ -1285,7 +1285,7 @@ export function PlanejamentoFacilities() {
                     <p className="text-xs text-muted-foreground">Nenhum link ativo.</p>
                   )}
                   {links.map((link, index) => (
-                    <div key={link.id || index} className="p-3 rounded-lg bg-secondary/30 border border-white/5 flex items-center justify-between gap-4">
+                    <div key={link.id || index} className="p-3 rounded-lg bg-secondary/30 border border-border flex items-center justify-between gap-4">
                       <div className="flex items-center gap-2 truncate">
                         <Lock className="h-3.5 w-3.5 text-success shrink-0" />
                         <span className="font-mono text-xs text-muted-foreground truncate">
@@ -1311,7 +1311,7 @@ export function PlanejamentoFacilities() {
                   ))}
                 </div>
 
-                <Button className="w-full shadow-neon" onClick={handleGenerateGuestLink}>
+                <Button className="w-full" onClick={handleGenerateGuestLink}>
                   <Plus className="h-4 w-4 mr-1.5" /> Gerar link do portal
                 </Button>
 
@@ -1331,7 +1331,7 @@ export function PlanejamentoFacilities() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Coluna da Esquerda: Form de Medição & Autoatribuição */}
                 <div className="lg:col-span-1 space-y-6">
-                  <Card className="glass-panel border-white/5">
+                  <Card className="glass-panel border-border">
                   <CardHeader>
                     <CardTitle className="font-mono text-lg flex items-center gap-2">
                       <Activity className="h-5 w-5 text-primary animate-pulse" />
@@ -1348,7 +1348,7 @@ export function PlanejamentoFacilities() {
                         placeholder="Ex: Motor de Resfriamento Principal"
                         value={formEquipamento}
                         onChange={(e) => setFormEquipamento(e.target.value)}
-                        className="bg-secondary/20 border-white/5"
+                        className="bg-secondary/20 border-border"
                       />
                     </div>
 
@@ -1357,7 +1357,7 @@ export function PlanejamentoFacilities() {
                       <select
                         value={formVariavel}
                         onChange={(e) => setFormVariavel(e.target.value)}
-                        className="w-full bg-secondary/20 border border-white/5 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full bg-secondary/20 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                       >
                         <option value="Temperatura (ºC)" className="bg-background text-foreground">Temperatura (ºC)</option>
                         <option value="Pressão de Óleo (bar)" className="bg-background text-foreground">Pressão de Óleo (bar)</option>
@@ -1374,7 +1374,7 @@ export function PlanejamentoFacilities() {
                         placeholder="Ex: 85.4"
                         value={formValor}
                         onChange={(e) => setFormValor(e.target.value)}
-                        className="bg-secondary/20 border-white/5 font-mono"
+                        className="bg-secondary/20 border-border font-mono"
                       />
                     </div>
 
@@ -1387,7 +1387,7 @@ export function PlanejamentoFacilities() {
                           placeholder="Ex: 20"
                           value={formMin}
                           onChange={(e) => setFormMin(e.target.value)}
-                          className="bg-secondary/20 border-white/5 font-mono"
+                          className="bg-secondary/20 border-border font-mono"
                         />
                       </div>
                       <div className="space-y-2">
@@ -1398,21 +1398,21 @@ export function PlanejamentoFacilities() {
                           placeholder="Ex: 80"
                           value={formMax}
                           onChange={(e) => setFormMax(e.target.value)}
-                          className="bg-secondary/20 border-white/5 font-mono"
+                          className="bg-secondary/20 border-border font-mono"
                         />
                       </div>
                     </div>
 
-                    <Button className="w-full shadow-neon gap-1.5" onClick={handleAddMeasurement}>
+                    <Button className="w-full gap-1.5" onClick={handleAddMeasurement}>
                       <Plus className="h-4 w-4" /> Registrar Medição Operacional
                     </Button>
                   </CardContent>
                 </Card>
 
                 {/* Card de Autoatribuição Inteligente */}
-                <Card className="glass-panel border-white/5 overflow-hidden relative">
+                <Card className="glass-panel border-border overflow-hidden relative">
                   <div className="absolute top-0 right-0 p-3">
-                    <Badge className={autoAssignActive ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-muted/10 text-muted-foreground border-white/5"}>
+                    <Badge className={autoAssignActive ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-muted/10 text-muted-foreground border-border"}>
                       {autoAssignActive ? "ATIVO" : "INATIVO"}
                     </Badge>
                   </div>
@@ -1426,12 +1426,12 @@ export function PlanejamentoFacilities() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/10 border border-white/5">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/10 border border-border">
                       <span className="text-xs font-medium">Distribuição Autônoma</span>
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className={`h-7 px-3 rounded-full border transition-all ${autoAssignActive ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20 hover:text-green-300" : "bg-secondary/30 text-muted-foreground border-white/5 hover:bg-secondary/50"}`}
+                        className={`h-7 px-3 rounded-full border transition-all ${autoAssignActive ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20 hover:text-green-300" : "bg-secondary/30 text-muted-foreground border-border hover:bg-secondary/50"}`}
                         onClick={() => setAutoAssignActive(!autoAssignActive)}
                       >
                         {autoAssignActive ? "Ativado" : "Desativado"}
@@ -1441,15 +1441,15 @@ export function PlanejamentoFacilities() {
                     <div className="space-y-2">
                       <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Matriz de Especialidades</span>
                       <div className="space-y-2 font-mono text-[11px]">
-                        <div className="p-2 rounded bg-background/50 border border-white/5 flex items-center justify-between">
+                        <div className="p-2 rounded bg-background/50 border border-border flex items-center justify-between">
                           <span className="text-muted-foreground">🌡️ Hidráulica / HVAC</span>
                           <span className="text-primary font-bold">Mecânico / HVAC</span>
                         </div>
-                        <div className="p-2 rounded bg-background/50 border border-white/5 flex items-center justify-between">
+                        <div className="p-2 rounded bg-background/50 border border-border flex items-center justify-between">
                           <span className="text-muted-foreground">⚡ Eletroeletrônica</span>
                           <span className="text-primary font-bold">Eletricista</span>
                         </div>
-                        <div className="p-2 rounded bg-background/50 border border-white/5 flex items-center justify-between">
+                        <div className="p-2 rounded bg-background/50 border border-border flex items-center justify-between">
                           <span className="text-muted-foreground">⚙️ Outras Variáveis</span>
                           <span className="text-primary font-bold">Técnico Plantão</span>
                         </div>
@@ -1466,7 +1466,7 @@ export function PlanejamentoFacilities() {
                 {/* Histórico de Medições e Alertas Ativos */}
                 <div className="lg:col-span-2 space-y-6">
                   {/* Alertas Ativos */}
-                  <Card className="glass-panel border-white/5 border-red-500/20 bg-red-500/5">
+                  <Card className="glass-panel border-border border-red-500/20 bg-red-500/5">
                     <CardHeader>
                       <CardTitle className="font-mono text-lg flex items-center gap-2 text-red-400">
                         <AlertTriangle className="h-5 w-5 animate-pulse" />
@@ -1493,7 +1493,7 @@ export function PlanejamentoFacilities() {
                                 </Badge>
                               </div>
                               <p className="text-xs text-muted-foreground">{alert.descricao}</p>
-                              <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-white/5">
+                              <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border">
                                 <span>Gerado em: {new Date(alert.data_alerta).toLocaleString('pt-BR')}</span>
                                 <span className="flex items-center gap-3">
                                   {alert.os_gerada_id && (
@@ -1521,7 +1521,7 @@ export function PlanejamentoFacilities() {
                   </Card>
 
                   {/* Lista de Medições Recentes */}
-                  <Card className="glass-panel border-white/5">
+                  <Card className="glass-panel border-border">
                     <CardHeader>
                       <CardTitle className="font-mono text-lg">Histórico de Medições de Condition Monitoring</CardTitle>
                       <CardDescription>
@@ -1534,7 +1534,7 @@ export function PlanejamentoFacilities() {
                           <p className="text-center text-xs text-muted-foreground py-6">Nenhuma medição registrada.</p>
                         )}
                         {measurements.map(med => (
-                          <div key={med.id} className="p-3 rounded-xl bg-secondary/10 border border-white/5 flex items-center justify-between gap-4">
+                          <div key={med.id} className="p-3 rounded-xl bg-secondary/10 border border-border flex items-center justify-between gap-4">
                             <div>
                               <h4 className="font-semibold text-sm text-foreground">{med.equipamento_nome}</h4>
                               <p className="text-xs text-muted-foreground mt-0.5">

@@ -89,7 +89,7 @@ export function PinGate({ ownerId, onUnlocked }: PinGateProps) {
 
   return (
     <div className="mx-auto max-w-sm pt-6">
-      <Card className="glass-panel border-white/10">
+      <Card className="glass-panel border-border">
         <CardContent className="space-y-4 p-6">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-primary/20 p-2">

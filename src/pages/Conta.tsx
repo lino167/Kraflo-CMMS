@@ -107,7 +107,7 @@ export default function Conta() {
       )}
 
       {isAdminEmpresa && empresaId && (
-        <Card className="glass-panel border-white/5">
+        <Card className="glass-panel border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <UserPlus className="h-4 w-4 text-primary" /> Convidar para a equipe
@@ -156,7 +156,7 @@ export default function Conta() {
       )}
 
       {empresaId && (
-        <Card className="glass-panel border-white/5">
+        <Card className="glass-panel border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Send className="h-4 w-4 text-primary" /> Telegram (opcional)
@@ -200,7 +200,7 @@ export default function Conta() {
       )}
 
       {empresaId && (
-        <Card className="glass-panel border-white/5">
+        <Card className="glass-panel border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Users className="h-4 w-4 text-primary" /> Equipe ({equipe.length})

@@ -27,9 +27,14 @@ export default {
       },
     },
     extend: {
+      fontWeight: {
+        medium: '510',
+        semibold: '590',
+        bold: '590',
+      },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
-        display: ['Outfit', 'sans-serif'],
+        display: ['Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
@@ -82,9 +87,9 @@ export default {
         info: 'hsl(var(--info))',
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        lg: 'var(--radius)', /* cartões: 12 px */
+        md: '0.375rem', /* botões e campos: 6 px */
+        sm: '0.25rem',
       },
       keyframes: {
         'accordion-down': {

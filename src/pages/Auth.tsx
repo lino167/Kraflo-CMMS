@@ -334,7 +334,7 @@ export default function Auth() {
                           className={`h-10 rounded-md border text-sm transition-colors ${
                             signupModo === valor
                               ? 'border-primary bg-primary/15 text-primary'
-                              : 'border-white/10 text-muted-foreground'
+                              : 'border-border text-muted-foreground'
                           }`}
                         >
                           {rotulo}

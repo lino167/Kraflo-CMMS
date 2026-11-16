@@ -208,8 +208,8 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
         {statuses.map((status) => {
           const filtered = osList.filter((os) => os.status_os === status);
           return (
-            <div key={status} className="p-4 rounded-xl bg-secondary/10 border border-white/5 space-y-4 min-w-[250px] flex flex-col">
-              <div className="flex items-center justify-between pb-2 border-b border-white/5">
+            <div key={status} className="p-4 rounded-xl bg-secondary/10 border border-border space-y-4 min-w-[250px] flex flex-col">
+              <div className="flex items-center justify-between pb-2 border-b border-border">
                 <span className="font-mono text-xs font-bold text-foreground/80 flex items-center gap-1.5">
                   <span className={`h-2 w-2 rounded-full ${
                     status === 'Aberta' ? 'bg-blue-400' :
@@ -225,7 +225,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
               
               <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
                 {filtered.map((os) => (
-                  <Card key={os.id} className="p-3.5 bg-background/40 border border-white/5 hover:border-primary/20 hover:shadow-neon transition-all duration-300 relative group">
+                  <Card key={os.id} className="p-3.5 bg-background/40 border border-border hover:border-primary/20 transition-all duration-300 relative group">
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <span className="font-mono text-xs font-bold text-primary">#{os.id}</span>
                       <Badge variant="outline" className={`text-[9px] ${getPrioridadeColor(os.prioridade)}`}>
@@ -234,9 +234,9 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                     </div>
                     <h4 className="font-mono text-xs font-bold text-foreground line-clamp-1">{os.equipamento_nome}</h4>
                     <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">TAG: {os.equipamento_tag || 'S/N'}</p>
-                    <p className="text-[10px] text-muted-foreground line-clamp-2 mt-1.5 bg-secondary/30 p-2 rounded border border-white/5">{os.descricao_problema || 'Nenhuma descrição'}</p>
+                    <p className="text-[10px] text-muted-foreground line-clamp-2 mt-1.5 bg-secondary/30 p-2 rounded border border-border">{os.descricao_problema || 'Nenhuma descrição'}</p>
                     
-                    <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[10px] text-muted-foreground">
+                    <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground">
                       <span className="flex items-center gap-1"><User className="h-3 w-3" /> {getTecnicoName(os.tecnico_id).split(' ')[0]}</span>
                       <div className="flex gap-1.5">
                         <Button size="icon" variant="ghost" className="h-5 w-5 hover:text-primary" onClick={() => onView(os)}><Eye className="h-3 w-3" /></Button>
@@ -273,8 +273,8 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 p-5 rounded-xl bg-secondary/15 border border-white/5 shadow-surface">
-          <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/5">
+        <div className="lg:col-span-2 p-5 rounded-xl bg-secondary/15 border border-border">
+          <div className="flex items-center justify-between mb-4 pb-2 border-b border-border">
             <h3 className="font-mono text-sm font-bold text-foreground uppercase tracking-wide">{monthName}</h3>
             <span className="text-[10px] font-mono text-muted-foreground">Clique em um dia para auditar</span>
           </div>
@@ -300,9 +300,9 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                   key={`day-${day}`}
                   onClick={() => setActiveDay(day)}
                   className={`p-2 rounded-lg aspect-square flex flex-col items-center justify-between border transition-all relative ${
-                    isSelected ? 'bg-primary/20 border-primary text-foreground shadow-neon font-bold' :
+                    isSelected ? 'bg-primary/20 border-primary text-foreground font-bold' :
                     isToday ? 'bg-secondary/30 border-primary/30 text-primary font-semibold' :
-                    'bg-background/25 border-white/5 hover:border-white/20 text-muted-foreground'
+                    'bg-background/25 border-border hover:border-white/20 text-muted-foreground'
                   }`}
                 >
                   <span className="text-xs">{day}</span>
@@ -321,8 +321,8 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
           </div>
         </div>
 
-        <div className="p-5 rounded-xl bg-secondary/15 border border-white/5 flex flex-col">
-          <h3 className="font-mono text-sm font-bold text-foreground uppercase border-b border-white/5 pb-3 mb-4 flex items-center justify-between">
+        <div className="p-5 rounded-xl bg-secondary/15 border border-border flex flex-col">
+          <h3 className="font-mono text-sm font-bold text-foreground uppercase border-b border-border pb-3 mb-4 flex items-center justify-between">
             <span>Ordens do Dia {activeDay}</span>
             <Badge variant="secondary" className="font-mono">{osForActiveDay.length}</Badge>
           </h3>
@@ -330,7 +330,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
           <ScrollArea className="flex-1 max-h-[350px]">
             <div className="space-y-3 pr-2">
               {osForActiveDay.map((os) => (
-                <div key={os.id} className="p-3 rounded-lg bg-background/40 border border-white/5 hover:border-white/10 transition-all flex items-center justify-between gap-3 group">
+                <div key={os.id} className="p-3 rounded-lg bg-background/40 border border-border hover:border-border transition-all flex items-center justify-between gap-3 group">
                   <div className="space-y-1">
                     <span className="font-mono text-xs font-bold text-primary">#{os.id}</span>
                     <h4 className="font-mono text-xs font-bold text-foreground line-clamp-1">{os.equipamento_nome}</h4>
@@ -384,8 +384,8 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                   <span className={`h-1.5 w-1.5 rounded-full ${hasFechamento ? 'bg-emerald-400' : 'bg-amber-400'}`} />
                 </span>
 
-                <div className="p-5 rounded-xl bg-secondary/10 border border-white/5 hover:border-white/15 transition-all duration-300">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3 mb-3">
+                <div className="p-5 rounded-xl bg-secondary/10 border border-border hover:border-white/15 transition-all duration-300">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3 mb-3">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-sm font-bold text-primary">#{os.id}</span>
                       <h4 className="font-mono text-sm font-bold text-foreground">{os.equipamento_nome}</h4>
@@ -422,12 +422,12 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                   </div>
 
                   {os.descricao_problema && (
-                    <div className="mt-4 p-3 bg-secondary/20 rounded border border-white/5">
+                    <div className="mt-4 p-3 bg-secondary/20 rounded border border-border">
                       <p className="text-xs text-muted-foreground italic">" {os.descricao_problema} "</p>
                     </div>
                   )}
 
-                  <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs font-mono">
+                  <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs font-mono">
                     <span className="text-[10px] text-emerald-400/80 bg-emerald-500/5 px-2 py-1 border border-emerald-500/10 rounded flex items-center gap-1">
                       ✓ Registros em conformidade com normas técnicas regionais de segurança
                     </span>
@@ -459,7 +459,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
 
   if (osList.length === 0) {
     return (
-      <Card className="p-12 text-center glass-panel border-white/5 flex flex-col items-center justify-center">
+      <Card className="p-12 text-center glass-panel border-border flex flex-col items-center justify-center">
         <Wrench className="h-12 w-12 text-muted-foreground/50 mb-4" />
         <p className="text-muted-foreground font-mono text-lg">Nenhuma OS encontrada</p>
       </Card>
@@ -470,8 +470,8 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
   return (
     <>
       {/* Seletor de Visualização e Auditoria */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 p-4 rounded-xl bg-secondary/10 border border-white/5">
-        <div className="flex items-center gap-1.5 p-1 bg-background/50 border border-white/5 rounded-lg flex-wrap">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 p-4 rounded-xl bg-secondary/10 border border-border">
+        <div className="flex items-center gap-1.5 p-1 bg-background/50 border border-border rounded-lg flex-wrap">
           <Button
             variant={viewMode === 'lista' ? 'secondary' : 'ghost'}
             size="sm"
@@ -522,7 +522,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
         isMobile ? (
           <div className="space-y-4">
             {osList.map((os) => (
-              <Card key={os.id} className="p-4 glass-panel border-white/5 shadow-surface hover:shadow-neon transition-all duration-300 relative overflow-hidden group">
+              <Card key={os.id} className="p-4 glass-panel border-border transition-all duration-300 relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-1 h-full bg-primary/50 opacity-0 group-hover:opacity-100 transition-opacity" />
                 {/* Header with ID and Status */}
                 <div className="flex items-center justify-between mb-3">
@@ -562,7 +562,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-wrap gap-2 pt-3 border-t border-white/5 mt-4">
+                <div className="flex flex-wrap gap-2 pt-3 border-t border-border mt-4">
                   <Button
                     variant="outline"
                     size="sm"
@@ -629,7 +629,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
             ))}
           </div>
         ) : (
-          <Card className="glass-panel border-white/5 overflow-hidden shadow-surface">
+          <Card className="glass-panel border-border overflow-hidden">
             <ScrollArea className="h-[600px]">
               <Table>
                 <TableHeader>
@@ -646,7 +646,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                 </TableHeader>
                 <TableBody>
                   {osList.map((os) => (
-                    <TableRow key={os.id} className="cursor-pointer hover:bg-primary/5 transition-colors border-white/5 border-b group">
+                    <TableRow key={os.id} className="cursor-pointer hover:bg-primary/5 transition-colors border-border border-b group">
                       <TableCell className="font-mono font-medium text-primary group-hover:text-primary-foreground transition-colors" onClick={() => onView(os)}>{os.id}</TableCell>
                       <TableCell onClick={() => onView(os)}>
                         <div>

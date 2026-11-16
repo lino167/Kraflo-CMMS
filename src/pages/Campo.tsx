@@ -30,7 +30,7 @@ const PRIORIDADES = ['Baixa', 'Média', 'Alta', 'Urgente'] as const
 const STATUS_FINAIS = ['Fechada', 'Liberado para produção', 'Não liberado'] as const
 
 const selectClass =
-  'h-11 w-full rounded-md border border-white/10 bg-secondary/30 px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary'
+  'h-11 w-full rounded-md border border-border bg-secondary/30 px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary'
 
 type Tab = 'nova' | 'abertas' | 'pendencias'
 
@@ -105,7 +105,7 @@ function FotoField({ id, label, value, onPick, onClear }: {
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
       {value ? (
-        <div className="relative overflow-hidden rounded-md border border-white/10">
+        <div className="relative overflow-hidden rounded-md border border-border">
           <img src={value} alt="Foto anexada" className="h-40 w-full object-cover" />
           <Button type="button" size="icon" variant="secondary" aria-label="Remover foto" className="absolute right-2 top-2 h-8 w-8" onClick={onClear}>
             <X className="h-4 w-4" />
@@ -407,7 +407,7 @@ export default function Campo() {
         </div>
       </div>
 
-      <Card className="glass-panel border-white/5">
+      <Card className="glass-panel border-border">
         <CardContent className="flex items-center justify-between gap-3 p-3">
           <div className="min-w-0 flex-1 text-sm">
             {pendentes === 0 ? (
@@ -430,7 +430,7 @@ export default function Campo() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-3 gap-1 rounded-xl border border-white/5 bg-secondary/20 p-1">
+      <div className="grid grid-cols-3 gap-1 rounded-xl border border-border bg-secondary/20 p-1">
         {(
           [
             ['nova', 'Nova OS'],
@@ -611,7 +611,7 @@ export default function Campo() {
             <p className="py-10 text-center text-sm text-muted-foreground">Nenhuma OS aberta.</p>
           )}
           {abertas.map((os) => (
-            <Card key={os.key} className="glass-panel border-white/5">
+            <Card key={os.key} className="glass-panel border-border">
               <CardContent className="space-y-3 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -650,7 +650,7 @@ export default function Campo() {
           {ops.map((op) => {
             const st = statusLabel(op)
             return (
-              <Card key={op.id} className="glass-panel border-white/5">
+              <Card key={op.id} className="glass-panel border-border">
                 <CardContent className="space-y-2 p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -684,7 +684,7 @@ export default function Campo() {
       )}
 
       <Dialog open={!!closing} onOpenChange={(open) => !open && setClosing(null)}>
-        <DialogContent className="glass-panel max-h-[90vh] overflow-y-auto border-white/10 sm:max-w-md">
+        <DialogContent className="glass-panel max-h-[90vh] overflow-y-auto border-border sm:max-w-md">
           <form onSubmit={submitClose} className="space-y-4">
             <DialogHeader>
               <DialogTitle>Fechar OS</DialogTitle>
@@ -749,7 +749,7 @@ export default function Campo() {
             <div className="space-y-2">
               <Label>Peças usadas</Label>
               {closeForm.pecas.map((p, i) => (
-                <div key={i} className="flex items-center justify-between rounded-md border border-white/5 bg-secondary/20 p-2 text-sm">
+                <div key={i} className="flex items-center justify-between rounded-md border border-border bg-secondary/20 p-2 text-sm">
                   <span>
                     {p.quantidade}× {p.nome_peca}
                     {p.tag_peca ? ` (${p.tag_peca})` : ''}

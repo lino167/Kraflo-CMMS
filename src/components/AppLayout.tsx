@@ -162,10 +162,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background overflow-hidden">
-        <Sidebar className="border-r border-white/5 bg-sidebar-background/80 backdrop-blur-xl">
+        <Sidebar className="border-r border-border bg-sidebar-background">
           <SidebarHeader className="p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary rounded-lg shadow-neon">
+              <div className="p-2 bg-primary rounded-lg">
                 <Bot className="h-6 w-6 text-primary-foreground" />
               </div>
               <div className="flex flex-col">
@@ -191,7 +191,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     isActive={item.isActive}
                     className={cn(
                       "transition-all duration-200 hover:bg-primary/10 group",
-                      item.isActive && "bg-primary/20 text-primary shadow-neon border-r-2 border-primary"
+                      item.isActive && "bg-primary/20 text-primary border-r-2 border-primary"
                     )}
                   >
                     <item.icon className={cn("h-4 w-4 transition-transform group-hover:scale-110", item.isActive && "text-primary")} />
@@ -210,7 +210,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     isActive={item.isActive}
                     className={cn(
                       "transition-all duration-200 hover:bg-primary/10 group",
-                      item.isActive && "bg-primary/20 text-primary shadow-neon border-r-2 border-primary"
+                      item.isActive && "bg-primary/20 text-primary border-r-2 border-primary"
                     )}
                   >
                     <item.icon className={cn("h-4 w-4 transition-transform group-hover:scale-110", item.isActive && "text-primary")} />
@@ -221,7 +221,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             </SidebarMenu>
           </SidebarContent>
 
-          <SidebarFooter className="p-4 border-t border-white/5 bg-black/20">
+          <SidebarFooter className="p-4 border-t border-border bg-black/20">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton className="h-12 w-full justify-between hover:bg-white/5 transition-colors rounded-xl p-2">
@@ -241,7 +241,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 glass-panel border-white/10 shadow-surface">
+              <DropdownMenuContent align="end" className="w-56 glass-panel border-border">
                 <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate('/conta')}>
@@ -266,7 +266,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </Sidebar>
 
         <SidebarInset className="bg-background flex flex-col min-w-0">
-          <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-white/5 sticky top-0 bg-background/50 backdrop-blur-xl z-40">
+          <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-border sticky top-0 bg-background z-40">
             <div className="flex items-center gap-2 md:gap-4">
               <SidebarTrigger className="hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors hidden md:flex" />
               
@@ -314,7 +314,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                       <User className="h-4 w-4 text-primary" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 glass-panel border-white/10">
+                  <DropdownMenuContent align="end" className="w-56 glass-panel border-border">
                     <DropdownMenuItem onClick={() => navigate('/conta')}>
                       <User className="mr-2 h-4 w-4" /> Conta e Equipe
                     </DropdownMenuItem>
@@ -348,7 +348,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </SidebarInset>
 
         {/* Mobile Bottom Navigation */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-panel border-t border-white/10 px-4 py-2 flex justify-around items-center safe-area-bottom shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-panel border-t border-border px-4 py-2 flex justify-around items-center safe-area-bottom shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
           <button 
             onClick={() => navigate('/')}
             className={cn(
@@ -375,7 +375,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <div className="relative -mt-10">
             <Button 
               size="icon" 
-              className="h-14 w-14 rounded-full bg-primary shadow-neon hover:scale-110 active:scale-95 transition-all duration-300 border-4 border-background"
+              className="h-14 w-14 rounded-full bg-primary hover:scale-110 active:scale-95 transition-all duration-300 border-4 border-background"
               aria-label="Nova OS"
               onClick={() => {
                 // Sem conexão o formulário online não grava: abre o Modo Campo, que funciona offline
@@ -412,7 +412,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <span className="text-[10px] mt-1 font-medium">Mais</span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" side="top" className="w-60 glass-panel border-white/10 mb-2">
+            <DropdownMenuContent align="end" side="top" className="w-60 glass-panel border-border mb-2">
               {[...navItems, ...technicalItems]
                 .filter((item) => !["/", "/ordens-servico", "/campo"].includes(item.path))
                 .map((item) => (

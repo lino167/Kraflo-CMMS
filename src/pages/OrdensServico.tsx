@@ -343,7 +343,7 @@ export default function OrdensServico() {
 
   return (
     <main className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
           <h1 className="text-2xl font-mono font-bold text-foreground tracking-tight flex items-center gap-2">
             Painel Operacional do Técnico
@@ -353,7 +353,7 @@ export default function OrdensServico() {
       </div>
 
       <Tabs defaultValue="lista-os" className="w-full space-y-6">
-        <TabsList className="bg-secondary/40 border border-white/5 p-1 rounded-xl flex w-full justify-start overflow-x-auto h-auto sm:inline-flex md:w-auto">
+        <TabsList className="bg-secondary/40 border border-border p-1 rounded-xl flex w-full justify-start overflow-x-auto h-auto sm:inline-flex md:w-auto">
           <TabsTrigger value="lista-os" className="font-mono text-xs gap-2 py-2.5 px-4 rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-foreground data-[state=active]:shadow-neon transition-all">
             <ClipboardList className="h-4 w-4 text-primary" />
             Minhas OS ({totalCount})
@@ -555,7 +555,7 @@ export default function OrdensServico() {
                 return (
                   <div
                     key={prev.id}
-                    className="p-5 rounded-xl bg-secondary/15 border border-white/5 hover:border-blue-500/30 transition-all duration-300 flex flex-col justify-between relative group"
+                    className="p-5 rounded-xl bg-secondary/15 border border-border hover:border-blue-500/30 transition-all duration-300 flex flex-col justify-between relative group"
                   >
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -578,7 +578,7 @@ export default function OrdensServico() {
                         </p>
                       </div>
 
-                      <div className="p-3.5 rounded-lg bg-secondary/30 border border-white/5 space-y-1.5">
+                      <div className="p-3.5 rounded-lg bg-secondary/30 border border-border space-y-1.5">
                         <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                           <Clock className="h-3.5 w-3.5 text-primary" />
                           {prev.tarefa?.titulo || 'Tarefa Geral'}
@@ -589,7 +589,7 @@ export default function OrdensServico() {
                       </div>
                     </div>
 
-                    <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between">
+                    <div className="mt-5 pt-4 border-t border-border flex items-center justify-between">
                       <span className="text-[10px] font-mono text-muted-foreground uppercase">
                         Plano: {prev.tarefa?.plano?.periodicidade || 'mensal'}
                       </span>
@@ -606,7 +606,7 @@ export default function OrdensServico() {
               })}
             </div>
           ) : (
-            <div className="p-12 text-center rounded-xl bg-secondary/10 border border-white/5 space-y-3">
+            <div className="p-12 text-center rounded-xl bg-secondary/10 border border-border space-y-3">
               <UserCheck className="h-10 w-10 text-muted-foreground/30 mx-auto" />
               <h3 className="font-mono font-bold text-lg text-foreground">Tudo em dia!</h3>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">Nenhuma manutenção preventiva pendente para a sua empresa no momento.</p>
@@ -626,7 +626,7 @@ export default function OrdensServico() {
                 return (
                   <div
                     key={sol.id}
-                    className="p-5 rounded-xl bg-secondary/15 border border-white/5 hover:border-warning/30 transition-all duration-300 flex flex-col justify-between relative group"
+                    className="p-5 rounded-xl bg-secondary/15 border border-border hover:border-warning/30 transition-all duration-300 flex flex-col justify-between relative group"
                   >
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -649,7 +649,7 @@ export default function OrdensServico() {
                         </p>
                       </div>
 
-                      <div className="p-3.5 rounded-lg bg-secondary/30 border border-white/5 space-y-1.5">
+                      <div className="p-3.5 rounded-lg bg-secondary/30 border border-border space-y-1.5">
                         <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                           <AlertTriangle className="h-3.5 w-3.5 text-warning" />
                           Problema Relatado
@@ -660,7 +660,7 @@ export default function OrdensServico() {
                       </div>
                     </div>
 
-                    <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between">
+                    <div className="mt-5 pt-4 border-t border-border flex items-center justify-between">
                       <span className="text-[10px] font-mono text-muted-foreground uppercase">
                         Chamado pendente
                       </span>
@@ -677,7 +677,7 @@ export default function OrdensServico() {
               })}
             </div>
           ) : (
-            <div className="p-12 text-center rounded-xl bg-secondary/10 border border-white/5 space-y-3">
+            <div className="p-12 text-center rounded-xl bg-secondary/10 border border-border space-y-3">
               <UserCheck className="h-10 w-10 text-muted-foreground/30 mx-auto" />
               <h3 className="font-mono font-bold text-lg text-foreground">Sem pendências!</h3>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">Não há solicitações de operadores aguardando verificação no momento.</p>

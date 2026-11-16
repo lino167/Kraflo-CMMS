@@ -76,7 +76,7 @@ interface Maquina {
 const CRITICIDADE: Record<string, { label: string; className: string }> = {
   A: { label: 'A · Crítica', className: 'border-red-500/30 bg-red-500/10 text-red-400' },
   B: { label: 'B · Média', className: 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400' },
-  C: { label: 'C · Baixa', className: 'border-white/10 bg-white/5 text-muted-foreground' },
+  C: { label: 'C · Baixa', className: 'border-border bg-white/5 text-muted-foreground' },
 };
 
 export default function Configuracoes() {
@@ -242,7 +242,7 @@ export default function Configuracoes() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-primary/20 rounded-lg">
-            <Settings2 className="h-6 w-6 text-primary shadow-neon" />
+            <Settings2 className="h-6 w-6 text-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-mono font-bold tracking-tight text-foreground uppercase">
@@ -256,7 +256,7 @@ export default function Configuracoes() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-muted/50 border border-white/5 p-1 rounded-xl">
+        <TabsList className="bg-muted/50 border border-border p-1 rounded-xl">
           <TabsTrigger value="maquinas" className="gap-2 rounded-lg px-6">
             <Cpu className="h-4 w-4" /> Máquinas
           </TabsTrigger>
@@ -277,11 +277,11 @@ export default function Configuracoes() {
               if (!open) setEditingMaquina(null);
             }}>
               <DialogTrigger asChild>
-                <Button className="gap-2 shadow-neon-blue">
+                <Button className="gap-2">
                   <Plus className="h-4 w-4" /> Nova Máquina
                 </Button>
               </DialogTrigger>
-              <DialogContent className="glass-panel border-white/10 sm:max-w-[500px]">
+              <DialogContent className="glass-panel border-border sm:max-w-[500px]">
                 <form onSubmit={(e) => {
                   e.preventDefault();
                   const formData = new FormData(e.currentTarget);
@@ -360,7 +360,7 @@ export default function Configuracoes() {
             </Dialog>
           </div>
 
-          <Card className="glass-panel border-white/5 overflow-hidden">
+          <Card className="glass-panel border-border overflow-hidden">
             <CardContent className="p-0">
               {/* Desktop Table */}
               <div className="hidden md:block">
@@ -484,7 +484,7 @@ export default function Configuracoes() {
             setIsSetorDialogOpen(true);
           }}>
             <div className="p-3 bg-primary/10 rounded-full group-hover:scale-110 transition-transform">
-              <Plus className="h-6 w-6 text-primary shadow-neon" />
+              <Plus className="h-6 w-6 text-primary" />
             </div>
             <p className="mt-4 font-mono text-sm uppercase tracking-wider text-muted-foreground group-hover:text-primary">Novo Setor</p>
           </Card>
@@ -492,7 +492,7 @@ export default function Configuracoes() {
           {setoresLoading ? (
             <div className="col-span-full py-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           ) : setores?.map((s) => (
-            <Card key={s.id} className="glass-panel border-white/5 hover:border-primary/30 transition-all group overflow-hidden">
+            <Card key={s.id} className="glass-panel border-border hover:border-primary/30 transition-all group overflow-hidden">
               <CardHeader className="p-5 pb-2">
                 <div className="flex items-center justify-between">
                   <div className="bg-blue-500/10 p-2 rounded-lg">
@@ -521,7 +521,7 @@ export default function Configuracoes() {
                   {s.descricao || 'Sem descrição cadastrada.'}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-5 pt-4 border-t border-white/5 bg-black/20">
+              <CardContent className="p-5 pt-4 border-t border-border bg-black/20">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Cpu className="h-3 w-3" /> 
@@ -550,7 +550,7 @@ export default function Configuracoes() {
         setIsSetorDialogOpen(open);
         if (!open) setEditingSetor(null);
       }}>
-        <DialogContent className="glass-panel border-white/10 sm:max-w-[425px]">
+        <DialogContent className="glass-panel border-border sm:max-w-[425px]">
           <form onSubmit={(e) => {
             e.preventDefault();
             const formData = new FormData(e.currentTarget);

@@ -118,7 +118,7 @@ function HelpBadge({ text }: { text: string }) {
           ?
         </span>
       </TooltipTrigger>
-      <TooltipContent className="bg-secondary/95 backdrop-blur-md border border-white/10 text-muted-foreground text-xs p-3 rounded-xl max-w-[260px] shadow-neon animate-in fade-in-50 zoom-in-95 z-50">
+      <TooltipContent className="bg-secondary/95 border border-border text-muted-foreground text-xs p-3 rounded-xl max-w-[260px] animate-in fade-in-50 zoom-in-95 z-50">
         <p className="font-sans leading-relaxed text-foreground/90 font-medium">{text}</p>
       </TooltipContent>
     </Tooltip>
@@ -480,12 +480,12 @@ export function Dashboard({ onAskAI }: DashboardProps) {
     <TooltipProvider delayDuration={150}>
       <div className="space-y-6 animate-slide-up-fade">
         {/* Header with Filters */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-4 rounded-xl border-white/5 shadow-surface">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-4 rounded-xl border-border">
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
         </div>
 
         <Tabs defaultValue="operacional" className="space-y-6 w-full">
-          <TabsList className="grid w-full md:w-fit grid-cols-2 md:grid-cols-4 glass-panel border border-white/10 p-1 h-auto rounded-xl gap-1">
+          <TabsList className="grid w-full md:w-fit grid-cols-2 md:grid-cols-4 glass-panel border border-border p-1 h-auto rounded-xl gap-1">
             <TabsTrigger value="operacional" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
               Visão Operacional
             </TabsTrigger>
@@ -504,7 +504,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
           <TabsContent value="operacional" className="space-y-6 animate-slide-in-right">
             {/* KPI Cards - Bento Grid High Density */}
             <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4">
-              <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5">
+              <Card className="col-span-2 xl:col-span-2 industrial-card border-border">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
                     OS Abertas
@@ -518,7 +518,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                 </CardContent>
               </Card>
 
-              <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5">
+              <Card className="col-span-2 xl:col-span-2 industrial-card border-border">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
                     Fechadas Hoje
@@ -532,7 +532,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                 </CardContent>
               </Card>
 
-              <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5 relative overflow-hidden group">
+              <Card className="col-span-2 xl:col-span-2 industrial-card border-border relative overflow-hidden group">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
                     OS Urgentes
@@ -547,7 +547,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                 {stats.osUrgentes > 0 && <div className="absolute top-0 right-0 w-1 h-full bg-red-500 animate-pulse-neon" />}
               </Card>
 
-              <Card className="col-span-2 xl:col-span-2 industrial-card border-white/5">
+              <Card className="col-span-2 xl:col-span-2 industrial-card border-border">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
                     Velocidade (MTTR)
@@ -563,7 +563,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="industrial-card border-white/5">
+              <Card className="industrial-card border-border">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
                     Tempo na Fila (Idade Média)
@@ -576,7 +576,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                 </CardContent>
               </Card>
 
-              <Card className="industrial-card border-white/5">
+              <Card className="industrial-card border-border">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
                     Atrasadas (≥24h)
@@ -589,7 +589,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                 </CardContent>
               </Card>
 
-               <Card className="industrial-card border-white/5">
+               <Card className="industrial-card border-border">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
                     Novas Quebras (7 dias)
@@ -608,7 +608,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                 </CardContent>
               </Card>
 
-              <Card className="industrial-card border-white/5">
+              <Card className="industrial-card border-border">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
                     Consertos Entregues (7 dias)
@@ -646,7 +646,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
           {/* --- ABA EQUIPAMENTOS --- */}
           <TabsContent value="equipamentos" className="space-y-6 animate-slide-in-right">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="col-span-2 industrial-card border-white/5">
+              <Card className="col-span-2 industrial-card border-border">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
                     Taxa de Resolução
@@ -660,7 +660,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                 </CardContent>
               </Card>
 
-              <Card className="col-span-2 industrial-card border-white/5">
+              <Card className="col-span-2 industrial-card border-border">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
                     OS Reincidentes
@@ -690,7 +690,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                </div>
 
                {/* Equipamentos Problemáticos */}
-               <Card className="glass-panel border-white/5">
+               <Card className="glass-panel border-border">
                 <CardHeader>
                   <CardTitle className="font-mono text-lg flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 text-orange-500" />
@@ -705,14 +705,14 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                   <div className="space-y-3">
                     {equipamentosProblematicos.length > 0 ? (
                       equipamentosProblematicos.map((equip: EquipamentoProblematico, index: number) => (
-                        <div key={index} className="p-3 rounded-lg bg-secondary/30 border border-white/5 hover:bg-secondary/50 transition-colors">
+                        <div key={index} className="p-3 rounded-lg bg-secondary/30 border border-border hover:bg-secondary/50 transition-colors">
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <Settings className="h-4 w-4 text-muted-foreground" />
                                 <span className="font-medium text-sm truncate text-foreground">{equip.nome}</span>
                                 {equip.tag && (
-                                  <Badge variant="outline" className="text-xs bg-black/20 border-white/10">{equip.tag}</Badge>
+                                  <Badge variant="outline" className="text-xs bg-black/20 border-border">{equip.tag}</Badge>
                                 )}
                               </div>
                               <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
@@ -745,7 +745,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
               <div className="glow-border rounded-xl">
                 <CategoryDistributionCard dateRange={dateRange} />
               </div>
-              <Card className="glass-panel border-white/5">
+              <Card className="glass-panel border-border">
                 <CardHeader>
                 <CardTitle className="font-mono text-lg flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-primary" />
@@ -789,7 +789,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
             </Card>
            </div>
 
-           <Card className="glass-panel border-white/5 col-span-1 lg:col-span-2">
+           <Card className="glass-panel border-border col-span-1 lg:col-span-2">
             <CardHeader>
               <CardTitle className="font-mono text-lg flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-primary" />
@@ -800,14 +800,14 @@ export function Dashboard({ onAskAI }: DashboardProps) {
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-3">
                   {recentOS.map((os: OS, index: number) => (
-                    <div key={os.id} className={`p-4 rounded-xl bg-secondary/30 border border-white/5 hover:bg-secondary/60 transition-colors animate-slide-up-fade stagger-${(index % 5) + 1}`}>
+                    <div key={os.id} className={`p-4 rounded-xl bg-secondary/30 border border-border hover:bg-secondary/60 transition-colors animate-slide-up-fade stagger-${(index % 5) + 1}`}>
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <span className="font-mono text-sm font-bold text-primary">OS #{os.id}</span>
-                            <Badge variant="outline" className={`${getStatusColor(os.status_os)} border-transparent bg-background/50 backdrop-blur`}>{os.status_os}</Badge>
-                            {os.prioridade && <Badge variant="outline" className={`${getPrioridadeColor(os.prioridade)} border-transparent bg-background/50 backdrop-blur`}>{os.prioridade}</Badge>}
-                            {os.tipo_manutencao && <Badge variant="outline" className="bg-secondary/50 border-white/10">{os.tipo_manutencao}</Badge>}
+                            <Badge variant="outline" className={`${getStatusColor(os.status_os)} border-transparent bg-background/50`}>{os.status_os}</Badge>
+                            {os.prioridade && <Badge variant="outline" className={`${getPrioridadeColor(os.prioridade)} border-transparent bg-background/50`}>{os.prioridade}</Badge>}
+                            {os.tipo_manutencao && <Badge variant="outline" className="bg-secondary/50 border-border">{os.tipo_manutencao}</Badge>}
                           </div>
                           <h4 className="font-medium text-foreground truncate text-base">
                             {os.equipamento_nome}
@@ -815,7 +815,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                           </h4>
                           {os.descricao_problema && <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{os.descricao_problema}</p>}
                         </div>
-                        <div className="text-right text-xs text-muted-foreground shrink-0 bg-background/30 p-2 rounded-lg border border-white/5">
+                        <div className="text-right text-xs text-muted-foreground shrink-0 bg-background/30 p-2 rounded-lg border border-border">
                           <div className="flex items-center gap-1.5 justify-end">
                             <Calendar className="h-3 w-3 text-primary" />
                             {format(parseISO(os.data_abertura), 'dd/MM/yyyy')}

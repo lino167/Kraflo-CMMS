@@ -404,7 +404,7 @@ export function OSForm({ open, onClose, onSuccess, editingOS, prefilledData }: O
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full glass-panel border-white/10 shadow-surface p-6 sm:p-8">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full glass-panel border-border p-6 sm:p-8">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-xl font-display text-primary flex items-center gap-2">
             <span className="h-6 w-1 bg-primary rounded-full"></span>
@@ -679,7 +679,7 @@ export function OSForm({ open, onClose, onSuccess, editingOS, prefilledData }: O
                 </Button>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/10 rounded-xl cursor-pointer hover:bg-white/5 hover:border-primary/50 transition-all duration-300">
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-xl cursor-pointer hover:bg-white/5 hover:border-primary/50 transition-all duration-300">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6 text-muted-foreground hover:text-primary transition-colors">
                   <ImageIcon className="h-8 w-8 mb-2" />
                   <p className="text-sm">
@@ -722,11 +722,11 @@ export function OSForm({ open, onClose, onSuccess, editingOS, prefilledData }: O
             </div>
           )}
 
-          <DialogFooter className="mt-8 pt-4 border-t border-white/5 flex gap-2">
+          <DialogFooter className="mt-8 pt-4 border-t border-border flex gap-2">
             <Button type="button" variant="ghost" onClick={onClose} className="hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading} className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow transition-all">
+            <Button type="submit" disabled={isLoading} className="bg-primary text-primary-foreground hover:bg-primary/90 transition-all">
               {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {editingOS ? 'Salvar Alterações' : 'Criar OS'}
             </Button>

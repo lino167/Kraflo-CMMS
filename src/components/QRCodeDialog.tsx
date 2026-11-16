@@ -127,7 +127,7 @@ function QRPanel({ item, title, subtitle }: { item: QRCodeItem; title: string; s
 export function QRCodeDialog({ open, onOpenChange, title, subtitle, items }: QRCodeDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-panel border-white/10 sm:max-w-[420px]">
+      <DialogContent className="glass-panel border-border sm:max-w-[420px]">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{subtitle || 'Imprima e fixe a etiqueta no local.'}</DialogDescription>

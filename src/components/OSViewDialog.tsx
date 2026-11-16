@@ -448,7 +448,7 @@ export function OSViewDialog({
                   <History className="h-4 w-4" />
                   Histórico da OS
                 </div>
-                <ol className="space-y-2 border-l border-white/10 pl-4">
+                <ol className="space-y-2 border-l border-border pl-4">
                   {historico.map((h) => (
                     <li key={h.id} className="text-sm">
                       <p>{descreverEvento(h)}</p>
