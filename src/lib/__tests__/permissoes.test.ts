@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { minimoDaRota, papelDe, pode, podeAcessarRota, rotaInicial, temNivel } from '@/lib/permissoes'
+import { minimoDaRota, papelDe, pode, podeAcessarRota, podeExcluirOS, rotaInicial, temNivel } from '@/lib/permissoes'
 
 describe('papelDe', () => {
   it('sem papel de admin é técnico', () => {
@@ -84,5 +84,28 @@ describe('ações', () => {
       expect(pode('admin_empresa', a), a).toBe(true)
       expect(pode('admin_kraflo', a), a).toBe(true)
     }
+  })
+})
+
+describe('podeExcluirOS', () => {
+  const eu = 'user-1'
+  it('a administração exclui qualquer OS, com ou sem criador', () => {
+    expect(podeExcluirOS('admin_empresa', { criado_por: 'outro' }, eu)).toBe(true)
+    expect(podeExcluirOS('admin_empresa', { criado_por: null }, eu)).toBe(true)
+    expect(podeExcluirOS('admin_kraflo', {}, eu)).toBe(true)
+  })
+  it('o técnico exclui a OS que ele criou', () => {
+    expect(podeExcluirOS('tecnico', { criado_por: eu }, eu)).toBe(true)
+  })
+  it('o técnico não exclui OS de outra pessoa', () => {
+    expect(podeExcluirOS('tecnico', { criado_por: 'outro' }, eu)).toBe(false)
+  })
+  it('OS sem criador (bot ou anterior ao campo) só a administração exclui', () => {
+    expect(podeExcluirOS('tecnico', { criado_por: null }, eu)).toBe(false)
+    expect(podeExcluirOS('tecnico', {}, eu)).toBe(false)
+  })
+  it('sem usuário identificado, o técnico não exclui', () => {
+    expect(podeExcluirOS('tecnico', { criado_por: eu }, null)).toBe(false)
+    expect(podeExcluirOS('tecnico', { criado_por: eu }, undefined)).toBe(false)
   })
 })

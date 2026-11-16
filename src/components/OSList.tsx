@@ -76,6 +76,8 @@ interface OS {
   subcategoria_parada_id?: string | null;
   categoria_problema_id?: string | null;
   subcategoria_problema_id?: string | null;
+  /** Quem abriu a OS (preenchido pelo banco). Define quem, além da administração, pode excluí-la. */
+  criado_por?: string | null;
 }
 
 interface Tecnico {
@@ -149,17 +151,29 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
 
     setIsDeleting(true);
     try {
-      const { error } = await supabase
+      // .select() devolve as linhas apagadas: o banco recusa sem erro quando a regra não permite
+      const { data, error } = await supabase
         .from('ordens_de_servico')
         .delete()
-        .eq('id', deletingOS.id);
+        .eq('id', deletingOS.id)
+        .select('id');
 
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        toast.error('Você não tem permissão para excluir esta OS. Só a administração e quem a criou podem excluí-la.');
+        return;
+      }
 
       toast.success('OS excluída com sucesso!');
       onRefresh();
     } catch (error) {
-      handleError(error);
+      // 23503: a OS nasceu de um agendamento preventivo e ainda está ligada a ele
+      if ((error as { code?: string })?.code === '23503') {
+        toast.error('Esta OS foi gerada por um agendamento preventivo e não pode ser excluída.');
+      } else {
+        handleError(error);
+      }
     } finally {
       setIsDeleting(false);
       setDeletingOS(null);
@@ -589,7 +603,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                         )}
                         Exportar PDF
                       </DropdownMenuItem>
-                      {(os.status_os === 'Aberta' || os.status_os === 'Em manutenção' || permissoes.pode('os.reabrir') || permissoes.pode('os.excluir')) && (
+                      {(os.status_os === 'Aberta' || os.status_os === 'Em manutenção' || permissoes.pode('os.reabrir') || permissoes.podeExcluirOS(os)) && (
                         <DropdownMenuSeparator />
                       )}
                       {(os.status_os === 'Aberta' || os.status_os === 'Em manutenção') ? (
@@ -609,7 +623,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                           Reabrir OS
                         </DropdownMenuItem>
                       ) : null}
-                      {permissoes.pode('os.excluir') && (
+                      {permissoes.podeExcluirOS(os) && (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -694,7 +708,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                               )}
                               Exportar PDF
                             </DropdownMenuItem>
-                            {(os.status_os === 'Aberta' || os.status_os === 'Em manutenção' || permissoes.pode('os.reabrir') || permissoes.pode('os.excluir')) && (
+                            {(os.status_os === 'Aberta' || os.status_os === 'Em manutenção' || permissoes.pode('os.reabrir') || permissoes.podeExcluirOS(os)) && (
                               <DropdownMenuSeparator />
                             )}
                             {(os.status_os === 'Aberta' || os.status_os === 'Em manutenção') ? (
@@ -714,7 +728,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                                 Reabrir OS
                               </DropdownMenuItem>
                             ) : null}
-                            {permissoes.pode('os.excluir') && (
+                            {permissoes.podeExcluirOS(os) && (
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem

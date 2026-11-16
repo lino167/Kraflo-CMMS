@@ -1,13 +1,26 @@
 -- =====================================================================
--- COMO DESFAZER as migrations aplicadas em 16/11/2026 no banco de produção:
+-- COMO DESFAZER as migrations aplicadas em 16/11/2026 no banco de produção
+-- (a 4 só vale se ela tiver sido aplicada):
 --   1) 20261111120400_seguranca_funcoes_e_policies
 --   2) 20261116120000_fechar_os_idempotencia_por_operacao
 --   3) 20261116130000_separacao_admin_tecnico
+--   4) 20261116140000_tecnico_exclui_as_proprias_os
 --
 -- Fica FORA de supabase/migrations de propósito: não deve rodar sozinho.
--- Use só se algo quebrar. Rode na ordem inversa (3, 2, 1), um bloco por vez.
+-- Use só se algo quebrar. Rode na ordem inversa (4, 3, 2, 1), um bloco por vez.
 -- O estado anterior foi capturado de pg_policies e pg_proc antes de aplicar.
 -- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- DESFAZER 4) técnico exclui as próprias OS (20261116140000) — só se tiver sido aplicada
+-- Volta a exclusão só para a administração. A coluna criado_por pode ficar (é inofensiva).
+-- ---------------------------------------------------------------------
+DROP POLICY IF EXISTS "kraflo_os_delete_admin_ou_criador" ON public.ordens_de_servico;
+CREATE POLICY "kraflo_os_admin_delete" ON public.ordens_de_servico
+  FOR DELETE TO authenticated
+  USING (empresa_id = public.get_user_empresa_id(auth.uid()) AND public.is_company_admin(auth.uid()));
+DROP TRIGGER IF EXISTS trg_os_criado_por ON public.ordens_de_servico;
+DROP FUNCTION IF EXISTS public.fn_os_criado_por();
 
 -- ---------------------------------------------------------------------
 -- DESFAZER 3) separação admin x técnico: volta a escrita ampla da empresa

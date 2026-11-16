@@ -22,7 +22,7 @@ Os papéis são cumulativos: admin da empresa faz tudo que o técnico faz, e o a
 |---|---|---|
 | **Operação** | | |
 | Modo Campo | ✅ | ✅ |
-| Ordens de Serviço | ✅ abre, edita, fecha | ✅ + reabre e exclui |
+| Ordens de Serviço | ✅ abre, edita, fecha e **exclui as que ele criou** | ✅ + reabre e exclui qualquer uma |
 | Biblioteca | ✅ consulta | ✅ + envia, edita, reindexa, exclui manuais |
 | Estoque de Peças | ✅ consulta | ✅ + cadastra peças e lança movimentações |
 | Assistente IA | ✅ | ✅ + dispara a indexação das OS |
@@ -46,7 +46,7 @@ Migration: `supabase/migrations/20261116130000_separacao_admin_tecnico.sql`.
 
 | Tabela | Técnico | Admin |
 |---|---|---|
-| `ordens_de_servico` | lê, abre e atualiza (fechar inclusive); **não exclui** | tudo |
+| `ordens_de_servico` | lê, abre e atualiza (fechar inclusive); exclui **só as que criou** (`criado_por`) | tudo |
 | `execucoes_preventivas` | lê e atualiza (iniciar/concluir); não cria nem exclui | tudo |
 | `planos_manutencao`, `tarefas_preventivas` | só lê | tudo |
 | `categorias_parada`, `categorias_problema`, `subcategorias` | só lê | tudo |
@@ -95,6 +95,20 @@ Os gatilhos do banco (histórico, fila de indexação, estoque) continuaram func
 - Ativar a **proteção contra senhas vazadas** (Authentication → Policies). Está desligada.
 - Configurar as URLs de redirecionamento e o SMTP da recuperação de senha (ver `requisitos.md`, seção 6).
 - O relatório de segurança ainda lista funções auxiliares (`has_role`, `is_admin_kraflo`, `is_company_admin`, `get_user_empresa_id`) executáveis sem login. Elas são usadas dentro das políticas e aceitam um id de usuário como parâmetro; restringi-las pede teste cuidadoso, então ficou para depois.
+
+## Exclusão de OS pelo técnico (migration `20261116140000`)
+
+O técnico pode excluir as OS que ele mesmo criou; as dos outros, só a administração.
+
+- O banco passa a guardar o criador em `ordens_de_servico.criado_por` (usuário que abriu a OS). Um gatilho o preenche na abertura **ignorando o que o navegador enviar**, e só a administração pode alterá-lo depois. Assim não dá para "forjar" nem "adotar" a OS de outra pessoa.
+- `tecnico_id` não serve para isso: é o responsável, e a administração pode abrir uma OS em nome de um técnico.
+- OS abertas pelo bot e as que já existiam não têm criador (`NULL`): só a administração as exclui. Não há preenchimento retroativo, porque seria um palpite.
+- A exclusão passa a ser: administração da empresa **ou** o criador, sempre dentro da empresa.
+- **Estado: escrita e testada em transação que se desfaz, mas ainda NÃO aplicada em produção.** Até ser aplicada, o técnico não vê "Excluir" em nenhuma OS (a coluna ainda não existe).
+
+Cuidados que a exclusão tem, para quem decidir ampliar ou restringir:
+- Excluir apaga também as peças usadas, o histórico e os orçamentos ligados à OS. O **estoque já baixado não volta**.
+- Uma OS gerada por um agendamento preventivo **não pode ser excluída** por ninguém: o banco recusa (a ligação com a execução preventiva é `NO ACTION`). A tela avisa o motivo.
 
 ## Limites conhecidos
 

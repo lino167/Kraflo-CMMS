@@ -64,7 +64,7 @@ export const rotaInicial = (papel: Papel): string => (papel === 'tecnico' ? '/ca
  * ------------------------------------------------------------------ */
 
 const ACOES = {
-  /** Excluir OS: definitivo, só administração (o banco também recusa). */
+  /** Excluir QUALQUER OS da empresa: definitivo, só administração. O técnico exclui só as que criou (podeExcluirOS). */
   'os.excluir': 'admin_empresa',
   /** Reabrir uma OS já fechada: correção de registro, só administração. */
   'os.reabrir': 'admin_empresa',
@@ -83,3 +83,17 @@ const ACOES = {
 export type Acao = keyof typeof ACOES
 
 export const pode = (papel: Papel, acao: Acao): boolean => temNivel(papel, ACOES[acao])
+
+/**
+ * Pode excluir esta OS? A administração exclui qualquer OS da empresa; o técnico, só as que ele mesmo criou
+ * (`criado_por` é preenchido pelo banco na abertura). OS do bot e as anteriores a esse campo não têm criador:
+ * só a administração exclui. O banco aplica a mesma regra; aqui só se decide se o botão aparece.
+ */
+export function podeExcluirOS(
+  papel: Papel,
+  os: { criado_por?: string | null },
+  usuarioId: string | null | undefined,
+): boolean {
+  if (pode(papel, 'os.excluir')) return true
+  return !!usuarioId && !!os.criado_por && os.criado_por === usuarioId
+}
