@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { AlertTriangle, Camera, CheckCircle2, Clock, Loader2, Lock, Plus, RefreshCw, Trash2, Wifi, WifiOff, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/integrations/supabase/client'
+import { ReincidenciaAlert } from '@/components/ReincidenciaAlert'
 import { useOfflineSync } from '@/hooks/useOfflineSync'
 import { offlineQueue, secureStore } from '@/lib/offline/local'
 import { compressPhoto } from '@/lib/offline/photo'
@@ -31,6 +33,21 @@ const selectClass =
   'h-11 w-full rounded-md border border-white/10 bg-secondary/30 px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary'
 
 type Tab = 'nova' | 'abertas' | 'pendencias'
+
+interface ReincidenciaData {
+  encontrou: boolean
+  total_recentes: number
+  dias_limite?: number
+  ultima_os?: {
+    id: number
+    descricao_problema: string | null
+    diagnostico_solucao: string | null
+    data_fechamento: string
+    tecnico_id: number
+    tecnico_nome: string | null
+    dias_desde_fechamento: number
+  }
+}
 
 /** OS mostrada na tela: pode ser do servidor ou ainda só no aparelho. */
 interface OSView {
@@ -118,6 +135,31 @@ export default function Campo() {
   const [form, setForm] = useState(emptyForm)
   const [closing, setClosing] = useState<OSView | null>(null)
   const [closeForm, setCloseForm] = useState(emptyClose)
+  const [reincidencia, setReincidencia] = useState<ReincidenciaData | null>(null)
+
+  // Alerta de reincidência (igual à versão web): informa, não bloqueia.
+  // Precisa do servidor; sem conexão o aviso simplesmente não aparece.
+  const tagSelecionada = snap?.maquinas.find((m) => m.id === form.maquina_id)?.tag ?? null
+  useEffect(() => {
+    setReincidencia(null)
+    if (!online || !empresaId || !tagSelecionada || tagSelecionada.length < 2) return
+    let cancelado = false
+    void (async () => {
+      try {
+        const { data, error } = await (supabase as any).rpc('fn_check_reincidencia', {
+          p_empresa_id: empresaId,
+          p_tag: tagSelecionada.trim(),
+          p_dias_limite: 60,
+        })
+        if (!cancelado && !error) setReincidencia(data as ReincidenciaData)
+      } catch {
+        // sem aviso: não impede a abertura
+      }
+    })()
+    return () => {
+      cancelado = true
+    }
+  }, [online, empresaId, tagSelecionada])
 
   // Dados de apoio: primeiro o que está no aparelho, depois atualiza se houver conexão
   useEffect(() => {
@@ -268,6 +310,7 @@ export default function Campo() {
     if (!closing || !ownerId || !empresaId) return
     if (!closeForm.categoria_problema_id) return toast.error('Selecione a causa raiz.')
     if (closeForm.diagnostico_solucao.trim().length < 5) return toast.error('Descreva o diagnóstico e a solução (mínimo de 5 caracteres).')
+    if (!closeForm.notas_finais.trim()) return toast.error('Preencha as notas finais / serviço realizado.')
 
     await offlineQueue.add({
       kind: 'close_os',
@@ -279,7 +322,7 @@ export default function Campo() {
       close: {
         status_os: closeForm.status_os,
         diagnostico_solucao: closeForm.diagnostico_solucao.trim(),
-        notas_finais: closeForm.notas_finais.trim() || null,
+        notas_finais: closeForm.notas_finais.trim(),
         categoria_problema_id: closeForm.categoria_problema_id,
         subcategoria_problema_id: closeForm.subcategoria_problema_id || null,
         closed_at: new Date().toISOString(),
@@ -512,6 +555,10 @@ export default function Campo() {
             </div>
           )}
 
+          {reincidencia?.encontrou && tagSelecionada && (
+            <ReincidenciaAlert data={reincidencia} tag={tagSelecionada} />
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="local">Local (opcional)</Label>
             <Input id="local" className="h-11" value={form.localizacao} onChange={(e) => setForm({ ...form, localizacao: e.target.value })} />
@@ -719,7 +766,7 @@ export default function Campo() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notas">Notas finais (opcional)</Label>
+              <Label htmlFor="notas">Notas finais / serviço realizado</Label>
               <Textarea id="notas" rows={2} value={closeForm.notas_finais} onChange={(e) => setCloseForm({ ...closeForm, notas_finais: e.target.value })} />
             </div>
 
