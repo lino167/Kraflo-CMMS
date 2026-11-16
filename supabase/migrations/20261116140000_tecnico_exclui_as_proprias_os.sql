@@ -1,5 +1,5 @@
 -- =====================================================================
--- O técnico pode excluir as OS que ele mesmo criou.
+-- O técnico pode excluir as OS que ele mesmo criou, enquanto estiverem ABERTAS.
 --
 -- Até aqui só a administração excluía OS. Para o técnico excluir "as suas", o banco
 -- precisa saber quem criou cada OS. A coluna tecnico_id não serve: é o RESPONSÁVEL,
@@ -13,7 +13,9 @@
 --   * OS abertas pelo bot (service_role) e as que já existiam ficam sem criador (NULL):
 --     essas só a administração exclui. Não há preenchimento retroativo: seria um palpite.
 --
--- Exclusão passa a ser: administração da empresa OU o próprio criador, sempre na empresa dele.
+-- Exclusão passa a ser: administração da empresa, OU o próprio criador enquanto a OS estiver
+-- 'Aberta' ou 'Em manutenção', sempre na empresa dele. Depois de fechada, só a administração exclui:
+-- excluir apaga as peças usadas e o histórico, e o estoque já baixado não volta.
 -- Rodar DEPOIS de 20261116130000_separacao_admin_tecnico.sql.
 -- =====================================================================
 
@@ -53,12 +55,15 @@ CREATE TRIGGER trg_os_criado_por
   BEFORE INSERT OR UPDATE ON public.ordens_de_servico
   FOR EACH ROW EXECUTE FUNCTION public.fn_os_criado_por();
 
--- Exclusão: administração da empresa ou o criador da OS
+-- Exclusão: administração da empresa, ou o criador enquanto a OS não foi fechada
 DROP POLICY IF EXISTS "kraflo_os_admin_delete" ON public.ordens_de_servico;
 DROP POLICY IF EXISTS "kraflo_os_delete_admin_ou_criador" ON public.ordens_de_servico;
 CREATE POLICY "kraflo_os_delete_admin_ou_criador" ON public.ordens_de_servico
   FOR DELETE TO authenticated
   USING (
     empresa_id = public.get_user_empresa_id(auth.uid())
-    AND (public.is_company_admin(auth.uid()) OR criado_por = auth.uid())
+    AND (
+      public.is_company_admin(auth.uid())
+      OR (criado_por = auth.uid() AND status_os IN ('Aberta', 'Em manutenção'))
+    )
   );

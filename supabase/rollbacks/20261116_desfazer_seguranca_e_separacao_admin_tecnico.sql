@@ -13,7 +13,7 @@
 
 -- ---------------------------------------------------------------------
 -- DESFAZER 4) técnico exclui as próprias OS (20261116140000) — só se tiver sido aplicada
--- Volta a exclusão só para a administração. A coluna criado_por pode ficar (é inofensiva).
+-- Volta a exclusão só para a administração (o técnico perde a exclusão das próprias OS abertas). A coluna criado_por pode ficar (é inofensiva).
 -- ---------------------------------------------------------------------
 DROP POLICY IF EXISTS "kraflo_os_delete_admin_ou_criador" ON public.ordens_de_servico;
 CREATE POLICY "kraflo_os_admin_delete" ON public.ordens_de_servico

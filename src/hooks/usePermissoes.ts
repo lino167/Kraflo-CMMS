@@ -9,7 +9,7 @@ export function usePermissoes() {
     papel,
     ehAdmin: papel !== 'tecnico',
     pode: (acao: Acao) => pode(papel, acao),
-    /** Administração: qualquer OS da empresa. Técnico: só as que ele criou. */
-    podeExcluirOS: (os: { criado_por?: string | null }) => podeExcluirOS(papel, os, user?.id),
+    /** Administração: qualquer OS da empresa. Técnico: só as que ele criou e que ainda estão abertas. */
+    podeExcluirOS: (os: { criado_por?: string | null; status_os?: string | null }) => podeExcluirOS(papel, os, user?.id),
   }
 }

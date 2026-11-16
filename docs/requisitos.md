@@ -101,7 +101,7 @@ Sem página: o bot do Telegram (`telegram-webhook`), que será aposentado em fav
 - **RF-OS-07** ✅ Solicitações: converter um chamado do portal em OS.
 - **RF-OS-08** 🗑️ Selo "FORMATO AUDITÁVEL REGIONAL SE REG-9001", botão "Validar Trilha" e textos citando ISO 9001 removidos: sugeriam uma conformidade que o sistema não valida. A visão ficou como linha do tempo das OS.
 - **RF-OS-09** 💡 Exigir confirmação e registro de quem excluiu uma OS (hoje a exclusão é definitiva).
-- **RF-OS-10** 🆕 O técnico exclui as OS que ele mesmo criou; a administração exclui qualquer uma (migration `20261116140000`, ainda a aplicar). Ver `perfis-e-permissoes.md`.
+- **RF-OS-10** 🆕 O técnico exclui as OS que ele mesmo criou, só enquanto abertas (Aberta ou Em manutenção); a administração exclui qualquer uma (migration `20261116140000`, aplicada em 16/11/2026). Ver `perfis-e-permissoes.md`.
 
 ### 3.7 Modo Campo (`/campo`)
 - **RF-CAM-01** ✅ Instalável como app; abre sem internet depois da primeira visita.

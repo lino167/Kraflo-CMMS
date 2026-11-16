@@ -89,23 +89,33 @@ describe('ações', () => {
 
 describe('podeExcluirOS', () => {
   const eu = 'user-1'
-  it('a administração exclui qualquer OS, com ou sem criador', () => {
-    expect(podeExcluirOS('admin_empresa', { criado_por: 'outro' }, eu)).toBe(true)
-    expect(podeExcluirOS('admin_empresa', { criado_por: null }, eu)).toBe(true)
+  const minhaAberta = { criado_por: eu, status_os: 'Aberta' }
+  it('a administração exclui qualquer OS, com ou sem criador, aberta ou fechada', () => {
+    expect(podeExcluirOS('admin_empresa', { criado_por: 'outro', status_os: 'Fechada' }, eu)).toBe(true)
+    expect(podeExcluirOS('admin_empresa', { criado_por: null, status_os: 'Aberta' }, eu)).toBe(true)
     expect(podeExcluirOS('admin_kraflo', {}, eu)).toBe(true)
   })
-  it('o técnico exclui a OS que ele criou', () => {
-    expect(podeExcluirOS('tecnico', { criado_por: eu }, eu)).toBe(true)
+  it('o técnico exclui a OS que ele criou enquanto está aberta ou em manutenção', () => {
+    expect(podeExcluirOS('tecnico', minhaAberta, eu)).toBe(true)
+    expect(podeExcluirOS('tecnico', { criado_por: eu, status_os: 'Em manutenção' }, eu)).toBe(true)
   })
-  it('o técnico não exclui OS de outra pessoa', () => {
-    expect(podeExcluirOS('tecnico', { criado_por: 'outro' }, eu)).toBe(false)
+  it('depois de fechada, o técnico não exclui nem a própria OS', () => {
+    for (const status of ['Fechada', 'Liberado para produção', 'Não liberado']) {
+      expect(podeExcluirOS('tecnico', { criado_por: eu, status_os: status }, eu), status).toBe(false)
+    }
+  })
+  it('o técnico não exclui OS de outra pessoa, mesmo aberta', () => {
+    expect(podeExcluirOS('tecnico', { criado_por: 'outro', status_os: 'Aberta' }, eu)).toBe(false)
   })
   it('OS sem criador (bot ou anterior ao campo) só a administração exclui', () => {
-    expect(podeExcluirOS('tecnico', { criado_por: null }, eu)).toBe(false)
-    expect(podeExcluirOS('tecnico', {}, eu)).toBe(false)
+    expect(podeExcluirOS('tecnico', { criado_por: null, status_os: 'Aberta' }, eu)).toBe(false)
+    expect(podeExcluirOS('tecnico', { status_os: 'Aberta' }, eu)).toBe(false)
+  })
+  it('sem status conhecido, o técnico não exclui', () => {
+    expect(podeExcluirOS('tecnico', { criado_por: eu }, eu)).toBe(false)
   })
   it('sem usuário identificado, o técnico não exclui', () => {
-    expect(podeExcluirOS('tecnico', { criado_por: eu }, null)).toBe(false)
-    expect(podeExcluirOS('tecnico', { criado_por: eu }, undefined)).toBe(false)
+    expect(podeExcluirOS('tecnico', minhaAberta, null)).toBe(false)
+    expect(podeExcluirOS('tecnico', minhaAberta, undefined)).toBe(false)
   })
 })

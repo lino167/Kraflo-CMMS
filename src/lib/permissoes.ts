@@ -84,16 +84,20 @@ export type Acao = keyof typeof ACOES
 
 export const pode = (papel: Papel, acao: Acao): boolean => temNivel(papel, ACOES[acao])
 
+/** OS ainda em andamento: o técnico só exclui a que criou enquanto estiver neste estado. */
+export const STATUS_OS_ABERTOS: readonly string[] = ['Aberta', 'Em manutenção']
+
 /**
  * Pode excluir esta OS? A administração exclui qualquer OS da empresa; o técnico, só as que ele mesmo criou
- * (`criado_por` é preenchido pelo banco na abertura). OS do bot e as anteriores a esse campo não têm criador:
- * só a administração exclui. O banco aplica a mesma regra; aqui só se decide se o botão aparece.
+ * (`criado_por` é preenchido pelo banco na abertura) e **enquanto estiverem abertas**. Depois de fechada só a
+ * administração exclui: excluir apaga as peças usadas e o estoque já baixado não volta. OS do bot e as
+ * anteriores a esse campo não têm criador. O banco aplica a mesma regra; aqui só se decide se o botão aparece.
  */
 export function podeExcluirOS(
   papel: Papel,
-  os: { criado_por?: string | null },
+  os: { criado_por?: string | null; status_os?: string | null },
   usuarioId: string | null | undefined,
 ): boolean {
   if (pode(papel, 'os.excluir')) return true
-  return !!usuarioId && !!os.criado_por && os.criado_por === usuarioId
+  return !!usuarioId && !!os.criado_por && os.criado_por === usuarioId && STATUS_OS_ABERTOS.includes(os.status_os ?? '')
 }

@@ -46,7 +46,7 @@ Migration: `supabase/migrations/20261116130000_separacao_admin_tecnico.sql`.
 
 | Tabela | Técnico | Admin |
 |---|---|---|
-| `ordens_de_servico` | lê, abre e atualiza (fechar inclusive); exclui **só as que criou** (`criado_por`) | tudo |
+| `ordens_de_servico` | lê, abre e atualiza (fechar inclusive); exclui **só as que criou (`criado_por`) e que ainda estão abertas** (Aberta ou Em manutenção) | tudo |
 | `execucoes_preventivas` | lê e atualiza (iniciar/concluir); não cria nem exclui | tudo |
 | `planos_manutencao`, `tarefas_preventivas` | só lê | tudo |
 | `categorias_parada`, `categorias_problema`, `subcategorias` | só lê | tudo |
@@ -98,13 +98,13 @@ Os gatilhos do banco (histórico, fila de indexação, estoque) continuaram func
 
 ## Exclusão de OS pelo técnico (migration `20261116140000`)
 
-O técnico pode excluir as OS que ele mesmo criou; as dos outros, só a administração.
+O técnico pode excluir as OS que ele mesmo criou **enquanto estiverem abertas** (status Aberta ou Em manutenção). Depois de fechada, e as dos outros, só a administração exclui.
 
 - O banco passa a guardar o criador em `ordens_de_servico.criado_por` (usuário que abriu a OS). Um gatilho o preenche na abertura **ignorando o que o navegador enviar**, e só a administração pode alterá-lo depois. Assim não dá para "forjar" nem "adotar" a OS de outra pessoa.
 - `tecnico_id` não serve para isso: é o responsável, e a administração pode abrir uma OS em nome de um técnico.
 - OS abertas pelo bot e as que já existiam não têm criador (`NULL`): só a administração as exclui. Não há preenchimento retroativo, porque seria um palpite.
-- A exclusão passa a ser: administração da empresa **ou** o criador, sempre dentro da empresa.
-- **Estado: escrita e testada em transação que se desfaz, mas ainda NÃO aplicada em produção.** Até ser aplicada, o técnico não vê "Excluir" em nenhuma OS (a coluna ainda não existe).
+- A exclusão é: administração da empresa **ou** o criador enquanto a OS estiver aberta, sempre dentro da empresa. O limite às OS abertas existe porque o estoque já baixado não volta.
+- **Estado: aplicada em produção em 16/11/2026**, depois de testada em transação que se desfaz (técnico exclui a própria aberta e a em manutenção; não exclui a fechada, a alheia, a sem criador, a forjada nem a de outra empresa; administração exclui qualquer uma da própria empresa).
 
 Cuidados que a exclusão tem, para quem decidir ampliar ou restringir:
 - Excluir apaga também as peças usadas, o histórico e os orçamentos ligados à OS. O **estoque já baixado não volta**.
