@@ -173,7 +173,7 @@ Sem página: o bot do Telegram (`telegram-webhook`), que será aposentado em fav
 
 ### 4.1 Segurança
 - **RNF-SEG-01** ✅ Isolamento por empresa no banco: 24 de 25 tabelas criadas nas migrations têm RLS ligado. Verificar a tabela restante. Conferido no banco de produção: ninguém lê OS de outra empresa.
-- **RNF-SEG-08** 🆕 **Separação admin × técnico**: menu e telas por papel (`lib/permissoes.ts`) e escrita administrativa restrita no banco (migration `20261116130000`). Técnico não exclui OS, não cria planos, máquinas nem categorias. **Pendente de aplicar em produção**, junto com a `20261111120400`; ver `perfis-e-permissoes.md`.
+- **RNF-SEG-08** 🆕 **Separação admin × técnico**: menu e telas por papel (`lib/permissoes.ts`) e escrita administrativa restrita no banco (migration `20261116130000`). Técnico não exclui OS, não cria planos, máquinas nem categorias. **Aplicado em produção em 16/11/2026** (junto com a `20261111120400` e a de idempotência do fechamento) e testado com um técnico e um administrador reais; ver `perfis-e-permissoes.md`.
 - **RNF-SEG-02** ✅ Cadastro não confia em dados enviados pelo navegador (empresa vem do código de convite).
 - **RNF-SEG-03** ✅ Modo Campo cifra os dados no aparelho (AES-GCM, chave derivada do PIN) e apaga após 5 erros; acesso offline vale 7 dias.
 - **RNF-SEG-04** ✅ Fechamento de OS em uma transação (peças e fechamento juntos), com identificador da operação para não confundir reenvios.

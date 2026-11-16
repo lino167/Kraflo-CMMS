@@ -57,24 +57,44 @@ Migration: `supabase/migrations/20261116130000_separacao_admin_tecnico.sql`.
 
 O que o técnico faz no campo (abrir, fechar, enviar pelo Modo Campo, iniciar preventiva) continua funcionando.
 
-## Estado do banco de produção e ordem de aplicação
+## Estado do banco de produção
 
-Conferido em 16/11/2026 no projeto Kraflo:
+**Aplicado em 16/11/2026** no projeto Kraflo, nesta ordem, cada uma conferida antes de seguir:
 
-- Já aplicadas: `...120000`, `...120100`, `...120200`, `...120300`, `...120500` e `...120600`.
-- **Não aplicada: `20261111120400_seguranca_funcoes_e_policies`.** É a que remove as políticas antigas que dão a qualquer membro da empresa escrita em máquinas, setores, links, checklists e orçamentos.
-- Existe em produção a migration `permissoes_ilimitadas_tecnicos` (maio de 2026), que **não está no repositório**. Ela deu escrita total a qualquer usuário da empresa em OS, planos, tarefas e execuções preventivas. A nova migration desfaz isso onde a administração precisa de controle.
-- Isolamento entre empresas: **ok**. A política `Require authentication for ordens_de_servico` é restritiva (`RESTRICTIVE`), então ninguém vê OS de outra empresa.
+1. `seguranca_funcoes_e_policies` (`20261111120400`): remove as políticas antigas que davam escrita a qualquer membro da empresa em máquinas, setores, links, checklists e orçamentos; funções de consulta passam a respeitar o acesso de quem chama; visitante anônimo perde acesso às funções internas.
+2. `fechar_os_idempotencia_por_operacao` (`20261116120000`): fechamento offline reconhece reenvio pelo id da operação.
+3. `separacao_admin_tecnico` (`20261116130000`): técnico não exclui OS nem escreve em planos, tarefas e categorias.
 
-Ordem para aplicar: `20261111120400`, depois `20261116120000` (idempotência do fechamento) e `20261116130000` (esta).
+Antes de aplicar havia a migration `permissoes_ilimitadas_tecnicos` (maio de 2026), que não está no repositório e deu escrita total a qualquer membro da empresa. As políticas dela foram substituídas.
 
-### Como conferir depois de aplicar
+No banco, as migrations aparecem com o horário em que foram aplicadas (por exemplo `20261116031...`), não com o prefixo dos arquivos do repositório. O conteúdo é o mesmo.
 
-Como **técnico** (login de teste), estas chamadas devem ser recusadas e as de operação devem funcionar:
-- recusar: excluir uma OS, criar um plano preventivo, criar uma máquina, editar uma categoria;
-- funcionar: abrir uma OS, fechar uma OS, iniciar uma preventiva, enviar pelo Modo Campo.
+### Teste de comportamento feito depois de aplicar
 
-Como **admin da empresa**, tudo deve funcionar. Rodar também o relatório de segurança do Supabase (advisors).
+Um técnico real e um administrador real tentaram cada ação, dentro de uma transação que se desfaz sozinha (nada foi gravado):
+
+| Ação | Técnico | Admin |
+|---|---|---|
+| Abrir OS | permitido | permitido |
+| Atualizar a própria OS | permitido | permitido |
+| Fechar OS (`fn_campo_fechar_os`), reenvio da mesma operação e conflito | ok / ok / conflito | |
+| Excluir OS | **bloqueado** | permitido |
+| Criar plano preventivo | **bloqueado** | permitido |
+| Criar categoria de parada | **bloqueado** | permitido |
+| Cadastrar máquina | **bloqueado** | permitido |
+| Ler ou excluir OS de **outra empresa** | 0 linhas | 0 linhas |
+
+Os gatilhos do banco (histórico, fila de indexação, estoque) continuaram funcionando para o técnico depois da `120400`.
+
+### Como desfazer
+
+`supabase/rollbacks/20261116_desfazer_seguranca_e_separacao_admin_tecnico.sql` recria as políticas e o estado das funções anteriores, na ordem inversa. Não roda sozinho (fica fora de `supabase/migrations`).
+
+### Pendências no painel do Supabase (não dá para fazer pelo código)
+
+- Ativar a **proteção contra senhas vazadas** (Authentication → Policies). Está desligada.
+- Configurar as URLs de redirecionamento e o SMTP da recuperação de senha (ver `requisitos.md`, seção 6).
+- O relatório de segurança ainda lista funções auxiliares (`has_role`, `is_admin_kraflo`, `is_company_admin`, `get_user_empresa_id`) executáveis sem login. Elas são usadas dentro das políticas e aceitam um id de usuário como parâmetro; restringi-las pede teste cuidadoso, então ficou para depois.
 
 ## Limites conhecidos
 
