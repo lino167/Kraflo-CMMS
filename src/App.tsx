@@ -10,6 +10,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const RedefinirSenha = lazy(() => import("./pages/RedefinirSenha"));
+const GuiaTecnico = lazy(() => import("./pages/GuiaTecnico"));
 const OrdensServico = lazy(() => import("./pages/OrdensServico"));
 const Biblioteca = lazy(() => import("./pages/Biblioteca"));
 const IndexacaoAdmin = lazy(() => import("./pages/IndexacaoAdmin"));
@@ -43,6 +44,7 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+              <Route path="/guia-do-tecnico" element={<GuiaTecnico />} />
               <Route path="/solicitar/:token" element={<PortalSolicitacao />} />
               
               <Route path="/" element={<AppLayout><Index /></AppLayout>} />

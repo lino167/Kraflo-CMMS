@@ -46,3 +46,9 @@ Tela `/campo`: abre e fecha OS sem internet e envia tudo automaticamente quando 
 - Alvos de toque de 48 px (botões, abas, campos e listas), texto de 16 px nos campos (evita o zoom automático do iPhone ao focar) e rótulos maiores.
 - **Modo sol**: botão de sol/lua no topo do `/campo` liga um tema claro de alto contraste para luz forte. A escolha fica guardada no aparelho e só vale enquanto a tela de campo está aberta (`classe campo-light` no `<html>`, definida em `src/index.css`).
 - Abas com a ativa preenchida em laranja, para ler à distância.
+
+## Instalação no celular
+
+- **Ícones**: `public/icon-192.png`, `icon-512.png`, `icon-maskable-512.png` e `apple-touch-icon.png` (180 px, quadrado). O iPhone ignora SVG no ícone da tela inicial, por isso o PNG. Para regerar a partir dos SVG: `node scripts/gerar-icones.cjs` (precisa do Playwright).
+- **Aviso de instalação** no `/campo` (`InstalarApp`): no Android/Chrome instala com um toque (o evento `beforeinstallprompt` é guardado cedo, em `lib/instalar-app.ts`, importado em `main.tsx`); no iPhone mostra os passos do Safari. Some sozinho depois de instalado e, se o técnico fechar, não volta por 14 dias.
+- **Guia do técnico** (`/guia-do-tecnico`): página de uma folha A4 para imprimir ou salvar em PDF, com o passo a passo de cadastro, instalação, primeiro acesso, abrir e fechar OS, uso sem sinal e problemas comuns. Aberta por um administrador, traz o **QR code do convite** da empresa; aberta por outra pessoa, traz só os passos. Acessível pelo botão em **Conta e Equipe** (administrador) e pelo link "Como usar o Modo Campo" no `/campo`.

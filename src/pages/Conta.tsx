@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, Copy, Link2, Loader2, RefreshCw, Send, Unlink, UserPlus, Users } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { CheckCircle2, Copy, FileText, Link2, Loader2, RefreshCw, Send, Unlink, UserPlus, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
@@ -21,6 +22,7 @@ async function copiar(texto: string, aviso: string) {
 
 export default function Conta() {
   const { user, profile, isAdminEmpresa } = useAuth()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const empresaId = profile?.empresa_id
   const [codigoTelegram, setCodigoTelegram] = useState<string | null>(null)
@@ -147,6 +149,9 @@ export default function Conta() {
                     <RefreshCw className="mr-1.5 h-4 w-4" /> Trocar
                   </Button>
                 </div>
+                <Button variant="secondary" size="sm" className="w-full" onClick={() => navigate('/guia-do-tecnico')}>
+                  <FileText className="mr-1.5 h-4 w-4" /> Guia do técnico para imprimir (com o QR do convite)
+                </Button>
               </>
             ) : (
               <p className="text-sm text-muted-foreground">Código indisponível.</p>

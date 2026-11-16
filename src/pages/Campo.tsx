@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { Link } from 'react-router-dom'
 import { AlertTriangle, Camera, CheckCircle2, Clock, Loader2, Lock, Moon, Plus, RefreshCw, Sun, Trash2, Wifi, WifiOff, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
@@ -8,6 +9,7 @@ import { useOfflineSync } from '@/hooks/useOfflineSync'
 import { offlineQueue, secureStore } from '@/lib/offline/local'
 import { compressPhoto } from '@/lib/offline/photo'
 import { PinGate } from '@/components/PinGate'
+import { InstalarApp } from '@/components/InstalarApp'
 import { readSnapshot, refreshSnapshot, type RefSnapshot } from '@/lib/offline/snapshot'
 import type { OfflineOp, PecaOffline } from '@/lib/offline/queue'
 import { Badge } from '@/components/ui/badge'
@@ -408,6 +410,9 @@ export default function Campo() {
               ? `Dados de apoio de ${new Date(snap.saved_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}`
               : 'Conecte-se uma vez para baixar máquinas e categorias.'}
           </p>
+          <Link to="/guia-do-tecnico" className="text-sm text-primary underline-offset-4 hover:underline">
+            Como usar o Modo Campo
+          </Link>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Badge variant="outline" className={online ? 'border-green-500/30 text-green-400' : 'border-yellow-500/30 text-yellow-400'}>
@@ -439,6 +444,8 @@ export default function Campo() {
           </Button>
         </div>
       </div>
+
+      <InstalarApp />
 
       <Card className="glass-panel border-border">
         <CardContent className="flex items-center justify-between gap-3 p-3">

@@ -111,6 +111,8 @@ Sem página: o bot do Telegram (`telegram-webhook`), que será aposentado em fav
 - **RF-CAM-06** ✅ Alerta de reincidência quando há conexão.
 - **RF-CAM-07** ✅ Aviso antes de sair da conta se houver lançamentos não enviados.
 - **RF-CAM-08** 🆕 Modo sol (tema claro de alto contraste) e alvos de toque de 48 px.
+- **RF-CAM-09** 🆕 Aviso para instalar o app na tela inicial (um toque no Android; passos do Safari no iPhone) e ícones PNG para Android e iPhone.
+- **RF-CAM-10** 🆕 Guia do técnico para imprimir (`/guia-do-tecnico`), com o QR code do convite quando aberto por um administrador.
 
 ### 3.8 Biblioteca (`/biblioteca`)
 - **RF-BIB-01** ✅ Enviar manuais (PDF), com tipo, categoria, segmento, fabricante e modelo.
