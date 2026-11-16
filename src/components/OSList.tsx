@@ -357,13 +357,10 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
         <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1">
             <h4 className="text-sm font-mono font-bold text-emerald-400 flex items-center gap-1.5 uppercase">
-              🛡️ Trilha de Auditoria Cronológica Regional
+              Linha do tempo das ordens de serviço
             </h4>
-            <p className="text-xs text-muted-foreground">Apresente esta linha do tempo linear de eventos para auditorias estritas de ISO 9001 e normas regionais de manutenção preventiva.</p>
+            <p className="text-xs text-muted-foreground">Abertura, andamento e fechamento de cada OS em ordem cronológica, com os registros de data e hora do sistema.</p>
           </div>
-          <Button size="sm" variant="outline" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 font-mono text-xs" onClick={() => toast.success('Pronto para exportação regional!')}>
-            Validar Trilha
-          </Button>
         </div>
 
         <div className="relative pl-6 border-l-2 border-primary/20 space-y-8">
@@ -510,12 +507,6 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
           </Button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded px-2.5 py-1.5 flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            FORMATO AUDITÁVEL REGIONAL SE REG-9001
-          </span>
-        </div>
       </div>
 
       {viewMode === 'lista' && (

@@ -31,7 +31,6 @@ import {
 } from '@/components/ui/card'
 import {
   MoreHorizontal,
-  Wrench,
   Calendar,
   FileText,
   Search,
@@ -49,7 +48,6 @@ interface EquipmentHealthTableProps {
   equipments: EquipmentStats[]
   isLoading?: boolean
   onCreatePreventive?: (equipment: EquipmentStats) => void
-  onCreateOS?: (equipment: EquipmentStats) => void
   onViewHistory?: (equipment: EquipmentStats) => void
 }
 
@@ -69,7 +67,6 @@ export function EquipmentHealthTable({
   equipments,
   isLoading = false,
   onCreatePreventive,
-  onCreateOS,
   onViewHistory,
 }: EquipmentHealthTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
@@ -207,10 +204,6 @@ export function EquipmentHealthTable({
                             >
                               <Calendar className="h-4 w-4 mr-2" />
                               Criar plano preventivo
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onCreateOS?.(eq)}>
-                              <Wrench className="h-4 w-4 mr-2" />
-                              Criar OS preventiva
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => onViewHistory?.(eq)}

@@ -28,8 +28,6 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
   const [stats, setStats] = useState({
     totalOS: 0,
     osIndexadas: 0,
-    manuais: 0,
-    chunks: 0,
   });
 
   useEffect(() => {
@@ -53,19 +51,9 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
         .from("os_embeddings")
         .select("*", { count: "exact", head: true });
 
-      const { count: manuaisCount } = await supabase
-        .from("manuais")
-        .select("*", { count: "exact", head: true });
-
-      const { count: chunksCount } = await supabase
-        .from("manual_chunks")
-        .select("*", { count: "exact", head: true });
-
       setStats({
         totalOS: osCount || 0,
         osIndexadas: indexedCount || 0,
-        manuais: manuaisCount || 0,
-        chunks: chunksCount || 0,
       });
     } catch (error) {
       console.error("Error loading stats:", error);

@@ -169,10 +169,6 @@ export function AIReport({ empresaId }: AIReportProps) {
     setWizardOpen(true);
   };
 
-  const handleCreateOS = (equipment: EquipmentStats) => {
-    toast.info(`Criar OS preventiva para ${equipment.nome} - funcionalidade em desenvolvimento`);
-  };
-
   const handleCreatePlanFromRec = (rec: AIRecommendation) => {
     const mockEquipment: EquipmentStats = {
       nome: rec.targetValue || rec.targetId || 'Equipamento',
@@ -186,10 +182,6 @@ export function AIReport({ empresaId }: AIReportProps) {
     };
     setWizardEquipment(mockEquipment);
     setWizardOpen(true);
-  };
-
-  const handleCreateOSFromRec = (rec: AIRecommendation) => {
-    toast.info(`Criar OS preventiva: ${rec.title} - funcionalidade em desenvolvimento`);
   };
 
   const exportToPDF = () => {
@@ -645,7 +637,6 @@ export function AIReport({ empresaId }: AIReportProps) {
           <EquipmentHealthTable
             equipments={statsData.equipamentosCriticos}
             onCreatePreventive={handleCreatePreventive}
-            onCreateOS={handleCreateOS}
           />
 
           {/* Benchmark Comparison Card */}
@@ -782,7 +773,6 @@ export function AIReport({ empresaId }: AIReportProps) {
             <RecommendationCards
               recommendations={reportData.analiseIA.recommendations}
               onCreatePlan={handleCreatePlanFromRec}
-              onCreateOS={handleCreateOSFromRec}
               onAddToExisting={(rec) => toast.info(`Adicionar a plano existente: ${rec.title}`)}
             />
           )}

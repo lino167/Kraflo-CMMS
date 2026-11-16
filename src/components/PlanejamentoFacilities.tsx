@@ -1,17 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { calcularSla, formatarHoras, formatarPercentual } from '@/lib/sla';
 import {
   Calendar as CalendarIcon,
   Clock,
   CheckCircle2,
-  FileText,
   Users,
   CheckSquare,
   Plus,
   Trash2,
-  Send,
   DollarSign,
   Check,
   X,
@@ -22,7 +21,6 @@ import {
   Activity,
   AlertTriangle,
   UserCheck,
-  Eye,
   QrCode,
 } from 'lucide-react';
 import {
@@ -113,7 +111,7 @@ interface MeasurementAlert {
 
 export function PlanejamentoFacilities() {
   const { profile } = useAuth();
-  const [activeSubTab, setActiveSubTab] = useState<'sla' | 'calendario' | 'orcamentos' | 'checklists' | 'relatorios' | 'guest' | 'solicitacoes' | 'medicoes'>('sla');
+  const [activeSubTab, setActiveSubTab] = useState<'sla' | 'calendario' | 'orcamentos' | 'checklists' | 'guest' | 'solicitacoes' | 'medicoes'>('sla');
   const [isLoading, setIsLoading] = useState(true);
 
   // --- ESTADOS DO BANCO ---
@@ -124,6 +122,7 @@ export function PlanejamentoFacilities() {
   const [links, setLinks] = useState<GuestLink[]>([]);
   const [realOSList, setRealOSList] = useState<RealOS[]>([]);
   const [selectedDay, setSelectedDay] = useState<number>(new Date().getDate());
+  const sla = useMemo(() => calcularSla(realOSList), [realOSList]);
 
   // --- CONDITION MONITORING (persistido em medicoes_ativos) ---
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
@@ -675,13 +674,6 @@ export function PlanejamentoFacilities() {
           )}
         </Button>
         <Button
-          variant={activeSubTab === 'relatorios' ? 'default' : 'ghost'}
-          onClick={() => setActiveSubTab('relatorios')}
-          className={`rounded-lg ${activeSubTab === 'relatorios' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
-        >
-          <FileText className="h-4 w-4 mr-2" /> Relatórios Clientes
-        </Button>
-        <Button
           variant={activeSubTab === 'guest' ? 'default' : 'ghost'}
           onClick={() => setActiveSubTab('guest')}
           className={`rounded-lg ${activeSubTab === 'guest' ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20' : 'text-muted-foreground'}`}
@@ -713,122 +705,88 @@ export function PlanejamentoFacilities() {
           {/* ======================================================== */}
           {activeSubTab === 'sla' && (
             <div className="space-y-6">
+              <p className="text-xs text-muted-foreground">
+                Calculado com as OS mais recentes da empresa (até 200), só corretivas e preditivas. Meta de resolução:
+                Urgente 2 h · Alta 6 h · Média e Baixa 24 h (da abertura ao fechamento).
+              </p>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="glass-panel border-border relative overflow-hidden group">
+                <Card className="glass-panel border-border">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                      SLA de Atendimento Crítico
-                      <Badge className="bg-success/20 text-success border-transparent">96.4% OK</Badge>
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Cumprimento geral da meta</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="text-3xl font-mono font-bold text-foreground">54 min</div>
-                    <p className="text-xs text-muted-foreground">Tempo médio de resposta (Meta: &lt;1 hora)</p>
-                    <Progress value={96.4} className="h-1.5 [&>div]:bg-success bg-secondary" />
+                    <div className="text-3xl font-mono font-bold text-foreground">{formatarPercentual(sla.percentualGeral)}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {sla.finalizadas > 0
+                        ? `${sla.noPrazo} de ${sla.finalizadas} OS finalizadas dentro da meta`
+                        : 'Ainda não há OS finalizadas para calcular'}
+                    </p>
+                    {sla.percentualGeral !== null && <Progress value={sla.percentualGeral} className="h-1.5 bg-secondary" />}
                   </CardContent>
                 </Card>
 
-                <Card className="glass-panel border-border relative overflow-hidden group">
+                <Card className="glass-panel border-border">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                      SLA de MTTR Corretivo
-                      <Badge className="bg-success/20 text-success border-transparent">92.1% OK</Badge>
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Tempo médio de resolução</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="text-3xl font-mono font-bold text-foreground">3h 12m</div>
-                    <p className="text-xs text-muted-foreground">Tempo médio de conserto (Meta: &lt;4 horas)</p>
-                    <Progress value={92.1} className="h-1.5 [&>div]:bg-success bg-secondary" />
+                    <div className="text-3xl font-mono font-bold text-foreground">{formatarHoras(sla.mediaGeralHoras)}</div>
+                    <p className="text-xs text-muted-foreground">Média real das OS finalizadas</p>
                   </CardContent>
                 </Card>
 
-                <Card className="glass-panel border-border relative overflow-hidden group">
+                <Card className="glass-panel border-border">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                      SLA de Validação
-                      <Badge className="bg-warning/20 text-warning border-transparent">88.5% OK</Badge>
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Abertas fora do prazo agora</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="text-3xl font-mono font-bold text-foreground">42 min</div>
-                    <p className="text-xs text-muted-foreground">Verificação das solicitações (Meta: &lt;30 min)</p>
-                    <Progress value={88.5} className="h-1.5 [&>div]:bg-warning bg-secondary" />
+                    <div className={`text-3xl font-mono font-bold ${sla.abertasForaDoPrazo > 0 ? 'text-red-400' : 'text-foreground'}`}>
+                      {sla.abertasForaDoPrazo}
+                    </div>
+                    <p className="text-xs text-muted-foreground">OS ainda abertas que já passaram da meta</p>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* SLA details view */}
               <Card className="glass-panel border-border">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Clock className="h-5 w-5 text-primary" />
-                    Controle de Tempo de Atendimento e SLA por Criticidade
+                    SLA por prioridade
                   </CardTitle>
-                  <CardDescription>
-                    Monitore se os acordos de nível de serviço com a produção estão sendo cumpridos.
-                  </CardDescription>
+                  <CardDescription>Monitore se os prazos acordados com a produção estão sendo cumpridos.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-secondary/30 border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="inline-block h-3 w-3 rounded-full bg-red-500 animate-pulse" />
-                          <strong className="text-sm font-semibold text-foreground">Nível 1 - Urgência Crítica</strong>
+                    {sla.niveis.map((n) => (
+                      <div
+                        key={n.nivel}
+                        className="p-4 rounded-xl bg-secondary/30 border border-border flex flex-col md:flex-row md:items-center justify-between gap-4"
+                      >
+                        <div>
+                          <strong className="text-sm font-semibold text-foreground">
+                            {n.nivel === 'Média' ? 'Média e Baixa' : n.nivel}
+                          </strong>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Meta de resolução: {formatarHoras(n.metaHoras)}
+                            {n.abertasForaDoPrazo > 0 && (
+                              <span className="text-red-400"> · {n.abertasForaDoPrazo} aberta(s) fora do prazo</span>
+                            )}
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">Parada de máquina essencial da linha principal. Meta de resolução: 2 horas.</p>
-                      </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <div className="text-sm font-mono font-bold text-foreground">94.8%</div>
-                          <div className="text-[10px] text-muted-foreground">Dentro do prazo</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-mono font-bold text-primary">1h 32m</div>
-                          <div className="text-[10px] text-muted-foreground">Média Real</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-secondary/30 border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="inline-block h-3 w-3 rounded-full bg-orange-500" />
-                          <strong className="text-sm font-semibold text-foreground">Nível 2 - Alta Criticidade</strong>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">Falhas parciais que não paralisam a linha principal. Meta de resolução: 6 horas.</p>
-                      </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <div className="text-sm font-mono font-bold text-foreground">96.1%</div>
-                          <div className="text-[10px] text-muted-foreground">Dentro do prazo</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-mono font-bold text-foreground">4h 15m</div>
-                          <div className="text-[10px] text-muted-foreground">Média Real</div>
+                        <div className="flex items-center gap-6">
+                          <div className="text-right">
+                            <div className="text-sm font-mono font-bold text-foreground">{formatarPercentual(n.percentual)}</div>
+                            <div className="text-[10px] text-muted-foreground">Dentro do prazo ({n.finalizadas} OS)</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-mono font-bold text-foreground">{formatarHoras(n.mediaHoras)}</div>
+                            <div className="text-[10px] text-muted-foreground">Média real</div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-secondary/30 border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="inline-block h-3 w-3 rounded-full bg-yellow-500" />
-                          <strong className="text-sm font-semibold text-foreground">Nível 3 - Média Criticidade</strong>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">Solicitações de facilities e ajustes ergonômicos. Meta de resolução: 24 horas.</p>
-                      </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <div className="text-sm font-mono font-bold text-foreground">100.0%</div>
-                          <div className="text-[10px] text-muted-foreground">Dentro do prazo</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-mono font-bold text-foreground">12h 40m</div>
-                          <div className="text-[10px] text-muted-foreground">Média Real</div>
-                        </div>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -865,7 +823,7 @@ export function PlanejamentoFacilities() {
                 {/* Calendário Mensal */}
                 <div className="lg:col-span-8 space-y-4">
                   <div className="flex items-center justify-between bg-secondary/20 p-3 rounded-lg border border-border font-mono text-sm">
-                    <span className="font-bold text-primary">Maio {new Date().getFullYear()}</span>
+                    <span className="font-bold text-primary capitalize">{new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
                     <span className="text-muted-foreground text-xs">Visão Sincronizada Supabase</span>
                   </div>
                   <div className="grid grid-cols-7 gap-2 text-center text-xs font-mono font-bold text-muted-foreground p-1 border-b border-border">
@@ -920,7 +878,7 @@ export function PlanejamentoFacilities() {
                 <div className="lg:col-span-4 p-4 rounded-xl bg-secondary/20 border border-border flex flex-col justify-between h-full min-h-[300px]">
                   <div>
                     <div className="pb-3 border-b border-border flex items-center justify-between mb-4">
-                      <span className="font-mono text-sm font-bold text-foreground">Dia {selectedDay} de Maio</span>
+                      <span className="font-mono text-sm font-bold text-foreground">Dia {selectedDay} de {new Date().toLocaleDateString('pt-BR', { month: 'long' })}</span>
                       <Badge className="bg-primary/10 text-primary border-primary/20">
                         {getTasksForDay(selectedDay).length} Ordens
                       </Badge>
@@ -955,9 +913,6 @@ export function PlanejamentoFacilities() {
                     </div>
                   </div>
 
-                  <Button className="w-full mt-4" size="sm" onClick={() => toast.success('Por favor, utilize o painel de criação de OS para registrar preventivas agendadas.')}>
-                    <Plus className="h-3 w-3 mr-1.5" /> Registrar Preventiva
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -1206,64 +1161,6 @@ export function PlanejamentoFacilities() {
           {/* ======================================================== */}
           {/* TAB 6: RELATÓRIOS PARA CLIENTES */}
           {/* ======================================================== */}
-          {activeSubTab === 'relatorios' && (
-            <Card className="glass-panel border-border">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  Gestão e Envio de Relatórios Técnicos Reais para Clientes
-                </CardTitle>
-                <CardDescription>
-                  Listagem dinâmica de Ordens de Serviço Fechadas disponíveis para compartilhamento.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  {realOSList.filter(os => os.status_os === 'Fechada').length > 0 ? (
-                    realOSList.filter(os => os.status_os === 'Fechada').map(os => (
-                      <div 
-                        key={os.id} 
-                        className="p-4 rounded-xl bg-secondary/10 border border-border flex flex-col md:flex-row justify-between gap-4 items-start md:items-center"
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-primary font-bold">OS #{os.id}</span>
-                            <Badge variant="outline" className="border-success/30 text-success">FECHADA</Badge>
-                          </div>
-                          <h4 className="font-semibold text-sm text-foreground mt-1">{os.equipamento_nome}</h4>
-                          <div className="text-xs text-muted-foreground mt-0.5">Encerramento em: {new Date(os.data_fechamento || os.data_abertura).toLocaleDateString('pt-BR')}</div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => toast.success('Aberto para visualização prévia.')}>
-                            <Eye className="h-3.5 w-3.5 mr-1" /> Ver Parecer
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            className="h-8 text-xs bg-primary hover:bg-primary/90"
-                            onClick={() => {
-                              toast.success(`Relatório da OS #${os.id} enviado para o cliente cadastrado!`, {
-                                description: 'O link com acesso completo ao parecer técnico foi compartilhado.',
-                                icon: <Send className="h-4 w-4 text-green-400" />,
-                              });
-                            }}
-                          >
-                            <Send className="h-3.5 w-3.5 mr-1" /> Compartilhar
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-12 text-muted-foreground text-xs space-y-2">
-                      <FileText className="h-8 w-8 text-muted-foreground/30 mx-auto" />
-                      <p>Nenhuma ordem de serviço marcada como 'Fechada' no Supabase para gerar relatórios.</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* ======================================================== */}
           {/* TAB 7: ACESSO ILIMITADO FORNECEDORES E CLIENTES */}
           {/* ======================================================== */}
