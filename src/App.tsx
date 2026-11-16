@@ -25,6 +25,7 @@ void import("./pages/Campo");
 const Estoque = lazy(() => import("./pages/Estoque"));
 const PortalSolicitacao = lazy(() => import("./pages/PortalSolicitacao"));
 import { AppLayout } from "@/components/AppLayout";
+import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
               <Loader2 className="animate-spin h-8 w-8 text-primary" />
             </div>
           }>
+            <RouteErrorBoundary>
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/redefinir-senha" element={<RedefinirSenha />} />
@@ -64,6 +66,7 @@ const App = () => (
               
               <Route path="*" element={<AppLayout><NotFound /></AppLayout>} />
             </Routes>
+            </RouteErrorBoundary>
           </Suspense>
         </BrowserRouter>
       </AuthProvider>
