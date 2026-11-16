@@ -25,7 +25,8 @@ export default function PerfilTecnico() {
   const { profile, user, isLoading: authLoading } = useAuth();
 
   const empresaId = profile?.empresa_id;
-  const tecnicoId = profile?.id_telegram;
+  // tecnico_id é a chave nova (cadastro por convite); id_telegram cobre contas antigas
+  const tecnicoId = profile?.tecnico_id ?? profile?.id_telegram;
 
   const { data: myPerformance, isLoading: perfLoading } = useTechnicianPerformance(
     empresaId ?? undefined,

@@ -286,8 +286,11 @@ export function PlanejamentoFacilities() {
       return;
     }
 
-    // 1. Abre a OS; só então marca a solicitação como verificada
-    const { data: osData, error: osErr } = await supabase
+    // 1. Abre a OS; só então marca a solicitação como verificada.
+    // O id da solicitação vira o client_uuid da OS: se a atualização da solicitação
+    // falhar e o gestor tentar de novo, o servidor recusa a duplicata (índice único)
+    // e reaproveitamos a OS que já existe em vez de abrir outra.
+    let { data: osData, error: osErr } = await supabase
       .from('ordens_de_servico')
       .insert({
         equipamento_nome: req.equipamento_nome,
@@ -300,9 +303,22 @@ export function PlanejamentoFacilities() {
         tipo_manutencao: 'Corretiva',
         empresa_id: profile.empresa_id,
         tecnico_id: tecnico.id_telegram,
+        client_uuid: id,
       })
       .select('id')
       .single();
+
+    if (osErr?.code === '23505') {
+      const { data: existente, error: findErr } = await supabase
+        .from('ordens_de_servico')
+        .select('id')
+        .eq('client_uuid', id)
+        .limit(1);
+      if (!findErr && existente && existente.length > 0) {
+        osData = existente[0];
+        osErr = null;
+      }
+    }
 
     if (osErr || !osData) {
       toast.error(osErr ? getErrorMessage(osErr) : 'Não foi possível abrir a OS.');

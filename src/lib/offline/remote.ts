@@ -104,6 +104,7 @@ async function sendClose(op: Extract<OfflineOp, { kind: 'close_os' }>): Promise<
   const { data, error } = await supabase.rpc('fn_campo_fechar_os', {
     p_os_id: op.os_id,
     p_client_uuid: op.os_client_uuid,
+    p_op_id: op.id,
     p_status: c.status_os,
     p_diagnostico: c.diagnostico_solucao,
     p_notas: c.notas_finais,

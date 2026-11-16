@@ -39,3 +39,4 @@ Tela `/campo`: abre e fecha OS sem internet e envia tudo automaticamente quando 
 
 - `20261111120300_os_client_uuid_campo.sql` (já aplicada em produção): identificador do aparelho.
 - `20261111120500_campo_fechar_os_atomico.sql`: fechamento em transação única. Enquanto não for aplicada, o app usa o envio em etapas automaticamente.
+- `20261116120000_fechar_os_idempotencia_por_operacao.sql`: cada fechamento da fila leva o id da própria operação, então um reenvio é reconhecido sem confundir com outra pessoa que fechou a OS com o mesmo status e diagnóstico (esse caso agora volta como conflito para revisão). Sem ela, o app continua funcionando com a regra anterior.

@@ -1506,6 +1506,7 @@ export type Database = {
           p_closed_at: string
           p_diagnostico: string
           p_notas: string | null
+          p_op_id?: string | null
           p_os_id: number | null
           p_pecas?: Json
           p_status: string
