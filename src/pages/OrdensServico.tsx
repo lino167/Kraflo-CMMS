@@ -345,7 +345,7 @@ export default function OrdensServico() {
     <main className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <h1 className="text-2xl font-mono font-bold text-foreground tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
             Painel Operacional do Técnico
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Gerencie suas ordens de serviço, realize preventivas e atenda chamados de operadores.</p>
@@ -354,15 +354,15 @@ export default function OrdensServico() {
 
       <Tabs defaultValue="lista-os" className="w-full space-y-6">
         <TabsList className="bg-secondary/40 border border-border p-1 rounded-xl flex w-full justify-start overflow-x-auto h-auto sm:inline-flex md:w-auto">
-          <TabsTrigger value="lista-os" className="font-mono text-xs gap-2 py-2.5 px-4 rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-foreground data-[state=active]:shadow-neon transition-all">
+          <TabsTrigger value="lista-os" className="font-mono text-xs gap-2 py-2.5 px-4 rounded-lg data-[state=active]:bg-secondary data-[state=active]:text-foreground transition-all">
             <ClipboardList className="h-4 w-4 text-primary" />
             Minhas OS ({totalCount})
           </TabsTrigger>
-          <TabsTrigger value="preventivas" className="font-mono text-xs gap-2 py-2.5 px-4 rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-foreground data-[state=active]:shadow-neon transition-all">
+          <TabsTrigger value="preventivas" className="font-mono text-xs gap-2 py-2.5 px-4 rounded-lg data-[state=active]:bg-secondary data-[state=active]:text-foreground transition-all">
             <Calendar className="h-4 w-4 text-blue-400" />
             Preventivas Pendentes ({preventivasPendentes.length})
           </TabsTrigger>
-          <TabsTrigger value="solicitacoes" className="font-mono text-xs gap-2 py-2.5 px-4 rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-foreground data-[state=active]:shadow-neon transition-all">
+          <TabsTrigger value="solicitacoes" className="font-mono text-xs gap-2 py-2.5 px-4 rounded-lg data-[state=active]:bg-secondary data-[state=active]:text-foreground transition-all">
             <MessageSquare className="h-4 w-4 text-warning" />
             Solicitações ({solicitacoesPendentes.length})
           </TabsTrigger>

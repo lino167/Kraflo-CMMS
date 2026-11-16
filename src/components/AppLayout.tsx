@@ -301,7 +301,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <Shield className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" /> Admin
                 </Badge>
               ) : roles.includes('admin_empresa') ? (
-                <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 font-mono text-[9px] md:text-[10px] uppercase px-1.5">
+                <Badge variant="outline" className="bg-secondary text-muted-foreground border-border font-mono text-[9px] md:text-[10px] uppercase px-1.5">
                   <Building2 className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" /> Empresa
                 </Badge>
               ) : null}

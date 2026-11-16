@@ -112,7 +112,7 @@ function HelpBadge({ text }: { text: string }) {
     <Tooltip>
       <TooltipTrigger asChild>
         <span 
-          className="inline-flex items-center justify-center rounded-full bg-primary/10 hover:bg-primary/25 text-primary h-4.5 w-4.5 text-[11px] font-mono font-bold cursor-help transition-all ml-1.5 border border-primary/20 hover:scale-110 select-none shadow-sm shadow-primary/5 shrink-0" 
+          className="inline-flex items-center justify-center rounded-full bg-secondary hover:bg-muted text-muted-foreground h-4.5 w-4.5 text-[11px] font-mono font-bold cursor-help transition-all ml-1.5 border border-primary/20 hover:scale-110 select-none shadow-sm shadow-primary/5 shrink-0" 
           onClick={(e) => e.stopPropagation()}
         >
           ?
@@ -486,16 +486,16 @@ export function Dashboard({ onAskAI }: DashboardProps) {
 
         <Tabs defaultValue="operacional" className="space-y-6 w-full">
           <TabsList className="grid w-full md:w-fit grid-cols-2 md:grid-cols-4 glass-panel border border-border p-1 h-auto rounded-xl gap-1">
-            <TabsTrigger value="operacional" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
+            <TabsTrigger value="operacional" className="rounded-lg data-[state=active]:bg-secondary data-[state=active]:text-foreground px-6 py-2">
               Visão Operacional
             </TabsTrigger>
-            <TabsTrigger value="equipamentos" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
+            <TabsTrigger value="equipamentos" className="rounded-lg data-[state=active]:bg-secondary data-[state=active]:text-foreground px-6 py-2">
               Equipamentos
             </TabsTrigger>
-            <TabsTrigger value="planning" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
+            <TabsTrigger value="planning" className="rounded-lg data-[state=active]:bg-secondary data-[state=active]:text-foreground px-6 py-2">
               Gestão & Facilities
             </TabsTrigger>
-            <TabsTrigger value="inteligencia" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-neon px-6 py-2">
+            <TabsTrigger value="inteligencia" className="rounded-lg data-[state=active]:bg-secondary data-[state=active]:text-foreground px-6 py-2">
               Análises & Histórico
             </TabsTrigger>
           </TabsList>
@@ -513,7 +513,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                   <ClipboardList className="h-4 w-4 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-mono font-bold text-primary">{stats.osAbertas}</div>
+                  <div className="text-3xl font-mono font-bold text-foreground">{stats.osAbertas}</div>
                   <p className="text-xs text-muted-foreground mt-1">aguardando resolução</p>
                 </CardContent>
               </Card>
@@ -692,7 +692,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
                {/* Equipamentos Problemáticos */}
                <Card className="glass-panel border-border">
                 <CardHeader>
-                  <CardTitle className="font-mono text-lg flex items-center gap-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 text-orange-500" />
                     Equipamentos Críticos
                     <HelpBadge text="🚨 As máquinas com menor MTBF (que quebram no menor espaço de tempo)." />
@@ -747,7 +747,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
               </div>
               <Card className="glass-panel border-border">
                 <CardHeader>
-                <CardTitle className="font-mono text-lg flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-primary" />
                   Distribuição por Tipo
                 </CardTitle>
@@ -791,7 +791,7 @@ export function Dashboard({ onAskAI }: DashboardProps) {
 
            <Card className="glass-panel border-border col-span-1 lg:col-span-2">
             <CardHeader>
-              <CardTitle className="font-mono text-lg flex items-center gap-2">
+              <CardTitle className="text-lg flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-primary" />
                 Histórico Recente
               </CardTitle>

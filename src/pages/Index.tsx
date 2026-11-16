@@ -128,7 +128,7 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
             <MessageSquare className="h-4 w-4" />
             <span className="hidden sm:inline">Assistente</span>
           </TabsTrigger>
-          <TabsTrigger value="relatorios" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary transition-all">
+          <TabsTrigger value="relatorios" className="data-[state=active]:bg-secondary data-[state=active]:text-foreground transition-all">
             <BarChart3 className="h-4 w-4 mr-2" />
             Relatórios IA
           </TabsTrigger>

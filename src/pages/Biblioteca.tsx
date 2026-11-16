@@ -749,7 +749,7 @@ export default function Biblioteca() {
         <DialogContent className="max-w-3xl glass-panel border-border shadow-2xl p-0 overflow-hidden">
           <div className="p-6 bg-primary/5 border-b border-border">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-mono flex items-center gap-2">
+              <DialogTitle className="text-2xl flex items-center gap-2">
                 <UploadIcon className="h-6 w-6 text-primary" />
                 Indexação de Novo Manual
               </DialogTitle>

@@ -760,7 +760,7 @@ export function PlanejamentoFacilities() {
               {/* SLA details view */}
               <Card className="glass-panel border-border">
                 <CardHeader>
-                  <CardTitle className="font-mono text-lg flex items-center gap-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
                     <Clock className="h-5 w-5 text-primary" />
                     Controle de Tempo de Atendimento e SLA por Criticidade
                   </CardTitle>
@@ -843,7 +843,7 @@ export function PlanejamentoFacilities() {
               <CardHeader>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <CardTitle className="font-mono text-lg flex items-center gap-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
                       <CalendarIcon className="h-5 w-5 text-primary" />
                       Visualização de Calendário para Ordens de Serviço Real
                     </CardTitle>
@@ -969,7 +969,7 @@ export function PlanejamentoFacilities() {
           {activeSubTab === 'orcamentos' && (
             <Card className="glass-panel border-border">
               <CardHeader>
-                <CardTitle className="font-mono text-lg flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <DollarSign className="h-5 w-5 text-primary" />
                   Orçamentos de Serviços Externos
                 </CardTitle>
@@ -1058,7 +1058,7 @@ export function PlanejamentoFacilities() {
               <CardHeader>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <CardTitle className="font-mono text-lg flex items-center gap-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
                       <CheckSquare className="h-5 w-5 text-primary" />
                       Criação de Listas de Verificação (Supabase Sincronizado)
                     </CardTitle>
@@ -1132,7 +1132,7 @@ export function PlanejamentoFacilities() {
           {activeSubTab === 'solicitacoes' && (
             <Card className="glass-panel border-border">
               <CardHeader>
-                <CardTitle className="font-mono text-lg flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <ClipboardCheck className="h-5 w-5 text-primary" />
                   Triagem de Solicitações de Manutenção
                 </CardTitle>
@@ -1209,7 +1209,7 @@ export function PlanejamentoFacilities() {
           {activeSubTab === 'relatorios' && (
             <Card className="glass-panel border-border">
               <CardHeader>
-                <CardTitle className="font-mono text-lg flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <FileText className="h-5 w-5 text-primary" />
                   Gestão e Envio de Relatórios Técnicos Reais para Clientes
                 </CardTitle>
@@ -1270,7 +1270,7 @@ export function PlanejamentoFacilities() {
           {activeSubTab === 'guest' && (
             <Card className="glass-panel border-border">
               <CardHeader>
-                <CardTitle className="font-mono text-lg flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <Users className="h-5 w-5 text-primary" />
                   Portal de Solicitações
                 </CardTitle>
@@ -1333,7 +1333,7 @@ export function PlanejamentoFacilities() {
                 <div className="lg:col-span-1 space-y-6">
                   <Card className="glass-panel border-border">
                   <CardHeader>
-                    <CardTitle className="font-mono text-lg flex items-center gap-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
                       <Activity className="h-5 w-5 text-primary animate-pulse" />
                       Registrar Medição
                     </CardTitle>
@@ -1468,7 +1468,7 @@ export function PlanejamentoFacilities() {
                   {/* Alertas Ativos */}
                   <Card className="glass-panel border-border border-red-500/20 bg-red-500/5">
                     <CardHeader>
-                      <CardTitle className="font-mono text-lg flex items-center gap-2 text-red-400">
+                      <CardTitle className="text-lg flex items-center gap-2 text-red-400">
                         <AlertTriangle className="h-5 w-5 animate-pulse" />
                         Alertas Ativos & Ordens de Serviço Automatizadas
                       </CardTitle>
@@ -1523,7 +1523,7 @@ export function PlanejamentoFacilities() {
                   {/* Lista de Medições Recentes */}
                   <Card className="glass-panel border-border">
                     <CardHeader>
-                      <CardTitle className="font-mono text-lg">Histórico de Medições de Condition Monitoring</CardTitle>
+                      <CardTitle className="text-lg">Histórico de Medições de Condition Monitoring</CardTitle>
                       <CardDescription>
                         Trilha de auditoria das últimas medições registradas por planejadores e técnicos.
                       </CardDescription>

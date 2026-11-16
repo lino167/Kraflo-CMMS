@@ -97,7 +97,7 @@ export function DateRangeFilter({ value, onChange, className }: DateRangeFilterP
       {presets.map((preset) => (
         <Button
           key={preset.key}
-          variant={activePreset === preset.key ? 'default' : 'outline'}
+          variant={activePreset === preset.key ? 'secondary' : 'outline'}
           size="sm"
           onClick={() => applyPreset(preset.key)}
           className="h-8"
@@ -110,7 +110,7 @@ export function DateRangeFilter({ value, onChange, className }: DateRangeFilterP
       <Popover open={isFromOpen} onOpenChange={setIsFromOpen}>
         <PopoverTrigger asChild>
           <Button
-            variant={activePreset === 'custom' ? 'default' : 'outline'}
+            variant={activePreset === 'custom' ? 'secondary' : 'outline'}
             size="sm"
             className="h-8 min-w-[120px]"
           >
@@ -136,7 +136,7 @@ export function DateRangeFilter({ value, onChange, className }: DateRangeFilterP
       <Popover open={isToOpen} onOpenChange={setIsToOpen}>
         <PopoverTrigger asChild>
           <Button
-            variant={activePreset === 'custom' ? 'default' : 'outline'}
+            variant={activePreset === 'custom' ? 'secondary' : 'outline'}
             size="sm"
             className="h-8 min-w-[120px]"
           >

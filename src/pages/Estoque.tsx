@@ -281,7 +281,7 @@ export default function Estoque() {
             <Boxes className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="font-mono text-2xl font-bold uppercase tracking-tight text-foreground">Estoque de Peças</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Estoque de Peças</h1>
             <p className="text-sm text-muted-foreground">
               Saldo, custo médio e ponto de reposição das peças de manutenção
             </p>

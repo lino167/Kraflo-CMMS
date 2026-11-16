@@ -92,7 +92,7 @@ export default function Conta() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <h1 className="font-mono text-2xl font-bold uppercase tracking-tight">Conta e Equipe</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Conta e Equipe</h1>
         <p className="text-sm text-muted-foreground">
           {profile?.nome_completo} · {user?.email}
         </p>

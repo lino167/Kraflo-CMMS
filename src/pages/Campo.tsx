@@ -379,7 +379,7 @@ export default function Campo() {
     <div className="mx-auto max-w-xl space-y-4 pb-24">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="font-mono text-xl font-bold uppercase tracking-tight">Modo Campo</h1>
+          <h1 className="text-xl font-bold tracking-tight">Modo Campo</h1>
           <p className="text-xs text-muted-foreground">
             {snap
               ? `Dados de apoio de ${new Date(snap.saved_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}`

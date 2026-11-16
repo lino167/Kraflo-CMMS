@@ -245,7 +245,7 @@ export default function Configuracoes() {
             <Settings2 className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-mono font-bold tracking-tight text-foreground uppercase">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Gestão de Ativos
             </h1>
             <p className="text-sm text-muted-foreground">
