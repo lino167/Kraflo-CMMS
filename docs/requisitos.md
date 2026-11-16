@@ -50,7 +50,11 @@ Sem página: o bot do Telegram (`telegram-webhook`), que será aposentado em fav
 - **RF-AUT-02** ✅ Criar conta informando um código de convite (entra na empresa como técnico).
 - **RF-AUT-03** ✅ Criar conta com empresa nova (quem cria vira admin da empresa).
 - **RF-AUT-04** ✅ Código de convite inválido é recusado sem revelar dados da empresa.
-- **RF-AUT-05** 💡 **Não existe** recuperação de senha na tela de login: quem esquece a senha fica sem acesso. É uma lacuna a corrigir (alta prioridade).
+- **RF-AUT-05** 🆕 **Recuperação de senha**: "Esqueci minha senha" no login envia um link por e-mail; o link abre `/redefinir-senha`, onde se cria a nova senha e já se entra no sistema. Antes não existia: quem esquecia a senha ficava sem acesso.
+  - A resposta é a mesma exista ou não uma conta com o e-mail (não revela quem é cliente) e o reenvio espera 60 s.
+  - Ao salvar, os outros aparelhos conectados são desconectados.
+  - Link expirado, usado ou aberto sem o e-mail mostra "Link inválido ou expirado" com botão para pedir outro.
+  - **Configuração obrigatória no Supabase** (ver 6).
 
 ### 3.2 Dashboard (`/`)
 - **RF-DSH-01** ✅ Filtro de período (3, 7, 15, 30 dias, semana, mês e intervalo livre) valendo para todas as abas.
@@ -228,15 +232,33 @@ Sem página: o bot do Telegram (`telegram-webhook`), que será aposentado em fav
 ### Criado
 | O quê | Motivo |
 |---|---|
+| Recuperação de senha (`/redefinir-senha`) | Quem esquecia a senha ficava sem acesso |
 | SLA calculado das OS reais, por prioridade | Substitui o inventado por um número que o gestor pode usar |
 | Cartões arrastáveis no Dashboard | Cada gestor organiza o painel do seu jeito |
 | Modo sol e alvos de 48 px no `/campo` | Uso em fábrica |
 
 ### Recomendado (decisão sua, não executei)
-0. **Recuperação de senha** (RF-AUT-05): é a lacuna mais séria encontrada.
 1. **Aposentar o bot do Telegram** e o cartão de vínculo em Conta (RF-BOT-02).
 2. **Unificar a indexação** em um só lugar (a página de Indexação) e deixar o resto automático.
 3. **Raio-X × aba Equipamentos**: manter um só ou dar ao Raio-X um histórico por máquina.
 4. **Acessibilidade** (RNF-ACE-02) e **tamanho do pacote** (RNF-PER-01).
 5. **Auditoria de exclusões** e **remoção de membro da equipe** (RF-OS-09, RF-CON-05, RNF-SEG-07).
 6. **Aba Gestão & Facilities**: orçamentos, checklists, medições e acesso de convidados são funcionalidades de manutenção de facilities que cabem em uma área própria; avaliar se o cliente usa antes de investir.
+
+---
+
+## 6. Configuração necessária para a recuperação de senha
+
+O código está pronto, mas o e-mail só chega e o link só funciona depois destes ajustes no painel do Supabase (não dá para fazê-los pelo código):
+
+1. **Authentication → URL Configuration → Redirect URLs**: adicionar
+   - `https://kraflo.vercel.app/redefinir-senha`
+   - para testar nos previews da Vercel, um endereço com curinga, por exemplo `https://kraflo-git-*-lino167s-projects.vercel.app/redefinir-senha`
+   - para desenvolvimento local, `http://localhost:8080/redefinir-senha` (ajustar a porta)
+
+   Sem isso, o link do e-mail cai na página inicial em vez de `/redefinir-senha`.
+2. **Authentication → Emails → Reset Password**: conferir que o modelo contém `{{ .ConfirmationURL }}` e, de preferência, traduzir o texto para português.
+3. **Authentication → SMTP Settings**: configurar um provedor de e-mail próprio para produção. O envio padrão do Supabase tem limite baixo de mensagens por hora e serve só para testes.
+4. Testar uma vez de ponta a ponta com um e-mail real: pedir o link, abrir e trocar a senha.
+
+Regra de senha atual: de 6 a 72 caracteres (a mesma do cadastro). Elevar o mínimo para 8 deve ser feito no cadastro e na recuperação juntos.

@@ -11,7 +11,8 @@ import { EmailVerificationDialog } from '@/components/EmailVerificationDialog';
 import { toast } from '@/components/ui/sonner';
 import { Bot, Loader2, Mail, Lock, User, Briefcase, Building2, Hash, CheckCircle2 } from 'lucide-react';
 import { z } from 'zod';
-;
+import { ESPERA_REENVIO_SEGUNDOS, emailRecuperacaoSchema, urlRedefinirSenha } from '@/lib/recuperar-senha';
+
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -48,6 +49,12 @@ export default function Auth() {
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
   
+
+  // Recuperação de senha
+  const [recuperando, setRecuperando] = useState(false);
+  const [recEmail, setRecEmail] = useState('');
+  const [recEnviado, setRecEnviado] = useState(false);
+  const [recEspera, setRecEspera] = useState(0);
 
   // Login form
   const [loginEmail, setLoginEmail] = useState('');
@@ -95,6 +102,47 @@ export default function Auth() {
     }
   }, [user, authLoading, navigate]);
 
+
+  // Contagem regressiva para poder pedir outro e-mail
+  useEffect(() => {
+    if (recEspera <= 0) return;
+    const t = window.setTimeout(() => setRecEspera((s) => s - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [recEspera]);
+
+  const handleRecuperar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = emailRecuperacaoSchema.safeParse(recEmail);
+    if (!email.success) {
+      toast.error(email.error.errors[0].message);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.data, {
+        redirectTo: urlRedefinirSenha(window.location.origin),
+      });
+      if (error?.status === 429) {
+        toast.error('Muitas tentativas. Aguarde um minuto e tente de novo.');
+        setRecEspera(ESPERA_REENVIO_SEGUNDOS);
+        return;
+      }
+      if (error) {
+        toast.error('Não foi possível enviar agora. Tente de novo em instantes.');
+        return;
+      }
+      // A resposta é a mesma exista ou não uma conta com esse e-mail: não revela quem é cliente
+      setRecEnviado(true);
+      setRecEspera(ESPERA_REENVIO_SEGUNDOS);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const voltarAoLogin = () => {
+    setRecuperando(false);
+    setRecEnviado(false);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,6 +261,68 @@ export default function Auth() {
               </TabsList>
 
               <TabsContent value="login">
+                {recuperando ? (
+                  recEnviado ? (
+                    <div className="space-y-4" role="status">
+                      <div className="flex items-start gap-3 rounded-lg border border-border bg-secondary/30 p-4">
+                        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-500" />
+                        <p className="text-sm text-foreground">
+                          Se existir uma conta com esse e-mail, enviamos um link para criar uma nova senha. Confira também
+                          a caixa de spam. O link vale por pouco tempo.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        disabled={recEspera > 0 || isLoading}
+                        onClick={() => setRecEnviado(false)}
+                      >
+                        {recEspera > 0 ? `Enviar de novo em ${recEspera}s` : 'Enviar de novo'}
+                      </Button>
+                      <Button type="button" variant="ghost" className="w-full" onClick={voltarAoLogin}>
+                        Voltar ao login
+                      </Button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleRecuperar} className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Informe o e-mail da sua conta. Vamos enviar um link para você criar uma nova senha.
+                      </p>
+                      <div className="space-y-2">
+                        <Label htmlFor="rec-email">Email</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="rec-email"
+                            type="email"
+                            autoComplete="email"
+                            placeholder="seu@email.com"
+                            value={recEmail}
+                            onChange={(e) => setRecEmail(e.target.value)}
+                            className="pl-10"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <Button type="submit" className="w-full" disabled={isLoading || recEspera > 0}>
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Enviando...
+                          </>
+                        ) : recEspera > 0 ? (
+                          `Aguarde ${recEspera}s`
+                        ) : (
+                          'Enviar link'
+                        )}
+                      </Button>
+                      <Button type="button" variant="ghost" className="w-full" onClick={voltarAoLogin}>
+                        Voltar ao login
+                      </Button>
+                    </form>
+                  )
+                ) : (
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Email</Label>
@@ -244,6 +354,18 @@ export default function Auth() {
                       />
                     </div>
                   </div>
+                  <div className="-mt-1 text-right">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRecEmail(loginEmail);
+                        setRecuperando(true);
+                      }}
+                      className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                    >
+                      Esqueci minha senha
+                    </button>
+                  </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? (
                       <>
@@ -255,6 +377,7 @@ export default function Auth() {
                     )}
                   </Button>
                 </form>
+                )}
               </TabsContent>
 
               <TabsContent value="signup">
