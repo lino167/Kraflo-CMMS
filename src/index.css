@@ -207,3 +207,12 @@
   text-decoration-line: underline;
   text-underline-offset: 4px;
 }
+
+/* Draggable Widget Grid: cores do tema da Kraflo (DESIGN.md) */
+.dwg-root {
+  --dwg-card: hsl(var(--card));
+  --dwg-card-foreground: hsl(var(--card-foreground));
+  --dwg-border: hsl(var(--border));
+  --dwg-ring: hsl(var(--ring));
+  --dwg-landed: hsl(var(--primary) / 0.5);
+}

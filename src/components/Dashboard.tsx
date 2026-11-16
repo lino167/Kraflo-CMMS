@@ -20,10 +20,12 @@ import {
 } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DateRangeFilter, DateRange } from '@/components/DateRangeFilter'
 import { FrequentProblemsCard } from '@/components/FrequentProblemsCard'
 import { TrendChart } from '@/components/TrendChart'
+import { DraggableWidgetGrid, type WidgetItem } from '@/components/ui/draggable-widget-grid'
 import { DashboardSkeleton } from '@/components/DashboardSkeleton'
 import {
   ClipboardList,
@@ -107,6 +109,81 @@ interface DashboardProps {
   onAskAI?: (question: string) => void
 }
 
+
+/* ---------- Grade de widgets arrastáveis (aba Operacional) ---------- */
+
+const WIDGETS_KEY = 'kraflo:dashboard-widgets:v1'
+
+const DEFAULT_WIDGETS: WidgetItem[] = [
+  { id: 'os-abertas', size: 'sm', label: 'OS Abertas' },
+  { id: 'fechadas-hoje', size: 'sm', label: 'Fechadas Hoje' },
+  { id: 'urgentes', size: 'sm', label: 'OS Urgentes' },
+  { id: 'mttr', size: 'sm', label: 'Velocidade (MTTR)' },
+  { id: 'chart-evolucao', size: 'lg', label: 'Evolução de OS' },
+  { id: 'tempo-fila', size: 'sm', label: 'Tempo na Fila' },
+  { id: 'atrasadas', size: 'sm', label: 'Atrasadas' },
+  { id: 'novas-quebras', size: 'sm', label: 'Novas Quebras (7 dias)' },
+  { id: 'consertos', size: 'sm', label: 'Consertos Entregues (7 dias)' },
+  { id: 'chart-mttr', size: 'lg', label: 'MTTR por Dia' },
+]
+
+/** A ordem guardada neste aparelho; qualquer divergência dos widgets atuais volta ao padrão. */
+function loadWidgets(): WidgetItem[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(WIDGETS_KEY) || 'null') as string[] | null
+    if (!Array.isArray(saved) || saved.length !== DEFAULT_WIDGETS.length) return DEFAULT_WIDGETS
+    const byId = new Map(DEFAULT_WIDGETS.map((w) => [w.id, w]))
+    const ordered = saved.map((id) => byId.get(id))
+    if (ordered.some((w) => !w) || new Set(saved).size !== saved.length) return DEFAULT_WIDGETS
+    return ordered as WidgetItem[]
+  } catch {
+    return DEFAULT_WIDGETS
+  }
+}
+
+function saveWidgets(items: WidgetItem[]) {
+  try {
+    localStorage.setItem(WIDGETS_KEY, JSON.stringify(items.map((w) => w.id)))
+  } catch {
+    // armazenamento cheio ou bloqueado: a ordem só não é lembrada
+  }
+}
+
+function Kpi({
+  title,
+  help,
+  icon,
+  value,
+  valueClass = 'text-foreground',
+  sub,
+  urgent = false,
+}: {
+  title: string
+  help: string
+  icon?: React.ReactNode
+  value: React.ReactNode
+  valueClass?: string
+  sub: React.ReactNode
+  urgent?: boolean
+}) {
+  return (
+    <div className="relative flex h-full flex-col justify-between p-5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center text-sm font-medium text-muted-foreground">
+          {title}
+          <HelpBadge text={help} />
+        </div>
+        {icon}
+      </div>
+      <div>
+        <div className={`flex items-baseline gap-2 text-3xl font-mono font-bold ${valueClass}`}>{value}</div>
+        <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
+      </div>
+      {urgent && <div className="absolute right-0 top-0 h-full w-1 bg-red-500 animate-pulse-neon" />}
+    </div>
+  )
+}
+
 function HelpBadge({ text }: { text: string }) {
   return (
     <Tooltip>
@@ -127,6 +204,7 @@ function HelpBadge({ text }: { text: string }) {
 
 export function Dashboard({ onAskAI }: DashboardProps) {
   const { profile, isAdminKraflo } = useAuth()
+  const [widgetsKey, setWidgetsKey] = useState(0)
   const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
@@ -502,140 +580,163 @@ export function Dashboard({ onAskAI }: DashboardProps) {
 
           {/* --- ABA OPERACIONAL --- */}
           <TabsContent value="operacional" className="space-y-6 animate-slide-in-right">
-            {/* KPI Cards - Bento Grid High Density */}
-            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4">
-              <Card className="col-span-2 xl:col-span-2 industrial-card border-border">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    OS Abertas
-                    <HelpBadge text="📋 Serviços na fila esperando início do trabalho." />
-                  </CardTitle>
-                  <ClipboardList className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-mono font-bold text-foreground">{stats.osAbertas}</div>
-                  <p className="text-xs text-muted-foreground mt-1">aguardando resolução</p>
-                </CardContent>
-              </Card>
-
-              <Card className="col-span-2 xl:col-span-2 industrial-card border-border">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    Fechadas Hoje
-                    <HelpBadge text="🛠️ Consertos finalizados e entregues para a produção hoje." />
-                  </CardTitle>
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-mono font-bold text-foreground">{stats.osFechadasHoje}</div>
-                  <p className="text-xs text-muted-foreground mt-1">concluídas nas últimas 24h</p>
-                </CardContent>
-              </Card>
-
-              <Card className="col-span-2 xl:col-span-2 industrial-card border-border relative overflow-hidden group">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    OS Urgentes
-                    <HelpBadge text="🚨 Máquinas com falhas graves que precisam de atenção imediata." />
-                  </CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-red-500 group-hover:scale-110 transition-transform" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-mono font-bold text-foreground">{stats.osUrgentes}</div>
-                  <p className="text-xs text-muted-foreground mt-1">prioridade alta/urgente</p>
-                </CardContent>
-                {stats.osUrgentes > 0 && <div className="absolute top-0 right-0 w-1 h-full bg-red-500 animate-pulse-neon" />}
-              </Card>
-
-              <Card className="col-span-2 xl:col-span-2 industrial-card border-border">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    Velocidade (MTTR)
-                    <HelpBadge text="⏱️ MTTR: Nosso tempo médio real para consertar e devolver uma máquina rodando." />
-                  </CardTitle>
-                  <Clock className="h-4 w-4 text-blue-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-mono font-bold text-foreground">{stats.tempoMedioResolucao}h</div>
-                  <p className="text-xs text-muted-foreground mt-1">tempo médio de resolução (MTTR)</p>
-                </CardContent>
-              </Card>
+            {/* Widgets arrastáveis: arraste para reorganizar (a ordem fica guardada neste aparelho) */}
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">
+                Arraste os cartões para organizar o painel do seu jeito.
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-muted-foreground"
+                onClick={() => {
+                  try {
+                    localStorage.removeItem(WIDGETS_KEY)
+                  } catch {
+                    // sem armazenamento: nada a limpar
+                  }
+                  setWidgetsKey((k) => k + 1)
+                }}
+              >
+                Restaurar layout
+              </Button>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="industrial-card border-border">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
-                    Tempo na Fila (Idade Média)
-                    <HelpBadge text="⏳ Quanto tempo os chamados esperam por nós na fila." />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-mono font-bold text-foreground">{idadeMediaAbertasHoras}h</div>
-                  <p className="text-xs text-muted-foreground mt-1">idade média das OS abertas</p>
-                </CardContent>
-              </Card>
-
-              <Card className="industrial-card border-border">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
-                    Atrasadas (≥24h)
-                    <HelpBadge text="⚠️ Serviços atrasados há mais de 1 dia na fila." />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-mono font-bold text-red-400">{atrasadas}</div>
-                  <p className="text-xs text-muted-foreground mt-1">no prazo: {dentroPrazo}</p>
-                </CardContent>
-              </Card>
-
-               <Card className="industrial-card border-border">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
-                    Novas Quebras (7 dias)
-                    <HelpBadge text="📊 Novos chamados de manutenção abertos nesta semana." />
-                  </CardTitle>
-                  {tendenciaAbertura.variacao <= 0 ? <TrendingDown className="h-3 w-3 text-green-500" /> : <TrendingUp className="h-3 w-3 text-red-500" />}
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-mono font-bold text-foreground flex items-baseline gap-2">
-                    {tendenciaAbertura.semanaAtual}
-                    <span className={`text-xs ${tendenciaAbertura.variacao <= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {tendenciaAbertura.variacao > 0 ? '+' : ''}{tendenciaAbertura.variacao}%
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">novas OS abertas na semana</p>
-                </CardContent>
-              </Card>
-
-              <Card className="industrial-card border-border">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center">
-                    Consertos Entregues (7 dias)
-                    <HelpBadge text="🛠️ Consertos finalizados e entregues nesta semana." />
-                  </CardTitle>
-                  {tendenciaFechamento.variacao >= 0 ? <TrendingUp className="h-3 w-3 text-green-500" /> : <TrendingDown className="h-3 w-3 text-red-500" />}
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-mono font-bold text-foreground flex items-baseline gap-2">
-                    {tendenciaFechamento.semanaAtual}
-                    <span className={`text-xs ${tendenciaFechamento.variacao >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {tendenciaFechamento.variacao > 0 ? '+' : ''}{tendenciaFechamento.variacao}%
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">OS concluídas na semana</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="glow-border rounded-xl">
-                <TrendChart dateRange={dateRange} />
-              </div>
-              <div className="glow-border rounded-xl">
-                <MTTRLineChart dateRange={dateRange} />
-              </div>
-            </div>
+            <DraggableWidgetGrid
+              key={widgetsKey}
+              items={widgetsKey === 0 ? loadWidgets() : DEFAULT_WIDGETS}
+              onChange={saveWidgets}
+              maxColumns={5}
+              cellSize={210}
+              gap={16}
+              radius={12}
+              renderItem={(item) => {
+                switch (item.id) {
+                  case 'os-abertas':
+                    return (
+                      <Kpi
+                        title="OS Abertas"
+                        help="📋 Serviços na fila esperando início do trabalho."
+                        icon={<ClipboardList className="h-4 w-4 text-primary" />}
+                        value={stats.osAbertas}
+                        sub="aguardando resolução"
+                      />
+                    )
+                  case 'fechadas-hoje':
+                    return (
+                      <Kpi
+                        title="Fechadas Hoje"
+                        help="🛠️ Consertos finalizados e entregues para a produção hoje."
+                        icon={<CheckCircle2 className="h-4 w-4 text-green-500" />}
+                        value={stats.osFechadasHoje}
+                        sub="concluídas nas últimas 24h"
+                      />
+                    )
+                  case 'urgentes':
+                    return (
+                      <Kpi
+                        title="OS Urgentes"
+                        help="🚨 Máquinas com falhas graves que precisam de atenção imediata."
+                        icon={<AlertTriangle className="h-4 w-4 text-red-500" />}
+                        value={stats.osUrgentes}
+                        sub="prioridade alta/urgente"
+                        urgent={stats.osUrgentes > 0}
+                      />
+                    )
+                  case 'mttr':
+                    return (
+                      <Kpi
+                        title="Velocidade (MTTR)"
+                        help="⏱️ MTTR: Nosso tempo médio real para consertar e devolver uma máquina rodando."
+                        icon={<Clock className="h-4 w-4 text-blue-500" />}
+                        value={`${stats.tempoMedioResolucao}h`}
+                        sub="tempo médio de resolução (MTTR)"
+                      />
+                    )
+                  case 'tempo-fila':
+                    return (
+                      <Kpi
+                        title="Tempo na Fila"
+                        help="⏳ Quanto tempo os chamados esperam por nós na fila."
+                        value={`${idadeMediaAbertasHoras}h`}
+                        sub="idade média das OS abertas"
+                      />
+                    )
+                  case 'atrasadas':
+                    return (
+                      <Kpi
+                        title="Atrasadas (≥24h)"
+                        help="⚠️ Serviços atrasados há mais de 1 dia na fila."
+                        value={atrasadas}
+                        valueClass="text-red-400"
+                        sub={`no prazo: ${dentroPrazo}`}
+                      />
+                    )
+                  case 'novas-quebras':
+                    return (
+                      <Kpi
+                        title="Novas Quebras (7 dias)"
+                        help="📊 Novos chamados de manutenção abertos nesta semana."
+                        icon={
+                          tendenciaAbertura.variacao <= 0 ? (
+                            <TrendingDown className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <TrendingUp className="h-3 w-3 text-red-500" />
+                          )
+                        }
+                        value={
+                          <>
+                            {tendenciaAbertura.semanaAtual}
+                            <span className={`text-xs ${tendenciaAbertura.variacao <= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              {tendenciaAbertura.variacao > 0 ? '+' : ''}
+                              {tendenciaAbertura.variacao}%
+                            </span>
+                          </>
+                        }
+                        sub="novas OS abertas na semana"
+                      />
+                    )
+                  case 'consertos':
+                    return (
+                      <Kpi
+                        title="Consertos Entregues (7 dias)"
+                        help="🛠️ Consertos finalizados e entregues nesta semana."
+                        icon={
+                          tendenciaFechamento.variacao >= 0 ? (
+                            <TrendingUp className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <TrendingDown className="h-3 w-3 text-red-500" />
+                          )
+                        }
+                        value={
+                          <>
+                            {tendenciaFechamento.semanaAtual}
+                            <span className={`text-xs ${tendenciaFechamento.variacao >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              {tendenciaFechamento.variacao > 0 ? '+' : ''}
+                              {tendenciaFechamento.variacao}%
+                            </span>
+                          </>
+                        }
+                        sub="OS concluídas na semana"
+                      />
+                    )
+                  case 'chart-evolucao':
+                    return (
+                      <div className="h-full overflow-auto [&>*]:h-full [&>*]:rounded-none [&>*]:border-0 [&>*]:bg-transparent">
+                        <TrendChart dateRange={dateRange} />
+                      </div>
+                    )
+                  case 'chart-mttr':
+                    return (
+                      <div className="h-full overflow-auto [&>*]:h-full [&>*]:rounded-none [&>*]:border-0 [&>*]:bg-transparent">
+                        <MTTRLineChart dateRange={dateRange} />
+                      </div>
+                    )
+                  default:
+                    return null
+                }
+              }}
+            />
           </TabsContent>
 
           {/* --- ABA PLANEJAMENTO E FACILITIES --- */}
