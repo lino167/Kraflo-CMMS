@@ -40,3 +40,9 @@ Tela `/campo`: abre e fecha OS sem internet e envia tudo automaticamente quando 
 - `20261111120300_os_client_uuid_campo.sql` (já aplicada em produção): identificador do aparelho.
 - `20261111120500_campo_fechar_os_atomico.sql`: fechamento em transação única. Enquanto não for aplicada, o app usa o envio em etapas automaticamente.
 - `20261116120000_fechar_os_idempotencia_por_operacao.sql`: cada fechamento da fila leva o id da própria operação, então um reenvio é reconhecido sem confundir com outra pessoa que fechou a OS com o mesmo status e diagnóstico (esse caso agora volta como conflito para revisão). Sem ela, o app continua funcionando com a regra anterior.
+
+## Uso em fábrica (legibilidade)
+
+- Alvos de toque de 48 px (botões, abas, campos e listas), texto de 16 px nos campos (evita o zoom automático do iPhone ao focar) e rótulos maiores.
+- **Modo sol**: botão de sol/lua no topo do `/campo` liga um tema claro de alto contraste para luz forte. A escolha fica guardada no aparelho e só vale enquanto a tela de campo está aberta (`classe campo-light` no `<html>`, definida em `src/index.css`).
+- Abas com a ativa preenchida em laranja, para ler à distância.

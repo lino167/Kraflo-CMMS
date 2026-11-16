@@ -216,3 +216,45 @@
   --dwg-ring: hsl(var(--ring));
   --dwg-landed: hsl(var(--primary) / 0.5);
 }
+
+/* Modo sol do /campo: tema claro de alto contraste para luz forte (fábrica, pátio).
+   Ligado pela classe campo-light no <html> enquanto a tela de campo está aberta. */
+:root.campo-light {
+  --background: 40 20% 97%;
+  --foreground: 210 15% 8%;
+  --card: 0 0% 100%;
+  --card-foreground: 210 15% 8%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 15% 8%;
+  --primary: 22 100% 42%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 12% 92%;
+  --secondary-foreground: 210 15% 12%;
+  --muted: 210 12% 92%;
+  --muted-foreground: 215 12% 30%;
+  --accent: 210 12% 92%;
+  --accent-foreground: 210 15% 8%;
+  --destructive: 350 80% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 210 10% 72%;
+  --input: 210 10% 72%;
+  --ring: 22 100% 42%;
+  --warning: 35 100% 34%;
+  --success: 134 62% 26%;
+  --info: 239 70% 48%;
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 210 15% 12%;
+  --sidebar-primary: 22 100% 42%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 210 12% 92%;
+  --sidebar-accent-foreground: 210 15% 8%;
+  --sidebar-border: 210 10% 72%;
+  --sidebar-ring: 22 100% 42%;
+  color-scheme: light;
+}
+
+/* Avisos coloridos legíveis no modo sol (os tons 300/400 são para fundo escuro) */
+:root.campo-light .text-green-400 { color: hsl(var(--success)); }
+:root.campo-light .text-yellow-400 { color: hsl(var(--warning)); }
+:root.campo-light .text-red-400,
+:root.campo-light .text-red-300 { color: hsl(var(--destructive)); }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { AlertTriangle, Camera, CheckCircle2, Clock, Loader2, Lock, Plus, RefreshCw, Trash2, Wifi, WifiOff, X } from 'lucide-react'
+import { AlertTriangle, Camera, CheckCircle2, Clock, Loader2, Lock, Moon, Plus, RefreshCw, Sun, Trash2, Wifi, WifiOff, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { ReincidenciaAlert } from '@/components/ReincidenciaAlert'
@@ -30,7 +30,7 @@ const PRIORIDADES = ['Baixa', 'Média', 'Alta', 'Urgente'] as const
 const STATUS_FINAIS = ['Fechada', 'Liberado para produção', 'Não liberado'] as const
 
 const selectClass =
-  'h-11 w-full rounded-md border border-border bg-secondary/30 px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary'
+  'h-12 w-full rounded-md border border-border bg-secondary/30 px-3 text-base text-foreground focus:outline-none focus:ring-1 focus:ring-primary'
 
 type Tab = 'nova' | 'abertas' | 'pendencias'
 
@@ -103,11 +103,11 @@ function FotoField({ id, label, value, onPick, onClear }: {
 }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
+      <Label className="text-base font-medium" htmlFor={id}>{label}</Label>
       {value ? (
         <div className="relative overflow-hidden rounded-md border border-border">
           <img src={value} alt="Foto anexada" className="h-40 w-full object-cover" />
-          <Button type="button" size="icon" variant="secondary" aria-label="Remover foto" className="absolute right-2 top-2 h-8 w-8" onClick={onClear}>
+          <Button type="button" size="icon" variant="secondary" aria-label="Remover foto" className="absolute right-2 top-2 h-11 w-11" onClick={onClear}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -138,6 +138,24 @@ export default function Campo() {
   const [closeForm, setCloseForm] = useState(emptyClose)
   const [reincidencia, setReincidencia] = useState<ReincidenciaData | null>(null)
 
+  // Modo sol: tema claro de alto contraste para uso sob luz forte (guardado neste aparelho)
+  const [sol, setSol] = useState(() => {
+    try {
+      return localStorage.getItem('kraflo:campo-sol') === '1'
+    } catch {
+      return false
+    }
+  })
+  useEffect(() => {
+    document.documentElement.classList.toggle('campo-light', sol)
+    try {
+      localStorage.setItem('kraflo:campo-sol', sol ? '1' : '0')
+    } catch {
+      // sem armazenamento: a escolha só não é lembrada
+    }
+    return () => document.documentElement.classList.remove('campo-light')
+  }, [sol])
+
   // Alerta de reincidência (igual à versão web): informa, não bloqueia.
   // Precisa do servidor; sem conexão o aviso simplesmente não aparece.
   const tagDigitada = form.equipamento_tag.trim()
@@ -152,7 +170,12 @@ export default function Campo() {
     let cancelado = false
     void (async () => {
       try {
-        const { data, error } = await (supabase as any).rpc('fn_check_reincidencia', {
+        // a função não está nos tipos gerados do Supabase: chamada tipada à mão, sem `any`
+        const rpc = supabase.rpc.bind(supabase) as unknown as (
+          fn: string,
+          args: Record<string, unknown>,
+        ) => Promise<{ data: unknown; error: unknown }>
+        const { data, error } = await rpc('fn_check_reincidencia', {
           p_empresa_id: empresaId,
           p_tag: tagSelecionada.trim(),
           p_dias_limite: 60,
@@ -380,7 +403,7 @@ export default function Campo() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold tracking-tight">Modo Campo</h1>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {snap
               ? `Dados de apoio de ${new Date(snap.saved_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}`
               : 'Conecte-se uma vez para baixar máquinas e categorias.'}
@@ -394,7 +417,17 @@ export default function Campo() {
           <Button
             size="icon"
             variant="ghost"
-            className="h-9 w-9"
+            className="h-12 w-12"
+            aria-label={sol ? 'Voltar ao tema escuro' : 'Ativar modo sol (tema claro)'}
+            aria-pressed={sol}
+            onClick={() => setSol((v) => !v)}
+          >
+            {sol ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-12 w-12"
             aria-label="Bloquear Modo Campo"
             onClick={() => {
               secureStore.lock()
@@ -402,7 +435,7 @@ export default function Campo() {
               setUnlocked(false)
             }}
           >
-            <Lock className="h-4 w-4" />
+            <Lock className="h-5 w-5" />
           </Button>
         </div>
       </div>
@@ -423,7 +456,7 @@ export default function Campo() {
               </span>
             )}
           </div>
-          <Button size="sm" variant="outline" className="shrink-0" onClick={() => void sync()} disabled={!online || syncing}>
+          <Button variant="outline" className="h-12 shrink-0 px-4 text-base" onClick={() => void sync()} disabled={!online || syncing}>
             {syncing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}
             Sincronizar
           </Button>
@@ -442,8 +475,8 @@ export default function Campo() {
             key={id}
             type="button"
             onClick={() => setTab(id)}
-            className={`h-10 rounded-lg text-xs font-medium transition-colors ${
-              tab === id ? 'bg-primary/20 text-primary' : 'text-muted-foreground'
+            className={`h-12 rounded-lg text-sm font-semibold transition-colors ${
+              tab === id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
             }`}
           >
             {label}
@@ -455,7 +488,7 @@ export default function Campo() {
         <Card className="glass-panel border-red-500/30">
           <CardContent className="space-y-1 p-4 text-sm">
             <p className="font-medium text-red-300">Acesso offline indisponível</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Este aparelho não validou seu acesso com o servidor nos últimos 7 dias, ou você saiu da conta.
               Conecte-se à internet e entre novamente para continuar.
             </p>
@@ -466,7 +499,7 @@ export default function Campo() {
       {tab === 'nova' && (
         <form onSubmit={submitOpen} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="maquina">Máquina</Label>
+            <Label className="text-base font-medium" htmlFor="maquina">Máquina</Label>
             <select
               id="maquina"
               className={selectClass}
@@ -493,15 +526,18 @@ export default function Campo() {
               <Input
                 aria-label="Nome do equipamento"
                 placeholder="Nome do equipamento"
-                className="h-11"
+                className="h-12 text-base"
                 value={form.equipamento_manual}
                 onChange={(e) => setForm({ ...form, equipamento_manual: e.target.value })}
               />
             )}
-            <Label htmlFor="tag">TAG do equipamento</Label>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-base font-medium" htmlFor="tag">TAG do equipamento</Label>
             <Input
               id="tag"
-              className="h-11"
+              className="h-12 text-base"
               placeholder="Ex: TP-001"
               autoCapitalize="characters"
               value={form.equipamento_tag}
@@ -510,7 +546,7 @@ export default function Campo() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="categoria">Motivo da parada</Label>
+            <Label className="text-base font-medium" htmlFor="categoria">Motivo da parada</Label>
             <select
               id="categoria"
               className={selectClass}
@@ -528,7 +564,7 @@ export default function Campo() {
 
           {subcategoriasParada.length > 0 && (
             <div className="space-y-2">
-              <Label htmlFor="sub-parada">Subcategoria (opcional)</Label>
+              <Label className="text-base font-medium" htmlFor="sub-parada">Subcategoria (opcional)</Label>
               <select
                 id="sub-parada"
                 className={selectClass}
@@ -547,7 +583,7 @@ export default function Campo() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="tipo">Tipo</Label>
+              <Label className="text-base font-medium" htmlFor="tipo">Tipo</Label>
               <select id="tipo" className={selectClass} value={form.tipo_manutencao} onChange={(e) => setForm({ ...form, tipo_manutencao: e.target.value })}>
                 {TIPOS.map((t) => (
                   <option key={t}>{t}</option>
@@ -555,7 +591,7 @@ export default function Campo() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="prioridade">Prioridade</Label>
+              <Label className="text-base font-medium" htmlFor="prioridade">Prioridade</Label>
               <select id="prioridade" className={selectClass} value={form.prioridade} onChange={(e) => setForm({ ...form, prioridade: e.target.value })}>
                 {PRIORIDADES.map((p) => (
                   <option key={p}>{p}</option>
@@ -566,7 +602,7 @@ export default function Campo() {
 
           {precisaEscolherTecnico && (
             <div className="space-y-2">
-              <Label htmlFor="tecnico">Técnico responsável</Label>
+              <Label className="text-base font-medium" htmlFor="tecnico">Técnico responsável</Label>
               <select id="tecnico" className={selectClass} value={form.tecnico_id} onChange={(e) => setForm({ ...form, tecnico_id: e.target.value })}>
                 <option value="">Selecione…</option>
                 {(snap?.tecnicos ?? []).map((t) => (
@@ -583,13 +619,13 @@ export default function Campo() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="local">Local (opcional)</Label>
-            <Input id="local" className="h-11" value={form.localizacao} onChange={(e) => setForm({ ...form, localizacao: e.target.value })} />
+            <Label className="text-base font-medium" htmlFor="local">Local (opcional)</Label>
+            <Input id="local" className="h-12 text-base" value={form.localizacao} onChange={(e) => setForm({ ...form, localizacao: e.target.value })} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="descricao">O que aconteceu?</Label>
-            <Textarea id="descricao" rows={4} value={form.descricao_problema} onChange={(e) => setForm({ ...form, descricao_problema: e.target.value })} />
+            <Label className="text-base font-medium" htmlFor="descricao">O que aconteceu?</Label>
+            <Textarea id="descricao" className="text-base" rows={4} value={form.descricao_problema} onChange={(e) => setForm({ ...form, descricao_problema: e.target.value })} />
           </div>
 
           <FotoField id="foto-abertura" label="Foto do problema (opcional)" value={form.foto} onPick={(f) => pickFoto(f, (d) => setForm((prev) => ({ ...prev, foto: d })))} onClear={() => setForm({ ...form, foto: null })} />
@@ -598,7 +634,7 @@ export default function Campo() {
             <Plus className="mr-2 h-5 w-5" /> Salvar OS
           </Button>
           {!snap && (
-            <p className="text-center text-xs text-muted-foreground">
+            <p className="text-center text-sm text-muted-foreground">
               Sem dados de apoio no aparelho. Abra esta tela com internet uma vez.
             </p>
           )}
@@ -616,7 +652,7 @@ export default function Campo() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-medium">{os.equipamento_nome}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       {os.equipamento_tag ? `${os.equipamento_tag} · ` : ''}
                       {os.os_id ? `OS #${os.os_id}` : 'Sem número ainda'}
                       {os.prioridade ? ` · ${os.prioridade}` : ''}
@@ -655,23 +691,23 @@ export default function Campo() {
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="text-sm font-medium">{describe(op)}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(op.created_at).toLocaleString('pt-BR')}</p>
+                      <p className="text-sm text-muted-foreground">{new Date(op.created_at).toLocaleString('pt-BR')}</p>
                     </div>
                     <Badge variant="outline" className={st.className}>
                       {st.text}
                     </Badge>
                   </div>
                   {op.message && (
-                    <p className="flex items-start gap-2 text-xs text-red-300">
+                    <p className="flex items-start gap-2 text-sm text-red-300">
                       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {op.message}
                     </p>
                   )}
                   {op.status !== 'pending' && (
                     <div className="grid grid-cols-2 gap-2 pt-1">
-                      <Button size="sm" variant="outline" onClick={() => void retry(op)}>
+                      <Button variant="outline" className="h-11 text-base" onClick={() => void retry(op)}>
                         Tentar de novo
                       </Button>
-                      <Button size="sm" variant="ghost" className="text-red-400" onClick={() => void discard(op)}>
+                      <Button variant="ghost" className="h-11 text-base text-red-400" onClick={() => void discard(op)}>
                         <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Descartar
                       </Button>
                     </div>
@@ -695,7 +731,7 @@ export default function Campo() {
             </DialogHeader>
 
             <div className="space-y-2">
-              <Label htmlFor="causa">Causa raiz</Label>
+              <Label className="text-base font-medium" htmlFor="causa">Causa raiz</Label>
               <select
                 id="causa"
                 className={selectClass}
@@ -728,12 +764,12 @@ export default function Campo() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="diag">Diagnóstico e solução</Label>
-              <Textarea id="diag" rows={3} value={closeForm.diagnostico_solucao} onChange={(e) => setCloseForm({ ...closeForm, diagnostico_solucao: e.target.value })} />
+              <Label className="text-base font-medium" htmlFor="diag">Diagnóstico e solução</Label>
+              <Textarea id="diag" className="text-base" rows={3} value={closeForm.diagnostico_solucao} onChange={(e) => setCloseForm({ ...closeForm, diagnostico_solucao: e.target.value })} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status-final">Status final</Label>
+              <Label className="text-base font-medium" htmlFor="status-final">Status final</Label>
               <select
                 id="status-final"
                 className={selectClass}
@@ -747,7 +783,7 @@ export default function Campo() {
             </div>
 
             <div className="space-y-2">
-              <Label>Peças usadas</Label>
+              <Label className="text-base font-medium">Peças usadas</Label>
               {closeForm.pecas.map((p, i) => (
                 <div key={i} className="flex items-center justify-between rounded-md border border-border bg-secondary/20 p-2 text-sm">
                   <span>
@@ -780,17 +816,17 @@ export default function Campo() {
                 </select>
               )}
               <div className="grid grid-cols-6 gap-2">
-                <Input aria-label="Nome da peça" placeholder="Peça" disabled={!!closeForm.peca_estoque_id} className="col-span-3 h-10" value={closeForm.peca_estoque_id ? (snap?.pecas_estoque.find((x) => x.id === closeForm.peca_estoque_id)?.nome ?? '') : closeForm.peca_nome} onChange={(e) => setCloseForm({ ...closeForm, peca_nome: e.target.value })} />
-                <Input aria-label="Quantidade" type="number" min={1} className="col-span-1 h-10" value={closeForm.peca_qtd} onChange={(e) => setCloseForm({ ...closeForm, peca_qtd: e.target.value })} />
-                <Button type="button" variant="secondary" className="col-span-2 h-10" onClick={addPeca}>
+                <Input aria-label="Nome da peça" placeholder="Peça" disabled={!!closeForm.peca_estoque_id} className="col-span-3 h-12 text-base" value={closeForm.peca_estoque_id ? (snap?.pecas_estoque.find((x) => x.id === closeForm.peca_estoque_id)?.nome ?? '') : closeForm.peca_nome} onChange={(e) => setCloseForm({ ...closeForm, peca_nome: e.target.value })} />
+                <Input aria-label="Quantidade" type="number" min={1} className="col-span-1 h-12 text-base" value={closeForm.peca_qtd} onChange={(e) => setCloseForm({ ...closeForm, peca_qtd: e.target.value })} />
+                <Button type="button" variant="secondary" className="col-span-2 h-12" onClick={addPeca}>
                   Adicionar
                 </Button>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notas">Notas finais / serviço realizado</Label>
-              <Textarea id="notas" rows={2} value={closeForm.notas_finais} onChange={(e) => setCloseForm({ ...closeForm, notas_finais: e.target.value })} />
+              <Label className="text-base font-medium" htmlFor="notas">Notas finais / serviço realizado</Label>
+              <Textarea id="notas" className="text-base" rows={2} value={closeForm.notas_finais} onChange={(e) => setCloseForm({ ...closeForm, notas_finais: e.target.value })} />
             </div>
 
             <FotoField id="foto-fechamento" label="Foto do serviço (opcional)" value={closeForm.foto} onPick={(f) => pickFoto(f, (d) => setCloseForm((prev) => ({ ...prev, foto: d })))} onClear={() => setCloseForm({ ...closeForm, foto: null })} />
@@ -799,7 +835,7 @@ export default function Campo() {
               <Button type="button" variant="ghost" onClick={() => setClosing(null)}>
                 Cancelar
               </Button>
-              <Button type="submit" className="h-11">
+              <Button type="submit" className="h-12 text-base">
                 Fechar OS
               </Button>
             </DialogFooter>
