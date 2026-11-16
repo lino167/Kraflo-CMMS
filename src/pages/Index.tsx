@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { AIChat } from "@/components/AIChat";
 import { AIReport } from "@/components/AIReport";
 import { Dashboard } from "@/components/Dashboard";
+import { usePermissoes } from "@/hooks/usePermissoes";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -22,6 +23,7 @@ interface IndexProps {
 
 const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
   const { user, profile, isLoading: authLoading } = useAuth();
+  const permissoes = usePermissoes();
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [aiQuestion, setAiQuestion] = useState<string | null>(null);
   const [isIndexing, setIsIndexing] = useState(false);
@@ -145,7 +147,7 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
                     <p className="text-xs text-muted-foreground">OS Indexadas</p>
                   </div>
                 </div>
-                {stats.osIndexadas < stats.totalOS && (
+                {stats.osIndexadas < stats.totalOS && permissoes.pode('indexacao.gerenciar') && (
                   <Button
                     onClick={indexAllOS}
                     disabled={isIndexing}

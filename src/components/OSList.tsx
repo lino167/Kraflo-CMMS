@@ -50,6 +50,7 @@ import {
 import { toast } from '@/components/ui/sonner';
 import { handleError } from '@/lib/error-handler';
 import { exportOSToPDF } from './OSPdfExport';
+import { usePermissoes } from '@/hooks/usePermissoes';
 import { OSCloseDialog } from './OSCloseDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useOSCategories } from '@/hooks/useOSCategories';
@@ -96,6 +97,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
   const [viewMode, setViewMode] = useState<'lista' | 'kanban' | 'calendario' | 'agenda'>('lista');
   const [activeDay, setActiveDay] = useState<number>(new Date().getDate());
   const [deletingOS, setDeletingOS] = useState<OS | null>(null);
+  const permissoes = usePermissoes();
   const [isDeleting, setIsDeleting] = useState(false);
   const [exportingId, setExportingId] = useState<number | null>(null);
   const [closingOS, setClosingOS] = useState<OS | null>(null);
@@ -587,7 +589,9 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                         )}
                         Exportar PDF
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
+                      {(os.status_os === 'Aberta' || os.status_os === 'Em manutenção' || permissoes.pode('os.reabrir') || permissoes.pode('os.excluir')) && (
+                        <DropdownMenuSeparator />
+                      )}
                       {(os.status_os === 'Aberta' || os.status_os === 'Em manutenção') ? (
                         <DropdownMenuItem
                           onClick={() => setClosingOS(os)}
@@ -596,7 +600,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                           <CheckCircle className="h-4 w-4 mr-2" />
                           Fechar OS
                         </DropdownMenuItem>
-                      ) : (
+                      ) : permissoes.pode('os.reabrir') ? (
                         <DropdownMenuItem
                           onClick={() => handleReopenOS(os)}
                           className="text-blue-600 focus:text-blue-600"
@@ -604,15 +608,19 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                           <RotateCcw className="h-4 w-4 mr-2" />
                           Reabrir OS
                         </DropdownMenuItem>
+                      ) : null}
+                      {permissoes.pode('os.excluir') && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => setDeletingOS(os)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </>
                       )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => setDeletingOS(os)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Excluir
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -686,7 +694,9 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                               )}
                               Exportar PDF
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
+                            {(os.status_os === 'Aberta' || os.status_os === 'Em manutenção' || permissoes.pode('os.reabrir') || permissoes.pode('os.excluir')) && (
+                              <DropdownMenuSeparator />
+                            )}
                             {(os.status_os === 'Aberta' || os.status_os === 'Em manutenção') ? (
                               <DropdownMenuItem
                                 onClick={() => setClosingOS(os)}
@@ -695,7 +705,7 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                                 <CheckCircle className="h-4 w-4 mr-2" />
                                 Fechar OS
                               </DropdownMenuItem>
-                            ) : (
+                            ) : permissoes.pode('os.reabrir') ? (
                               <DropdownMenuItem
                                 onClick={() => handleReopenOS(os)}
                                 className="text-blue-600 focus:text-blue-600"
@@ -703,15 +713,19 @@ export function OSList({ osList, tecnicos, isLoading, onView, onEdit, onRefresh 
                                 <RotateCcw className="h-4 w-4 mr-2" />
                                 Reabrir OS
                               </DropdownMenuItem>
+                            ) : null}
+                            {permissoes.pode('os.excluir') && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => setDeletingOS(os)}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Excluir
+                                </DropdownMenuItem>
+                              </>
                             )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => setDeletingOS(os)}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Excluir
-                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

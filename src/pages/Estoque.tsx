@@ -17,6 +17,7 @@ import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import type { Database } from '@/integrations/supabase/types'
 import { useAuth } from '@/hooks/useAuth'
+import { usePermissoes } from '@/hooks/usePermissoes'
 import { getErrorMessage } from '@/lib/error-handler'
 import {
   formatBRL,
@@ -78,9 +79,9 @@ function NivelBadge({ peca }: { peca: Peca }) {
 }
 
 export default function Estoque() {
-  const { profile, isAdminEmpresa, isAdminKraflo } = useAuth()
+  const { profile } = useAuth()
   const empresaId = profile?.empresa_id
-  const podeGerenciar = isAdminEmpresa || isAdminKraflo
+  const podeGerenciar = usePermissoes().pode('estoque.gerenciar')
   const queryClient = useQueryClient()
 
   const [busca, setBusca] = useState('')

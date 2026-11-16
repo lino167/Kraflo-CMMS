@@ -6,6 +6,7 @@ import { handleError } from '@/lib/error-handler'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useOSCategories } from '@/hooks/useOSCategories'
+import { usePermissoes } from '@/hooks/usePermissoes'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -94,6 +95,10 @@ function FormReincidenciaAlert({ control, data }: { control: Control<OSFormData>
 
 export function OSForm({ open, onClose, onSuccess, editingOS, prefilledData }: OSFormProps) {
   const { profile, isAdminKraflo } = useAuth()
+  const permissoes = usePermissoes()
+  const podeAtribuir = permissoes.pode('os.atribuir')
+  // Técnico abre a OS em seu próprio nome; só a administração escolhe outro técnico
+  const meuTecnicoId = profile?.tecnico_id ?? profile?.id_telegram ?? null
   const [isLoading, setIsLoading] = useState(false)
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([])
   const [selectedTecnico, setSelectedTecnico] = useState<string>('')
@@ -191,12 +196,14 @@ export function OSForm({ open, onClose, onSuccess, editingOS, prefilledData }: O
       setTecnicos(data || [])
 
       if (data && data.length > 0 && !editingOS) {
-        setSelectedTecnico(String(data[0].id_telegram))
+        setSelectedTecnico(
+          !podeAtribuir && meuTecnicoId != null ? String(meuTecnicoId) : String(data[0].id_telegram),
+        )
       }
     } catch (error) {
       console.error('Error loading tecnicos:', error)
     }
-  }, [editingOS, isAdminKraflo, profile?.empresa_id])
+  }, [editingOS, isAdminKraflo, profile?.empresa_id, podeAtribuir, meuTecnicoId])
 
   useEffect(() => {
     if (open) {
@@ -474,6 +481,7 @@ export function OSForm({ open, onClose, onSuccess, editingOS, prefilledData }: O
               <Select
                 value={selectedTecnico}
                 onValueChange={setSelectedTecnico}
+                disabled={!podeAtribuir}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o técnico" />

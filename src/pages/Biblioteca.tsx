@@ -62,6 +62,7 @@ import {
   Pencil,
 } from 'lucide-react'
 import { ManualUpload } from '@/components/ManualUpload'
+import { usePermissoes } from '@/hooks/usePermissoes'
 import { useAuth } from '@/hooks/useAuth'
 import { subDays, startOfMonth, endOfMonth, format } from 'date-fns'
 import { Calendar as CalendarIcon } from 'lucide-react'
@@ -127,6 +128,7 @@ export default function Biblioteca() {
   const [manualToDelete, setManualToDelete] = useState<Manual | null>(null)
   const [manualToEdit, setManualToEdit] = useState<Manual | null>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
+  const permissoes = usePermissoes()
   const { profile } = useAuth()
 
   const [wikiResults, setWikiResults] = useState<OS[]>([])
@@ -401,7 +403,7 @@ export default function Biblioteca() {
           </button>
         </div>
 
-        {activeTab === 'manuals' && (
+        {activeTab === 'manuals' && permissoes.pode('manual.gerenciar') && (
           <Button 
             onClick={() => setIsUploadOpen(true)}
             className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300"
@@ -623,7 +625,7 @@ export default function Biblioteca() {
                                   </DropdownMenuItem>
                                 )}
                                 
-                                {profile?.empresa_id === manual.empresa_id && (
+                                {profile?.empresa_id === manual.empresa_id && permissoes.pode('manual.gerenciar') && (
                                   <>
                                     <DropdownMenuItem
                                       onClick={() => {
